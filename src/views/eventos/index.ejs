@@ -1,0 +1,88 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Calendário Institucional</h2>
+            <p class="text-gray-500">Agendamentos de eventos e ações de todas as secretarias.</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/eventos/novo" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Agendar Evento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters placeholder -->
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-[200px]">
+            <input type="text" placeholder="Buscar eventos..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <select class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option>Todas as Secretarias</option>
+        </select>
+        <select class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option>Status: Todos</option>
+            <option>Pendente</option>
+            <option>Aprovado</option>
+        </select>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evento</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Local</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Secretaria</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data / Hora</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                <% if(eventos.length === 0) { %>
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">
+                            Nenhum evento encontrado.
+                        </td>
+                    </tr>
+                <% } %>
+                <% eventos.forEach(evento => { %>
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-gray-900"><%= evento.titulo %></div>
+                            <div class="text-xs text-gray-500 line-clamp-1"><%= evento.descricao %></div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            <%= evento.local %>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: <%= evento.secretaria.cor %>20; color: <%= evento.secretaria.cor %>">
+                                <%= evento.secretaria.nome %>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-gray-900"><%= new Date(evento.data_inicio).toLocaleDateString('pt-BR') %></div>
+                            <div class="text-xs text-gray-500">
+                                <%= new Date(evento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %> - 
+                                <%= new Date(evento.data_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <% if(evento.status === 'aprovado') { %>
+                                <span class="px-2 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full">Aprovado</span>
+                            <% } else if(evento.status === 'pendente') { %>
+                                <span class="px-2 py-1 text-xs font-bold bg-yellow-100 text-yellow-700 rounded-full">Pendente</span>
+                            <% } else { %>
+                                <span class="px-2 py-1 text-xs font-bold bg-red-100 text-red-700 rounded-full">Cancelado</span>
+                            <% } %>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-blue-600 hover:text-blue-800 font-semibold px-2">Editar</button>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>

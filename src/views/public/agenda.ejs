@@ -1,0 +1,78 @@
+<div class="space-y-10">
+    <header class="text-center space-y-4">
+        <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Agenda Oficial da Prefeitura</h1>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Informações centralizadas para os profissionais de imprensa e veículos de comunicação local.</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Sidebar filters -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-gray-900">Filtrar Agenda</h3>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Secretaria</label>
+                    <select class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                        <option>Todas</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Período</label>
+                    <select class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                        <option>Próximos 7 dias</option>
+                        <option>Este mês</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-blue-600 p-6 rounded-2xl text-white shadow-xl shadow-blue-100 space-y-4">
+                <h3 class="font-bold text-lg">Suporte à Imprensa</h3>
+                <p class="text-sm text-blue-100">Necessita de credenciamento ou informações adicionais sobre algum evento?</p>
+                <div class="pt-2">
+                    <p class="text-xs font-bold uppercase tracking-widest opacity-75">WhatsApp Plantão</p>
+                    <p class="text-lg font-bold">(00) 00000-0000</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="lg:col-span-3 space-y-8">
+            <% if(eventos.length === 0) { %>
+                <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                    <p class="text-gray-400 font-medium">Nenhum evento público agendado para os próximos dias.</p>
+                </div>
+            <% } else { %>
+                <div class="space-y-6">
+                    <% eventos.forEach(evento => { %>
+                        <div class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col md:flex-row overflow-hidden border-l-8" style="border-left-color: <%= evento.secretaria.cor %>">
+                            <div class="p-6 md:w-48 bg-gray-50/50 flex flex-col items-center justify-center text-center border-r border-gray-100">
+                                <span class="text-sm font-bold text-gray-400 uppercase tracking-widest"><%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { month: 'short' }) %></span>
+                                <span class="text-4xl font-black text-gray-900"><%= new Date(evento.data_inicio).getDate() %></span>
+                                <span class="text-xs font-semibold text-blue-600 mt-2 uppercase"><%= new Date(evento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %></span>
+                            </div>
+                            <div class="p-6 flex-1 space-y-4">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <h3 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition"><%= evento.titulo %></h3>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest"><%= evento.secretaria.nome %></span>
+                                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                            <span class="text-xs font-bold text-gray-600 uppercase tracking-widest"><%= evento.tipo %></span>
+                                        </div>
+                                    </div>
+                                    <button class="shrink-0 p-2 bg-gray-50 text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                    </button>
+                                </div>
+                                <p class="text-gray-600 leading-relaxed text-sm"><%= evento.descricao %></p>
+                                <div class="flex items-center gap-2 text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    <span class="text-sm font-medium"><%= evento.local %></span>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>

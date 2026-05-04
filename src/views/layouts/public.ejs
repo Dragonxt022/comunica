@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunica - <%= title %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">C</div>
+                    <span class="text-xl font-bold tracking-tight">Comunica <span class="text-blue-600">Imprensa</span></span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="/login" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition">Acesso Restrito</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <%- body %>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-10 mt-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm text-gray-500">&copy; 2026 Secretaria de Comunicação - Todos os direitos reservados.</p>
+        </div>
+    </footer>
+</body>
+</html>

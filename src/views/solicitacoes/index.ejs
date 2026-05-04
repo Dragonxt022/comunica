@@ -1,0 +1,77 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Fluxo de Solicitações</h2>
+            <p class="text-gray-500">Acompanhe a produção de materiais por parte da SECOM.</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/solicitacoes/nova" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Abrir Chamado
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-5 gap-4">
+        <% ['pendente', 'aprovado', 'produção', 'concluído', 'cancelado'].forEach(st => { %>
+            <button class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-blue-400 transition text-left group">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><%= st %></p>
+                <p class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition">
+                    <%= solicitacoes.filter(s => s.status === st).length %>
+                </p>
+            </button>
+        <% }) %>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% if(solicitacoes.length === 0) { %>
+            <div class="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-gray-300">
+                <p class="text-gray-400">Nenhuma solicitação em andamento.</p>
+            </div>
+        <% } %>
+        
+        <% solicitacoes.forEach(s => { %>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col hover:shadow-md transition">
+                <div class="p-5 flex-1 space-y-4">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-600 rounded-full uppercase tracking-wider"><%= s.tipo_midia %></span>
+                                <% if(s.prioridade === 'alta') { %>
+                                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                <% } %>
+                            </div>
+                            <h3 class="text-base font-bold text-gray-900 leading-tight line-clamp-2"><%= s.titulo %></h3>
+                        </div>
+                        <div class="text-right">
+                             <span class="block text-[10px] font-bold text-gray-400 uppercase">Status</span>
+                             <span class="text-xs font-bold <%= s.status === 'pendente' ? 'text-yellow-600' : s.status === 'concluído' ? 'text-green-600' : 'text-blue-600' %> uppercase">
+                                <%= s.status %>
+                             </span>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-600 line-clamp-3"><%= s.descricao %></p>
+                    
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-gray-100 border border-white flex items-center justify-center text-xs font-bold text-gray-500">
+                                <%= s.secretaria.nome.charAt(0) %>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-800"><%= s.secretaria.nome %></p>
+                                <p class="text-[10px] text-gray-400 italic">Por <%= s.autor.nome %></p>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-400">#<%= s.id %></p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 flex justify-between items-center rounded-b-xl border-t border-gray-100">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase"><%= new Date(s.createdAt).toLocaleDateString('pt-BR') %></p>
+                    <a href="/solicitacoes/<%= s.id %>" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Detalhes &rarr;</a>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+</div>
