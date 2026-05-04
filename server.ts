@@ -8,11 +8,13 @@ import { fileURLToPath } from 'url';
 import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
-import { User, Secretaria, Auditoria } from './src/database/models/index.ts';
+import { User, Secretaria, Auditoria, Configuracao } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
 import solicitacoesRoutes from './src/modules/solicitacoes/routes.ts';
+import releasesRoutes from './src/modules/releases/routes.ts';
+import adminRoutes from './src/modules/admin/routes.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 
@@ -83,9 +85,14 @@ app.use(expressLayouts);
 app.set('layout', 'layouts/main');
 
 // Global Variables Middleware
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.user = (req as any).session.user || null;
   res.locals.path = req.path;
+  try {
+    res.locals.config = await Configuracao.findOne({ where: { id: 1 } });
+  } catch {
+    res.locals.config = null;
+  }
   next();
 });
 
@@ -152,6 +159,8 @@ async function startServer() {
     // Modules
     app.use('/solicitacoes', isAuthenticated, solicitacoesRoutes);
     app.use('/eventos', isAuthenticated, eventosRoutes);
+    app.use('/releases', isAuthenticated, releasesRoutes);
+    app.use('/admin', isAuthenticated, adminRoutes);
 
     // Audit helper available in req
     app.use((req, res, next) => {

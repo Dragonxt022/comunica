@@ -1,0 +1,194 @@
+<div class="space-y-6" x-data="{ showCreate: false, editId: null, editData: {} }">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Usuários</h2>
+            <p class="text-gray-500">Gerencie os acessos ao sistema.</p>
+        </div>
+        <button @click="showCreate = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Novo Usuário
+        </button>
+    </div>
+
+    <% if(errors && errors.length > 0) { %>
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <% errors.forEach(e => { %><p><%= e %></p><% }) %>
+        </div>
+    <% } %>
+
+    <!-- Modal Criar -->
+    <div x-show="showCreate" x-cloak @click.self="showCreate = false" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Novo Usuário</h3>
+                <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form action="/admin/usuarios" method="POST" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome completo <span class="text-red-500">*</span></label>
+                        <input type="text" name="nome" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">E-mail <span class="text-red-500">*</span></label>
+                        <input type="email" name="email" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Senha <span class="text-red-500">*</span></label>
+                        <input type="password" name="senha" required minlength="6" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Perfil <span class="text-red-500">*</span></label>
+                        <select name="role" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="secretaria">Secretaria</option>
+                            <option value="secom">SECOM</option>
+                            <option value="imprensa">Imprensa</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria</label>
+                        <select name="secretaria_id" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Nenhuma</option>
+                            <% secretarias.forEach(s => { %>
+                                <option value="<%= s.id %>"><%= s.nome %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="showCreate = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">Criar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar -->
+    <div x-show="editId !== null" x-cloak @click.self="editId = null" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Editar Usuário</h3>
+                <button @click="editId = null" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form :action="'/admin/usuarios/' + editId" method="POST" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                        <input type="text" name="nome" :value="editData.nome" required
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                        <input type="email" name="email" :value="editData.email" required
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nova senha <span class="text-gray-400 font-normal">(deixe vazio para manter)</span></label>
+                        <input type="password" name="senha" minlength="6"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
+                        <select name="role" :value="editData.role"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="secretaria" :selected="editData.role === 'secretaria'">Secretaria</option>
+                            <option value="secom" :selected="editData.role === 'secom'">SECOM</option>
+                            <option value="imprensa" :selected="editData.role === 'imprensa'">Imprensa</option>
+                            <option value="admin" :selected="editData.role === 'admin'">Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria</label>
+                        <select name="secretaria_id"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Nenhuma</option>
+                            <% secretarias.forEach(s => { %>
+                                <option value="<%= s.id %>" :selected="editData.secretaria_id == <%= s.id %>"><%= s.nome %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div class="col-span-2 flex items-center gap-2">
+                        <input type="checkbox" name="ativo" id="editAtivo" :checked="editData.ativo" class="w-4 h-4 accent-blue-600">
+                        <label for="editAtivo" class="text-sm text-gray-700">Usuário ativo</label>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="editId = null" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <% if(usuarios.length === 0) { %>
+            <div class="py-20 text-center text-gray-400">Nenhum usuário cadastrado.</div>
+        <% } else { %>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perfil</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Secretaria</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                <% usuarios.forEach(u => { %>
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+                                <%= u.nome.charAt(0) %>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900"><%= u.nome %></div>
+                                <div class="text-xs text-gray-400"><%= u.email %></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 text-xs font-bold rounded-full
+                            <%= u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                               u.role === 'secom' ? 'bg-blue-100 text-blue-700' :
+                               u.role === 'imprensa' ? 'bg-orange-100 text-orange-700' :
+                               'bg-gray-100 text-gray-600' %>">
+                            <%= u.role.toUpperCase() %>
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                        <%= u.secretaria ? u.secretaria.nome : '—' %>
+                    </td>
+                    <td class="px-6 py-4">
+                        <% if(u.ativo) { %>
+                            <span class="px-2.5 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full">Ativo</span>
+                        <% } else { %>
+                            <span class="px-2.5 py-1 text-xs font-bold bg-red-100 text-red-700 rounded-full">Inativo</span>
+                        <% } %>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end items-center gap-2">
+                            <button @click="editId = <%= u.id %>; editData = { nome: '<%= u.nome.replace(/'/g, "\\'") %>', email: '<%= u.email %>', role: '<%= u.role %>', secretaria_id: '<%= u.secretaria_id || "" %>', ativo: <%= u.ativo %> }"
+                                class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition">Editar</button>
+                            <form action="/admin/usuarios/<%= u.id %>/toggle" method="POST">
+                                <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition
+                                    <%= u.ativo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50' %>">
+                                    <%= u.ativo ? 'Desativar' : 'Ativar' %>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <% } %>
+    </div>
+</div>

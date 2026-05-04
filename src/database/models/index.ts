@@ -5,6 +5,7 @@ import Solicitacao from './Solicitacao.ts';
 import Release from './Release.ts';
 import Arquivo from './Arquivo.ts';
 import Auditoria from './Auditoria.ts';
+import Configuracao from './Configuracao.ts';
 
 export {
   User,
@@ -14,4 +15,5 @@ export {
   Release,
   Arquivo,
   Auditoria,
+  Configuracao,
 };
