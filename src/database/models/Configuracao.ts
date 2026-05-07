@@ -10,6 +10,7 @@ class Configuracao extends Model {
   public telefone_contato!: string;
   public instagram!: string;
   public site_oficial!: string;
+  public status_eventos!: string | null;
 }
 
 Configuracao.init(
@@ -22,6 +23,7 @@ Configuracao.init(
     telefone_contato: { type: DataTypes.STRING, defaultValue: '' },
     instagram: { type: DataTypes.STRING, defaultValue: '' },
     site_oficial: { type: DataTypes.STRING, defaultValue: '' },
+    status_eventos: { type: DataTypes.TEXT, allowNull: true },
   },
   { sequelize, modelName: 'Configuracao', tableName: 'configuracoes' }
 );

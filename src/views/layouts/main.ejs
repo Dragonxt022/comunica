@@ -7,102 +7,194 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <% if(typeof useQuill !== 'undefined' && useQuill) { %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+    <style>
+        .ql-container { font-size: 15px; font-family: 'Inter', sans-serif; }
+        .ql-editor { min-height: 320px; }
+        .ql-toolbar { border-radius: 8px 8px 0 0; border-color: #d1d5db !important; background: #f9fafb; }
+        .ql-container { border-radius: 0 0 8px 8px; border-color: #d1d5db !important; }
+        .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+    </style>
+    <% } %>
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 h-screen flex flex-col overflow-hidden" x-data="{ sidebarOpen: false }">
-    <!-- Navbar -->
-    <header class="bg-white border-b border-gray-200 z-30">
-        <div class="px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-gray-100 rounded-lg lg:hidden">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">
-                        <%= config && config.titulo_site ? config.titulo_site.charAt(0).toUpperCase() : 'C' %>
-                    </div>
-                    <h1 class="text-xl font-bold tracking-tight text-gray-800">
-                        <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
-                    </h1>
-                </div>
+<body class="bg-gray-50 h-screen flex overflow-hidden" x-data="{ sidebarOpen: false }">
+
+    <!-- Mobile backdrop -->
+    <div
+        x-show="sidebarOpen"
+        x-cloak
+        class="fixed inset-0 bg-black/40 z-30 lg:hidden"
+        @click="sidebarOpen = false">
+    </div>
+
+    <!-- Sidebar -->
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+        class="fixed inset-y-0 left-0 z-40 w-56 bg-slate-900 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:shrink-0">
+
+        <!-- Logo area -->
+        <div class="px-4 py-4 border-b border-slate-800/60 flex items-center gap-2.5 shrink-0">
+            <div class="w-7 h-7 bg-blue-500 rounded flex items-center justify-center text-white font-bold text-xs shrink-0">
+                <%= config && config.titulo_site ? config.titulo_site.charAt(0).toUpperCase() : 'C' %>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <% if(user) { %>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-sm font-medium"><%= user.nome %></p>
-                            <p class="text-xs text-gray-500 uppercase font-semibold"><%= user.role %></p>
-                        </div>
-                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold border-2 border-white shadow-sm">
-                            <%= user.nome.charAt(0) %>
-                        </div>
-                    </div>
-                <% } else { %>
-                    <a href="/login" class="text-sm font-semibold text-blue-600 hover:text-blue-700">Entrar</a>
-                <% } %>
-            </div>
+            <span class="text-white font-semibold text-sm truncate">
+                <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
+            </span>
         </div>
-    </header>
 
-    <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <aside 
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 lg:static">
-            <nav class="p-4 space-y-1">
-                <a href="/" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path === '/' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                    Dashboard
-                </a>
-                <a href="/eventos" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/eventos') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    Calendário
-                </a>
-                <a href="/solicitacoes" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/solicitacoes') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Solicitações
-                </a>
-                <a href="/releases" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/releases') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4"></path></svg>
-                    Releases
-                </a>
-                
-                <div class="pt-4 pb-2">
-                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Público</p>
-                </div>
-                <a href="/imprensa/agenda" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    Agenda Imprensa
-                </a>
-                
-                <% if(user && user.role === 'admin') { %>
-                    <div class="pt-4 pb-2">
-                        <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Sistema</p>
-                    </div>
-                    <a href="/admin/secretarias" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/admin/secretarias') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                        Secretarias
-                    </a>
-                    <a href="/admin/usuarios" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/admin/usuarios') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        Usuários
-                    </a>
-                    <a href="/admin/configuracoes" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg <%= path.startsWith('/admin/configuracoes') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100' %>">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Configurações
-                    </a>
-                <% } %>
-            </nav>
-        </aside>
+        <!-- Nav -->
+        <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+            <a href="/" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Dashboard
+            </a>
+            <a href="/eventos" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/eventos') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Calendário
+            </a>
+            <a href="/solicitacoes" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/solicitacoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Solicitações
+            </a>
+            <% if(user && user.role !== 'secretaria') { %>
+            <a href="/releases" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/releases') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4"></path></svg>
+                Releases
+            </a>
+            <% } %>
 
-        <!-- Main Content -->
+            <div class="pt-4 pb-1.5">
+                <p class="px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Público</p>
+            </div>
+            <a href="/imprensa/agenda" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/imprensa') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Agenda Imprensa
+            </a>
+
+            <% if(user && user.role === 'admin') { %>
+            <div class="pt-4 pb-1.5">
+                <p class="px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Sistema</p>
+            </div>
+            <a href="/admin/secretarias" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/secretarias') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                Secretarias
+            </a>
+            <a href="/admin/usuarios" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/usuarios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                Usuários
+            </a>
+            <a href="/admin/configuracoes" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/configuracoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Configurações
+            </a>
+            <% } %>
+        </nav>
+
+        <!-- User info footer -->
+        <% if(user) { %>
+        <div class="px-3 py-3 border-t border-slate-800/60 flex items-center gap-2 shrink-0">
+            <a href="/perfil" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-200 text-xs font-bold shrink-0 transition" title="Meu perfil">
+                <%= user.nome.charAt(0).toUpperCase() %>
+            </a>
+            <div class="min-w-0 flex-1">
+                <a href="/perfil" class="text-[12px] text-slate-200 font-medium truncate leading-tight hover:text-white block transition"><%= user.nome %></a>
+                <p class="text-[10px] text-slate-500 leading-tight capitalize"><%= user.role %></p>
+            </div>
+            <a href="/logout" title="Sair"
+               class="p-1.5 text-slate-500 hover:text-slate-200 hover:bg-white/10 rounded-md transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </a>
+        </div>
+        <% } %>
+    </aside>
+
+    <!-- Wrapper direito -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- Mobile header (lg:hidden) -->
+        <header class="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0">
+            <button @click="sidebarOpen = !sidebarOpen" class="p-1.5 hover:bg-gray-100 rounded-md">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <span class="text-sm font-semibold text-gray-800">
+                <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
+            </span>
+        </header>
+
+        <!-- Main content -->
         <main class="flex-1 overflow-y-auto p-6">
             <%- body %>
         </main>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <% if(user) { %>
+    <script>
+    (function() {
+        var _currentUserId = <%= user.id %>;
+
+        /* ── Toast ────────────────────────────────────────────────── */
+        window.showToast = function(msg, type) {
+            var bg = type === 'success' ? 'bg-green-600'
+                   : type === 'warning' ? 'bg-orange-500'
+                   : 'bg-gray-800';
+            var t = document.createElement('div');
+            t.className = 'pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white max-w-sm opacity-0 translate-y-2 transition-all duration-300 ' + bg;
+            t.textContent = msg;
+            var c = document.getElementById('toast-container');
+            if (!c) return;
+            c.appendChild(t);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() { t.classList.remove('opacity-0','translate-y-2'); });
+            });
+            setTimeout(function() {
+                t.classList.add('opacity-0','translate-y-2');
+                setTimeout(function() { t.remove(); }, 300);
+            }, 4500);
+        };
+
+        /* ── SSE ───────────────────────────────────────────────────── */
+        function connect() {
+            var es = new EventSource('/sse');
+
+            es.addEventListener('update', function(e) {
+                try {
+                    var data = JSON.parse(e.data);
+
+                    // Repassa ao handler da página atual
+                    if (window.onSSEUpdate) window.onSSEUpdate(data);
+
+                    // Toast para eventos de outros usuários
+                    if (data.updatedById !== _currentUserId) {
+                        var msg = '';
+                        if (data.type === 'solicitacao_status') {
+                            msg = data.updatedBy + ' alterou o chamado #' + data.id + ' → "' + data.status + '"';
+                        } else if (data.type === 'solicitacao_comentario') {
+                            msg = data.autor + ' comentou no chamado #' + data.id;
+                        } else if (data.type === 'evento_status') {
+                            msg = data.updatedBy + ' alterou status de evento → "' + data.status + '"';
+                        }
+                        if (msg) window.showToast(msg, 'info');
+                    }
+                } catch(err) {}
+            });
+
+            es.onerror = function() { /* auto-reconnect nativo do EventSource */ };
+        }
+
+        connect();
+    }());
+    </script>
+    <% } %>
 </body>
 </html>

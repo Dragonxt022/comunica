@@ -11,7 +11,7 @@ class Evento extends Model {
   public data_inicio!: Date;
   public data_fim!: Date;
   public tipo!: string;
-  public status!: 'pendente' | 'aprovado' | 'cancelado';
+  public status!: string;
   public secretaria_id!: number;
   public criado_por!: number;
   public secretaria?: Secretaria;
@@ -50,8 +50,8 @@ Evento.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pendente', 'aprovado', 'cancelado'),
-      defaultValue: 'pendente',
+      type: DataTypes.STRING,
+      defaultValue: 'em_planejamento',
     },
     secretaria_id: {
       type: DataTypes.INTEGER,

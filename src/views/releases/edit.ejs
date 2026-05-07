@@ -1,47 +1,254 @@
-<div class="max-w-3xl mx-auto space-y-6">
+<div class="space-y-5">
+
     <div class="flex items-center gap-3">
         <a href="/releases" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Editar Release</h2>
-            <p class="text-gray-500 text-sm">Atualize o conteúdo do release.</p>
+            <p class="text-sm text-gray-500">Atualize o conteúdo e as informações do release.</p>
         </div>
     </div>
 
-    <form action="/releases/<%= release.id %>" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Título <span class="text-red-500">*</span></label>
-            <input type="text" name="titulo" required value="<%= release.titulo %>"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-        </div>
+    <form id="release-form" action="/releases/<%= release.id %>" method="POST">
+        <input type="hidden" name="conteudo"    id="conteudo-input">
+        <input type="hidden" name="imagem_capa" id="imagem-capa-path" value="<%= release.imagem_capa || '' %>">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
-            <input type="text" name="subtitulo" value="<%= release.subtitulo || '' %>"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Conteúdo <span class="text-red-500">*</span></label>
-            <textarea name="conteudo" required rows="12"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-y font-mono text-sm"><%= release.conteudo %></textarea>
-        </div>
+            <!-- COLUNA PRINCIPAL -->
+            <div class="lg:col-span-2 space-y-5">
 
-        <div class="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
-            <input type="checkbox" name="publicado" id="publicado" <%= release.publicado ? 'checked' : '' %> class="w-4 h-4 accent-green-600">
-            <label for="publicado" class="text-sm font-medium text-green-800 cursor-pointer">Publicado</label>
-            <% if(release.publicado_em) { %>
-                <span class="text-xs text-green-600">desde <%= new Date(release.publicado_em).toLocaleDateString('pt-BR') %></span>
-            <% } %>
-        </div>
+                <!-- Identificação -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Identificação</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
+                        <input type="text" name="titulo" required value="<%= release.titulo %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Subtítulo <span class="text-xs text-gray-400 font-normal">(opcional)</span></label>
+                        <input type="text" name="subtitulo" value="<%= release.subtitulo || '' %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                    </div>
+                </div>
 
-        <div class="pt-2 flex justify-end gap-3">
-            <a href="/releases" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition">Cancelar</a>
-            <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Salvar Alterações
-            </button>
+                <!-- Editor de conteúdo -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-3">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Conteúdo <span class="text-red-500">*</span></h3>
+                    <div id="editor"></div>
+                </div>
+
+            </div>
+
+            <!-- SIDEBAR DIREITA (sticky) -->
+            <div class="space-y-4 lg:sticky lg:top-20">
+
+                <!-- Imagem de capa -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Imagem de Capa</h3>
+                    <div id="upload-area"
+                        onclick="document.getElementById('imagem-capa-input').click()"
+                        class="<%= release.imagem_capa ? 'hidden' : '' %> border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition">
+                        <svg class="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-xs font-medium text-gray-500">Clique para selecionar</p>
+                        <p class="text-xs text-gray-400 mt-0.5">JPEG, PNG, WebP — máx 5 MB</p>
+                        <input type="file" id="imagem-capa-input" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
+                    </div>
+                    <div id="capa-preview-container" class="<%= release.imagem_capa ? '' : 'hidden' %>">
+                        <div class="relative inline-block w-full">
+                            <img id="capa-preview" src="<%= release.imagem_capa || '' %>" alt="" class="w-full max-h-40 rounded-lg border border-gray-200 object-cover">
+                            <button type="button" onclick="removerCapa()"
+                                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition shadow">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="upload-progress" class="hidden flex items-center gap-2 text-xs text-blue-600">
+                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Enviando…
+                    </div>
+                    <p id="upload-error" class="hidden text-xs text-red-600 font-medium"></p>
+                </div>
+
+                <!-- Secretaria -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Secretaria</h3>
+                    <select name="secretaria_id" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Sem secretaria</option>
+                        <% secretarias.forEach(function(s) { %>
+                            <option value="<%= s.id %>" <%= release.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <!-- Publicação -->
+                <%
+                    var pubTipo = release.publicado ? 'publicar' : (release.agendado_para ? 'agendar' : 'rascunho');
+                    var agendadoVal = release.agendado_para
+                        ? new Date(release.agendado_para).toISOString().slice(0,16)
+                        : '';
+                %>
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Publicação</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent hover:bg-gray-50 cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/40">
+                            <input type="radio" name="publicacao_tipo" value="rascunho" <%= pubTipo === 'rascunho' ? 'checked' : '' %> onchange="onPublicacaoChange(this.value)"
+                                class="w-4 h-4 text-blue-600">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">Rascunho</p>
+                                <p class="text-xs text-gray-400">Salvar sem publicar</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent hover:bg-gray-50 cursor-pointer transition has-[:checked]:border-green-500 has-[:checked]:bg-green-50/40">
+                            <input type="radio" name="publicacao_tipo" value="publicar" <%= pubTipo === 'publicar' ? 'checked' : '' %> onchange="onPublicacaoChange(this.value)"
+                                class="w-4 h-4 text-green-600">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">Publicado</p>
+                                <% if(release.publicado_em) { %>
+                                <p class="text-xs text-gray-400">Desde <%= new Date(release.publicado_em).toLocaleDateString('pt-BR') %></p>
+                                <% } else { %><p class="text-xs text-gray-400">Visível imediatamente</p><% } %>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent hover:bg-gray-50 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/40">
+                            <input type="radio" name="publicacao_tipo" value="agendar" <%= pubTipo === 'agendar' ? 'checked' : '' %> onchange="onPublicacaoChange(this.value)"
+                                class="w-4 h-4 text-indigo-600">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">Agendado</p>
+                                <p class="text-xs text-gray-400">Escolha data e hora</p>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="schedule-fields" class="<%= pubTipo === 'agendar' ? '' : 'hidden' %> pt-1">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Data e hora</label>
+                        <input type="datetime-local" name="agendado_para" id="agendado-para" value="<%= agendadoVal %>"
+                            class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col gap-2">
+                    <button type="submit" id="btn-submit"
+                        class="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span id="btn-submit-label">Salvar Alterações</span>
+                    </button>
+                    <a href="/releases" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 font-medium hover:bg-gray-50 transition text-center">Cancelar</a>
+                </div>
+
+            </div>
         </div>
     </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+(function () {
+    var initialContent = <%- JSON.stringify(release.conteudo || '') %>;
+
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: 'Escreva o conteúdo do release aqui…',
+        modules: {
+            toolbar: {
+                container: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ color: [] }, { background: [] }],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'link', 'image'],
+                    ['clean']
+                ],
+                handlers: { image: uploadImageHandler }
+            }
+        }
+    });
+
+    if (initialContent) quill.root.innerHTML = initialContent;
+    setupImageResize(quill);
+
+    // Inicializa aparência do botão conforme estado atual
+    onPublicacaoChange(document.querySelector('[name="publicacao_tipo"]:checked').value);
+
+    document.getElementById('release-form').addEventListener('submit', function (e) {
+        var html = quill.root.innerHTML.trim();
+        if (html === '<p><br></p>' || html === '') {
+            e.preventDefault();
+            alert('O conteúdo do release não pode estar vazio.');
+            return;
+        }
+        document.getElementById('conteudo-input').value = html;
+    });
+
+    window.onPublicacaoChange = function(val) {
+        document.getElementById('schedule-fields').classList.toggle('hidden', val !== 'agendar');
+        var lbl = document.getElementById('btn-submit-label');
+        lbl.textContent = val === 'publicar' ? 'Salvar e Publicar' : val === 'agendar' ? 'Salvar Agendamento' : 'Salvar Alterações';
+    };
+
+    function uploadImageHandler() {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp');
+        input.click();
+        input.onchange = function () {
+            var file = input.files[0]; if (!file) return;
+            var fd = new FormData(); fd.append('imagem', file);
+            fetch('/releases/upload-imagem', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.ok) { var range = quill.getSelection(true); quill.insertEmbed(range.index, 'image', data.url); quill.setSelection(range.index + 1); }
+                    else { alert(data.error || 'Erro ao fazer upload'); }
+                });
+        };
+    }
+
+    document.getElementById('imagem-capa-input').addEventListener('change', function () {
+        var file = this.files[0]; if (!file) return;
+        document.getElementById('upload-progress').classList.remove('hidden');
+        var fd = new FormData(); fd.append('imagem', file);
+        fetch('/releases/upload-imagem', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                document.getElementById('upload-progress').classList.add('hidden');
+                if (data.ok) {
+                    document.getElementById('imagem-capa-path').value = data.url;
+                    document.getElementById('capa-preview').src = data.url;
+                    document.getElementById('capa-preview-container').classList.remove('hidden');
+                    document.getElementById('upload-area').classList.add('hidden');
+                } else {
+                    document.getElementById('upload-error').textContent = data.error || 'Erro';
+                    document.getElementById('upload-error').classList.remove('hidden');
+                }
+            });
+    });
+
+    window.removerCapa = function () {
+        document.getElementById('imagem-capa-path').value = '';
+        document.getElementById('capa-preview').src = '';
+        document.getElementById('capa-preview-container').classList.add('hidden');
+        document.getElementById('upload-area').classList.remove('hidden');
+        document.getElementById('imagem-capa-input').value = '';
+    };
+
+    function setupImageResize(q) {
+        var bar = document.createElement('div');
+        bar.style.cssText = 'display:none;position:fixed;z-index:9999;align-items:center;gap:4px;background:#1f2937;border-radius:8px;padding:5px 8px;box-shadow:0 4px 12px rgba(0,0,0,.35);font-size:11px;font-weight:600';
+        var label = document.createElement('span'); label.textContent = 'Largura:'; label.style.cssText = 'color:#9ca3af;margin-right:2px'; bar.appendChild(label);
+        [{t:'P',w:'25%'},{t:'M',w:'50%'},{t:'G',w:'75%'},{t:'100%',w:'100%'}].forEach(function(s) {
+            var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = s.t; btn.title = s.w;
+            btn.style.cssText = 'color:#fff;padding:2px 7px;border-radius:5px;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)';
+            btn.addEventListener('click', function(e) { e.stopPropagation(); if (cur) { cur.style.width = s.w; cur.removeAttribute('width'); } posBar(cur); }); bar.appendChild(btn);
+        });
+        var inp = document.createElement('input'); inp.type = 'number'; inp.placeholder = 'px'; inp.min = '50'; inp.max = '1400';
+        inp.style.cssText = 'width:54px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:5px;color:#fff;padding:2px 5px;font-size:11px;outline:none';
+        inp.addEventListener('keydown', function(e) { if (e.key === 'Enter' && this.value && cur) { cur.style.width = parseInt(this.value) + 'px'; cur.removeAttribute('width'); this.value = ''; posBar(cur); } }); bar.appendChild(inp);
+        document.body.appendChild(bar); var cur = null;
+        function posBar(img) { if (!img) return; var r = img.getBoundingClientRect(); bar.style.display = 'flex'; var top = r.top - 42; if (top < 8) top = r.bottom + 8; bar.style.top = top + 'px'; bar.style.left = Math.max(8, r.left) + 'px'; }
+        q.root.addEventListener('click', function(e) { if (e.target.tagName === 'IMG') { cur = e.target; posBar(cur); } else { bar.style.display = 'none'; cur = null; } });
+        document.addEventListener('click', function(e) { if (bar.contains(e.target)) return; if (e.target.tagName === 'IMG' && q.root.contains(e.target)) return; bar.style.display = 'none'; cur = null; });
+        window.addEventListener('scroll', function() { if (cur) posBar(cur); }, true);
+    }
+}());
+</script>

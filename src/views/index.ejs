@@ -1,146 +1,167 @@
-<div class="space-y-6">
+<div class="space-y-8">
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Bem-vindo, <%= user ? user.nome : 'Visitante' %>!</h2>
-            <p class="text-gray-500">Acompanhe as atividades de comunicação hoje.</p>
+            <h2 class="text-xl font-semibold text-gray-900">Bem-vindo, <%= user.nome.split(' ')[0] %></h2>
+            <p class="text-sm text-gray-400 mt-0.5">Acompanhe as atividades de comunicação hoje.</p>
         </div>
-        <div class="flex gap-2">
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
-                Nova Solicitação
-            </button>
-        </div>
+        <a href="/solicitacoes/nova" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition inline-flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Nova Solicitação
+        </a>
     </div>
 
-    <!-- Stats Grid -->
+    <!-- Stat cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <p class="text-sm font-medium text-gray-400 uppercase">Solicitações Abertas</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">12</p>
-            <div class="mt-4 flex items-center text-sm text-green-600 font-medium">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                +3 hoje
+
+        <!-- Solicitações Pendentes -->
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-orange-400 p-5 flex items-center gap-4">
+            <div class="bg-orange-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Solicitações Pendentes</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= solicitacoesPendentes %></p>
+                <a href="/solicitacoes" class="text-xs text-orange-600 font-medium hover:underline">Ver solicitações &rarr;</a>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <p class="text-sm font-medium text-gray-400 uppercase">Eventos na Semana</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">8</p>
-            <div class="mt-4 flex items-center text-sm text-blue-600 font-medium">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                2 para hoje
+
+        <!-- Eventos na Semana -->
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-blue-400 p-5 flex items-center gap-4">
+            <div class="bg-blue-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Eventos nos Próximos 7 dias</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= eventosNaSemana %></p>
+                <a href="/eventos" class="text-xs text-blue-600 font-medium hover:underline">Ver calendário &rarr;</a>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <p class="text-sm font-medium text-gray-400 uppercase">Releases Publicados</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">45</p>
-            <div class="mt-4 flex items-center text-sm text-gray-500 font-medium font-mono">
-                Total histórico
+
+        <!-- Releases Publicados -->
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-indigo-400 p-5 flex items-center gap-4">
+            <div class="bg-indigo-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Releases Publicados</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= releasesPublicados %></p>
+                <a href="/releases" class="text-xs text-indigo-600 font-medium hover:underline">Ver releases &rarr;</a>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <p class="text-sm font-medium text-gray-400 uppercase">Membros SECOM</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">15</p>
-            <div class="mt-4 flex items-center text-sm text-green-600 font-medium">
-                Online no sistema
+
+        <!-- Usuários Ativos -->
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-emerald-400 p-5 flex items-center gap-4">
+            <div class="bg-emerald-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Usuários Ativos</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= totalUsuativos %></p>
+                <% if(user.role === 'admin') { %>
+                <a href="/admin/usuarios" class="text-xs text-emerald-600 font-medium hover:underline">Gerenciar &rarr;</a>
+                <% } else { %>
+                <p class="text-xs text-gray-400">No sistema</p>
+                <% } %>
             </div>
         </div>
+
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Upcoming Events -->
-        <div class="lg:col-span-2 space-y-4">
+
+        <!-- Próximos Eventos -->
+        <div class="lg:col-span-2 space-y-3">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-gray-900">Agenda Institucional</h3>
-                <a href="/eventos" class="text-sm font-semibold text-blue-600 hover:underline">Ver tudo</a>
+                <h3 class="text-sm font-semibold text-gray-900">Próximos Eventos</h3>
+                <a href="/eventos" class="text-xs font-medium text-blue-600 hover:underline">Ver tudo</a>
             </div>
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <% if(proximosEventos.length === 0) { %>
+                    <div class="py-14 text-center text-gray-400">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-sm">Nenhum evento agendado.</p>
+                        <a href="/eventos/novo" class="block mt-1 text-blue-600 font-medium hover:underline text-sm">Agendar agora</a>
+                    </div>
+                <% } else { %>
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evento</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Secretaria</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Evento</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Secretaria</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Data</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium text-gray-400">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900">Inauguração Unidade Básica</div>
-                                <div class="text-xs text-gray-500">Local: Bairro Novo Horizonte</div>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        <% proximosEventos.forEach(ev => { %>
+                        <tr class="hover:bg-gray-50/80 transition">
+                            <td class="px-5 py-3">
+                                <div class="font-medium text-gray-900 line-clamp-1"><%= ev.titulo %></div>
+                                <div class="text-xs text-gray-400 line-clamp-1"><%= ev.local %></div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Saúde</span>
+                            <td class="px-5 py-3">
+                                <span class="px-2 py-0.5 text-xs font-medium rounded" style="background-color: <%= ev.secretaria.cor %>20; color: <%= ev.secretaria.cor %>">
+                                    <%= ev.secretaria.nome %>
+                                </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">05/05/2026</div>
-                                <div class="text-xs text-gray-500">09:00 - 11:00</div>
+                            <td class="px-5 py-3 text-gray-600">
+                                <div><%= new Date(ev.data_inicio).toLocaleDateString('pt-BR') %></div>
+                                <div class="text-xs text-gray-400"><%= new Date(ev.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %></div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Confirmado</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900">Coletiva de Imprensa: IPTU 2026</div>
-                                <div class="text-xs text-gray-500">Local: Gabinete do Prefeito</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">Fazenda</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">06/05/2026</div>
-                                <div class="text-xs text-gray-500">14:00 - 15:00</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Pendente</span>
+                            <td class="px-5 py-3">
+                                <% if(ev.status === 'aprovado') { %>
+                                    <span class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Aprovado</span>
+                                <% } else if(ev.status === 'pendente') { %>
+                                    <span class="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">Pendente</span>
+                                <% } else { %>
+                                    <span class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Cancelado</span>
+                                <% } %>
                             </td>
                         </tr>
+                        <% }) %>
                     </tbody>
                 </table>
+                <% } %>
             </div>
         </div>
 
-        <!-- Recent Solicitations -->
-        <div class="space-y-4">
-            <h3 class="text-lg font-bold text-gray-900">Solicitações Recentes</h3>
-            <div class="space-y-3">
-                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-                    <div class="flex items-start justify-between">
-                        <div class="space-y-1">
-                            <p class="text-xs font-bold text-blue-600 uppercase">Social Media</p>
-                            <h4 class="text-sm font-bold text-gray-900 leading-tight">Card Informativo: Vacinação Gripe</h4>
-                        </div>
-                        <span class="px-2 py-1 text-[10px] font-bold bg-orange-100 text-orange-800 rounded uppercase">Urgente</span>
-                    </div>
-                    <div class="pt-2 flex items-center justify-between border-t border-gray-100">
-                        <div class="flex items-center gap-2">
-                             <div class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold">S</div>
-                             <p class="text-xs text-gray-500">Saúde</p>
-                        </div>
-                        <p class="text-[10px] text-gray-400 italic">Há 2h</p>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3 opacity-75">
-                    <div class="flex items-start justify-between">
-                        <div class="space-y-1">
-                            <p class="text-xs font-bold text-purple-600 uppercase">Vídeo</p>
-                            <h4 class="text-sm font-bold text-gray-900 leading-tight">Cobertura: Obras no Centro</h4>
-                        </div>
-                        <span class="px-2 py-1 text-[10px] font-bold bg-gray-100 text-gray-800 rounded uppercase">Normal</span>
-                    </div>
-                    <div class="pt-2 flex items-center justify-between border-t border-gray-100">
-                        <div class="flex items-center gap-2">
-                             <div class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold">O</div>
-                             <p class="text-xs text-gray-500">Obras</p>
-                        </div>
-                        <p class="text-[10px] text-gray-400 italic">Há 5h</p>
-                    </div>
-                </div>
+        <!-- Solicitações Recentes -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gray-900">Solicitações Recentes</h3>
+                <a href="/solicitacoes" class="text-xs font-medium text-blue-600 hover:underline">Ver tudo</a>
             </div>
-            <button class="w-full py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                Ver todas solicitações
-            </button>
+            <% if(solicitacoesRecentes.length === 0) { %>
+                <div class="bg-white rounded-lg border border-gray-200 py-14 text-center text-gray-400">
+                    <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <p class="text-sm">Nenhuma solicitação ainda.</p>
+                    <a href="/solicitacoes/nova" class="block mt-1 text-blue-600 font-medium hover:underline text-sm">Abrir chamado</a>
+                </div>
+            <% } else { %>
+            <div class="space-y-2">
+                <% solicitacoesRecentes.forEach(s => { %>
+                <a href="/solicitacoes" class="block bg-white p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold text-gray-400 uppercase mb-0.5"><%= s.tipo_midia %></p>
+                            <p class="text-sm font-medium text-gray-900 line-clamp-1"><%= s.titulo %></p>
+                            <p class="text-xs text-gray-400 mt-0.5"><%= s.secretaria ? s.secretaria.nome : '—' %></p>
+                        </div>
+                        <% if(s.prioridade === 'alta') { %>
+                        <span class="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded bg-red-50 text-red-600 border border-red-200 uppercase">
+                            <%= s.prioridade %>
+                        </span>
+                        <% } else { %>
+                        <span class="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500 uppercase">
+                            <%= s.prioridade %>
+                        </span>
+                        <% } %>
+                    </div>
+                </a>
+                <% }) %>
+            </div>
+            <% } %>
         </div>
+
     </div>
 </div>

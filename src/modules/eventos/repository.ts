@@ -6,7 +6,8 @@ class EventoRepository {
       where,
       include: [
         { model: Secretaria, as: 'secretaria' },
-        { model: User, as: 'autor' }
+        { model: User, as: 'autor' },
+        { model: User, as: 'responsaveis', through: { attributes: [] } },
       ],
       order: [['data_inicio', 'ASC']]
     });
@@ -16,7 +17,8 @@ class EventoRepository {
     return await Evento.findByPk(id, {
       include: [
         { model: Secretaria, as: 'secretaria' },
-        { model: User, as: 'autor' }
+        { model: User, as: 'autor' },
+        { model: User, as: 'responsaveis', through: { attributes: [] } },
       ]
     });
   }

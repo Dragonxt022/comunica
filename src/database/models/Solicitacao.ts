@@ -9,7 +9,7 @@ class Solicitacao extends Model {
   public descricao!: string;
   public prioridade!: 'baixa' | 'media' | 'alta';
   public tipo_midia!: string;
-  public status!: 'pendente' | 'aprovado' | 'produção' | 'concluído' | 'cancelado';
+  public status!: string;
   public secretaria_id!: number;
   public criado_por!: number;
   public secretaria?: Secretaria;
@@ -40,7 +40,7 @@ Solicitacao.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pendente', 'aprovado', 'produção', 'concluído', 'cancelado'),
+      type: DataTypes.STRING,
       defaultValue: 'pendente',
     },
     secretaria_id: {

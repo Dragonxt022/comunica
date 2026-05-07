@@ -3,33 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comunica - <%= title %></title>
+    <title><%= title %> — <%= config && config.titulo_site ? config.titulo_site : 'Prefeitura Municipal' %></title>
+    <meta name="description" content="<%= config && config.descricao_site ? config.descricao_site : 'Agenda oficial e comunicados para a imprensa.' %>">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <nav class="bg-white border-b border-gray-200">
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- Faixa institucional -->
+    <div class="bg-blue-700 text-white text-xs py-1.5">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
+            <span class="opacity-80"><%= config && config.titulo_site ? config.titulo_site : 'Prefeitura Municipal' %> — Portal de Imprensa</span>
+            <% if(config && config.site_oficial) { %>
+                <a href="<%= config.site_oficial %>" target="_blank" rel="noopener" class="opacity-80 hover:opacity-100 transition">Site oficial →</a>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">C</div>
-                    <span class="text-xl font-bold tracking-tight">Comunica <span class="text-blue-600">Imprensa</span></span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <a href="/login" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition">Acesso Restrito</a>
+            <div class="flex items-center justify-between h-16">
+                <a href="/imprensa/agenda" class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-lg">
+                        <%= config && config.titulo_site ? config.titulo_site.charAt(0).toUpperCase() : 'C' %>
+                    </div>
+                    <div class="leading-tight">
+                        <span class="block text-sm font-black text-gray-900 tracking-tight"><%= config && config.titulo_site ? config.titulo_site : 'Comunica' %></span>
+                        <span class="block text-xs font-bold text-blue-600 tracking-widest uppercase">Imprensa</span>
+                    </div>
+                </a>
+                <div class="flex items-center gap-1">
+                    <a href="/imprensa/agenda#eventos"
+                        class="px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Agenda
+                    </a>
+                    <a href="/imprensa/agenda#materias"
+                        class="px-3 py-2 text-sm font-semibold rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
+                        Matérias
+                    </a>
+                    <a href="/login" class="ml-2 px-4 py-2 text-sm font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        Acesso Restrito
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
         <%- body %>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 py-10 mt-20">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-sm text-gray-500">&copy; 2026 Secretaria de Comunicação - Todos os direitos reservados.</p>
+    <footer class="bg-white border-t border-gray-100 py-8 mt-10">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-blue-600 rounded flex items-center justify-center text-white font-black text-sm">
+                    <%= config && config.titulo_site ? config.titulo_site.charAt(0).toUpperCase() : 'C' %>
+                </div>
+                <span class="text-sm font-bold text-gray-700"><%= config && config.titulo_site ? config.titulo_site : 'Secretaria de Comunicação' %></span>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-400">
+                <% if(config && config.email_contato) { %><span><%= config.email_contato %></span><% } %>
+                <% if(config && config.telefone_contato) { %><span><%= config.telefone_contato %></span><% } %>
+                <% if(config && config.instagram) { %><span>@<%= config.instagram %></span><% } %>
+                <span>&copy; <%= new Date().getFullYear() %> Todos os direitos reservados.</span>
+            </div>
         </div>
     </footer>
+
 </body>
 </html>

@@ -46,7 +46,7 @@
                         </div>
                         <div class="text-right">
                              <span class="block text-[10px] font-bold text-gray-400 uppercase">Status</span>
-                             <span class="text-xs font-bold <%= s.status === 'pendente' ? 'text-yellow-600' : s.status === 'concluído' ? 'text-green-600' : 'text-blue-600' %> uppercase">
+                             <span id="sol-status-<%= s.id %>" data-sol-id="<%= s.id %>" class="text-xs font-bold <%= s.status === 'pendente' ? 'text-yellow-600' : s.status === 'concluído' || s.status === 'finalizado' ? 'text-green-600' : 'text-blue-600' %> uppercase">
                                 <%= s.status %>
                              </span>
                         </div>
@@ -69,9 +69,30 @@
                 </div>
                 <div class="bg-gray-50 p-3 flex justify-between items-center rounded-b-xl border-t border-gray-100">
                     <p class="text-[10px] font-bold text-gray-400 uppercase"><%= new Date(s.createdAt).toLocaleDateString('pt-BR') %></p>
-                    <a href="/solicitacoes/<%= s.id %>" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Detalhes &rarr;</a>
+                    <div class="flex items-center gap-3">
+                        <a href="/solicitacoes/<%= s.id %>/editar" class="text-xs font-bold text-gray-400 hover:text-gray-600 transition inline-flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Editar
+                        </a>
+                        <a href="/solicitacoes/<%= s.id %>" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Detalhes &rarr;</a>
+                    </div>
                 </div>
             </div>
         <% }) %>
     </div>
 </div>
+
+<script>
+window.onSSEUpdate = function(data) {
+    if (data.type !== 'solicitacao_status') return;
+    var el = document.getElementById('sol-status-' + data.id);
+    if (!el) return;
+    el.textContent = data.status;
+    var cls = 'text-xs font-bold uppercase ';
+    if (data.status === 'pendente') cls += 'text-yellow-600';
+    else if (data.status === 'concluído' || data.status === 'finalizado') cls += 'text-green-600';
+    else if (data.status === 'cancelado') cls += 'text-red-600';
+    else cls += 'text-blue-600';
+    el.className = cls;
+};
+</script>

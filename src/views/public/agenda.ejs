@@ -1,78 +1,240 @@
-<div class="space-y-10">
-    <header class="text-center space-y-4">
-        <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Agenda Oficial da Prefeitura</h1>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Informações centralizadas para os profissionais de imprensa e veículos de comunicação local.</p>
+<div class="space-y-16">
+
+    <!-- Hero -->
+    <header class="text-center space-y-4 py-6">
+        <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-2">
+            Portal de Imprensa
+        </div>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+            <%= config && config.titulo_site ? config.titulo_site : 'Prefeitura Municipal' %>
+        </h1>
+        <p class="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            <%= config && config.descricao_site ? config.descricao_site : 'Agenda oficial e comunicados para os profissionais de imprensa e veículos de comunicação.' %>
+        </p>
+        <div class="flex items-center justify-center gap-6 text-sm pt-2">
+            <a href="#eventos" class="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:text-blue-700 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Agenda de eventos
+            </a>
+            <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+            <a href="#materias" class="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:text-blue-700 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
+                Matérias publicadas
+            </a>
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <!-- Sidebar filters -->
-        <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                <h3 class="font-bold text-gray-900">Filtrar Agenda</h3>
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Secretaria</label>
-                    <select class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                        <option>Todas</option>
-                    </select>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Período</label>
-                    <select class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                        <option>Próximos 7 dias</option>
-                        <option>Este mês</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-blue-600 p-6 rounded-2xl text-white shadow-xl shadow-blue-100 space-y-4">
-                <h3 class="font-bold text-lg">Suporte à Imprensa</h3>
-                <p class="text-sm text-blue-100">Necessita de credenciamento ou informações adicionais sobre algum evento?</p>
-                <div class="pt-2">
-                    <p class="text-xs font-bold uppercase tracking-widest opacity-75">WhatsApp Plantão</p>
-                    <p class="text-lg font-bold">(00) 00000-0000</p>
-                </div>
-            </div>
+    <!-- Agenda de Eventos -->
+    <section id="eventos" class="scroll-mt-20">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-blue-600 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Agenda de Eventos</h2>
+            <span class="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full"><%= eventos.length %> próximos</span>
         </div>
 
-        <!-- Timeline -->
-        <div class="lg:col-span-3 space-y-8">
-            <% if(eventos.length === 0) { %>
-                <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                    <p class="text-gray-400 font-medium">Nenhum evento público agendado para os próximos dias.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar contato -->
+            <div class="space-y-5">
+                <div class="bg-blue-600 p-6 rounded-2xl text-white shadow-xl shadow-blue-100 space-y-4 sticky top-24">
+                    <h3 class="font-bold text-lg">Assessoria de Imprensa</h3>
+                    <p class="text-sm text-blue-100">Credenciamento, entrevistas e informações adicionais.</p>
+                    <% if(config && config.telefone_contato) { %>
+                    <div class="pt-1">
+                        <p class="text-xs font-bold uppercase tracking-widest opacity-75">Telefone / WhatsApp</p>
+                        <p class="text-base font-bold mt-0.5"><%= config.telefone_contato %></p>
+                    </div>
+                    <% } %>
+                    <% if(config && config.email_contato) { %>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-widest opacity-75">E-mail</p>
+                        <p class="text-sm font-medium break-all mt-0.5"><%= config.email_contato %></p>
+                    </div>
+                    <% } %>
+                    <% if(config && config.instagram) { %>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-widest opacity-75">Instagram</p>
+                        <p class="text-sm font-medium mt-0.5">@<%= config.instagram %></p>
+                    </div>
+                    <% } %>
+                    <% if(config && config.site_oficial) { %>
+                    <a href="<%= config.site_oficial %>" target="_blank" rel="noopener"
+                        class="mt-2 inline-flex items-center gap-1 text-sm font-bold text-white/90 hover:text-white underline underline-offset-2 transition">
+                        Site oficial
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                    <% } %>
                 </div>
-            <% } else { %>
-                <div class="space-y-6">
-                    <% eventos.forEach(evento => { %>
-                        <div class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col md:flex-row overflow-hidden border-l-8" style="border-left-color: <%= evento.secretaria.cor %>">
-                            <div class="p-6 md:w-48 bg-gray-50/50 flex flex-col items-center justify-center text-center border-r border-gray-100">
-                                <span class="text-sm font-bold text-gray-400 uppercase tracking-widest"><%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { month: 'short' }) %></span>
-                                <span class="text-4xl font-black text-gray-900"><%= new Date(evento.data_inicio).getDate() %></span>
-                                <span class="text-xs font-semibold text-blue-600 mt-2 uppercase"><%= new Date(evento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %></span>
+            </div>
+
+            <!-- Timeline de eventos -->
+            <div class="lg:col-span-3 space-y-5">
+                <% if(eventos.length === 0) { %>
+                    <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-gray-500 font-medium">Nenhum evento público agendado para os próximos dias.</p>
+                    </div>
+                <% } else { %>
+                    <% eventos.forEach(function(evento) { %>
+                        <div class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col md:flex-row"
+                             style="border-left: 6px solid <%= evento.secretaria ? evento.secretaria.cor : '#3b82f6' %>">
+                            <!-- Data -->
+                            <div class="p-5 md:w-44 bg-gray-50/60 flex flex-col items-center justify-center text-center shrink-0 border-r border-gray-100">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                    <%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '') %>
+                                </span>
+                                <span class="text-4xl font-black text-gray-900 leading-none my-1">
+                                    <%= new Date(evento.data_inicio).getDate().toString().padStart(2, '0') %>
+                                </span>
+                                <span class="text-xs font-bold text-blue-600 uppercase">
+                                    <%= new Date(evento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+                                </span>
+                                <span class="text-xs text-gray-400 mt-1">
+                                    <%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { weekday: 'short' }) %>
+                                </span>
                             </div>
-                            <div class="p-6 flex-1 space-y-4">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="space-y-1">
-                                        <h3 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition"><%= evento.titulo %></h3>
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest"><%= evento.secretaria.nome %></span>
-                                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                            <span class="text-xs font-bold text-gray-600 uppercase tracking-widest"><%= evento.tipo %></span>
+                            <!-- Conteúdo -->
+                            <div class="p-6 flex-1 space-y-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition leading-snug"><%= evento.titulo %></h3>
+                                        <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                            <% if(evento.secretaria) { %>
+                                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
+                                                  style="background-color: <%= evento.secretaria.cor %>">
+                                                <%= evento.secretaria.nome %>
+                                            </span>
+                                            <% } %>
+                                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider"><%= evento.tipo %></span>
                                         </div>
                                     </div>
-                                    <button class="shrink-0 p-2 bg-gray-50 text-gray-400 rounded-full hover:bg-blue-50 hover:text-blue-600 transition">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                    <button type="button"
+                                        onclick="compartilhar('<%= encodeURIComponent(evento.titulo) %>', window.location.href)"
+                                        class="shrink-0 p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition"
+                                        title="Compartilhar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                     </button>
                                 </div>
-                                <p class="text-gray-600 leading-relaxed text-sm"><%= evento.descricao %></p>
-                                <div class="flex items-center gap-2 text-gray-500">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    <span class="text-sm font-medium"><%= evento.local %></span>
+                                <% if(evento.descricao) { %>
+                                <p class="text-sm text-gray-600 leading-relaxed line-clamp-2"><%= evento.descricao %></p>
+                                <% } %>
+                                <% if(evento.local) { %>
+                                <div class="flex items-center gap-1.5 text-gray-500 text-sm">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    <span><%= evento.local %></span>
                                 </div>
+                                <% } %>
                             </div>
                         </div>
                     <% }) %>
-                </div>
-            <% } %>
+                <% } %>
+            </div>
         </div>
-    </div>
+    </section>
+
+    <!-- Matérias / Releases -->
+    <% var _releases = (typeof releases !== 'undefined') ? releases : []; %>
+    <% if(_releases.length > 0) { %>
+    <section id="materias" class="scroll-mt-20">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-indigo-600 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Matérias para a Imprensa</h2>
+            <span class="ml-2 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full"><%= _releases.length %> publicadas</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <% _releases.forEach(function(release) { %>
+            <article class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col">
+                <!-- Capa -->
+                <% if(release.imagem_capa) { %>
+                <div class="relative overflow-hidden bg-gray-100 aspect-video">
+                    <img src="<%= release.imagem_capa %>" alt="<%= release.titulo %>"
+                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </div>
+                <% } else { %>
+                <div class="aspect-video bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
+                    <svg class="w-12 h-12 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
+                </div>
+                <% } %>
+
+                <!-- Conteúdo -->
+                <div class="p-5 flex flex-col flex-1 space-y-3">
+                    <div class="flex-1 space-y-2">
+                        <p class="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                            <%= release.publicado_em ? new Date(release.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '' %>
+                        </p>
+                        <h3 class="text-base font-bold text-gray-900 group-hover:text-indigo-700 transition leading-snug line-clamp-2">
+                            <%= release.titulo %>
+                        </h3>
+                        <% if(release.subtitulo) { %>
+                        <p class="text-sm text-gray-500 line-clamp-2 leading-relaxed"><%= release.subtitulo %></p>
+                        <% } %>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <a href="/imprensa/releases/<%= release.id %>"
+                           class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition inline-flex items-center gap-1">
+                            Ler matéria
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                        <button type="button"
+                            onclick="compartilhar('<%= encodeURIComponent(release.titulo) %>', window.location.origin + '/imprensa/releases/<%= release.id %>')"
+                            class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            title="Compartilhar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <% }) %>
+        </div>
+    </section>
+    <% } else { /* _releases.length === 0 */ %>
+    <section id="materias" class="scroll-mt-20">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-indigo-600 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Matérias para a Imprensa</h2>
+        </div>
+        <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
+            <p class="text-gray-500 font-medium">Nenhuma matéria publicada ainda.</p>
+        </div>
+    </section>
+    <% } %>
+
 </div>
+
+<!-- Toast -->
+<div id="share-toast"
+     style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999"
+     class="bg-gray-900 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-2xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+    Link copiado para a área de transferência!
+</div>
+
+<script>
+function compartilhar(tituloEncoded, url) {
+    var titulo = decodeURIComponent(tituloEncoded);
+    if (navigator.share) {
+        navigator.share({ title: titulo, url: url }).catch(function() {});
+    } else {
+        navigator.clipboard.writeText(url).then(function() {
+            var toast = document.getElementById('share-toast');
+            toast.style.display = 'flex';
+            setTimeout(function() { toast.style.display = 'none'; }, 2800);
+        }).catch(function() {
+            prompt('Copie o link abaixo:', url);
+        });
+    }
+}
+
+// Smooth scroll para âncoras
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        var id = this.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) {
+            e.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+</script>

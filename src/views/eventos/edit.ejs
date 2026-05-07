@@ -1,10 +1,10 @@
 <script>
 document.addEventListener('alpine:init', function() {
-    Alpine.data('eventoCreateForm', function() {
+    Alpine.data('eventoEditForm', function() {
         return {
-            selectedSec: <%- user.role === 'secretaria' ? user.secretaria_id : 'null' %>,
+            selectedSec: <%- evento.secretaria_id %>,
             allUsers: <%- JSON.stringify(users.map(function(u){ return { id: u.id, nome: u.nome, secretaria_id: u.secretaria_id }; })) %>,
-            responsaveis: [],
+            responsaveis: <%- JSON.stringify(evento.responsaveis ? evento.responsaveis.map(function(r){ return r.id; }) : []) %>,
             get filteredUsers() {
                 if (!this.selectedSec) return [];
                 var sec = this.selectedSec;
@@ -20,62 +20,67 @@ document.addEventListener('alpine:init', function() {
 });
 </script>
 
-<div class="space-y-6" x-data="eventoCreateForm">
+<div class="space-y-6" x-data="eventoEditForm">
     <div class="flex items-center gap-3">
         <a href="/eventos" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Agendar Evento</h2>
-            <p class="text-gray-500 text-sm">Preencha os dados para registrar um novo evento institucional.</p>
+            <h2 class="text-2xl font-bold text-gray-900">Editar Evento</h2>
+            <p class="text-gray-500 text-sm">Atualize as informações do evento institucional.</p>
         </div>
     </div>
 
-    <form action="/eventos" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+    <%
+        var fmtDT = function(d) {
+            if (!d) return '';
+            var dt = new Date(d);
+            var pad = function(n) { return String(n).padStart(2,'0'); };
+            return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate())
+                 + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+        };
+    %>
+
+    <form action="/eventos/<%= evento.id %>" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Título do Evento <span class="text-red-500">*</span></label>
-            <input type="text" name="titulo" required placeholder="Ex: Abertura do ano letivo 2025"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            <input type="text" name="titulo" required value="<%= evento.titulo %>"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
-            <textarea name="descricao" required rows="3" placeholder="Descreva o evento..."
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"></textarea>
+            <textarea name="descricao" required rows="3"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition resize-none"><%= evento.descricao %></textarea>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Local <span class="text-red-500">*</span></label>
-            <input type="text" name="local" required placeholder="Ex: Teatro Municipal, Rua XV, n° 120"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            <input type="text" name="local" required value="<%= evento.local %>"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Início <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_inicio" required
-                    value="<%= prefillDate ? prefillDate + 'T08:00' : '' %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                <input type="datetime-local" name="data_inicio" required value="<%= fmtDT(evento.data_inicio) %>"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Fim <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_fim" required
-                    value="<%= prefillDate ? prefillDate + 'T09:00' : '' %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                <input type="datetime-local" name="data_fim" required value="<%= fmtDT(evento.data_fim) %>"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Evento <span class="text-red-500">*</span></label>
-            <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
                 <option value="">Selecione...</option>
-                <option value="Coletiva de Imprensa">Coletiva de Imprensa</option>
-                <option value="Inauguração">Inauguração</option>
-                <option value="Cerimônia">Cerimônia</option>
-                <option value="Reunião">Reunião</option>
-                <option value="Evento Cultural">Evento Cultural</option>
-                <option value="Ação Social">Ação Social</option>
-                <option value="Outros">Outros</option>
+                <% ['Coletiva de Imprensa','Inauguração','Cerimônia','Reunião','Evento Cultural','Ação Social','Outros'].forEach(function(t) { %>
+                    <option value="<%= t %>" <%= evento.tipo === t ? 'selected' : '' %>><%= t %></option>
+                <% }) %>
             </select>
         </div>
 
@@ -84,10 +89,10 @@ document.addEventListener('alpine:init', function() {
             <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
             <select name="secretaria_id" required
                 @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
                 <option value="">Selecione...</option>
                 <% secretarias.forEach(function(s) { %>
-                    <option value="<%= s.id %>"><%= s.nome %></option>
+                    <option value="<%= s.id %>" <%= evento.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
                 <% }) %>
             </select>
         </div>
@@ -128,7 +133,7 @@ document.addEventListener('alpine:init', function() {
             <a href="/eventos" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition">Cancelar</a>
             <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Salvar Evento
+                Salvar Alterações
             </button>
         </div>
     </form>

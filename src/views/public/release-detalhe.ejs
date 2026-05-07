@@ -1,0 +1,130 @@
+<div class="max-w-4xl mx-auto space-y-8">
+
+    <!-- Breadcrumb / voltar -->
+    <nav class="flex items-center gap-2 text-sm text-gray-500">
+        <a href="/imprensa/agenda" class="hover:text-blue-600 transition font-medium">Portal de Imprensa</a>
+        <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <a href="/imprensa/agenda#materias" class="hover:text-blue-600 transition font-medium">Matérias</a>
+        <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <span class="text-gray-400 line-clamp-1 max-w-xs"><%= release.titulo %></span>
+    </nav>
+
+    <!-- Cabeçalho da matéria -->
+    <header class="space-y-5">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>
+                Matéria
+            </span>
+            <% if(release.publicado_em) { %>
+            <time class="text-sm text-gray-500 font-medium">
+                <%= new Date(release.publicado_em).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) %>
+            </time>
+            <% } %>
+        </div>
+
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
+            <%= release.titulo %>
+        </h1>
+
+        <% if(release.subtitulo) { %>
+        <p class="text-xl text-gray-500 leading-relaxed font-normal border-l-4 border-indigo-300 pl-4">
+            <%= release.subtitulo %>
+        </p>
+        <% } %>
+
+        <!-- Ações: compartilhar -->
+        <div class="flex items-center gap-3 pt-1">
+            <button type="button" id="btn-share"
+                onclick="compartilharMateria()"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                Compartilhar matéria
+            </button>
+            <a href="/imprensa/agenda#materias"
+               class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Ver todas as matérias
+            </a>
+        </div>
+    </header>
+
+    <!-- Imagem de capa -->
+    <% if(release.imagem_capa) { %>
+    <figure class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100">
+        <img src="<%= release.imagem_capa %>" alt="<%= release.titulo %>"
+             class="w-full max-h-[520px] object-cover">
+    </figure>
+    <% } %>
+
+    <!-- Conteúdo da matéria -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 md:p-12">
+        <div id="release-content" class="release-typography">
+            <%- release.conteudo %>
+        </div>
+    </div>
+
+    <!-- Rodapé da matéria -->
+    <footer class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6 border-t border-gray-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-lg">
+                <%= config && config.titulo_site ? config.titulo_site.charAt(0).toUpperCase() : 'C' %>
+            </div>
+            <div class="leading-tight">
+                <p class="text-sm font-bold text-gray-900"><%= config && config.titulo_site ? config.titulo_site : 'Assessoria de Imprensa' %></p>
+                <p class="text-xs text-gray-500">Portal de Imprensa Oficial</p>
+            </div>
+        </div>
+        <button type="button"
+            onclick="compartilharMateria()"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            Compartilhar
+        </button>
+    </footer>
+
+</div>
+
+<!-- Toast -->
+<div id="share-toast"
+     style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999"
+     class="bg-gray-900 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-2xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+    Link copiado para a área de transferência!
+</div>
+
+<style>
+.release-typography { font-size: 1.0625rem; line-height: 1.8; color: #374151; }
+.release-typography h1 { font-size: 1.875rem; font-weight: 800; color: #111827; margin: 1.75rem 0 0.75rem; line-height: 1.25; }
+.release-typography h2 { font-size: 1.5rem; font-weight: 700; color: #111827; margin: 1.5rem 0 0.625rem; line-height: 1.3; }
+.release-typography h3 { font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 1.25rem 0 0.5rem; }
+.release-typography p { margin-bottom: 1.25rem; }
+.release-typography strong, .release-typography b { font-weight: 700; color: #111827; }
+.release-typography em, .release-typography i { font-style: italic; }
+.release-typography ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.release-typography ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.release-typography li { margin-bottom: 0.375rem; }
+.release-typography blockquote { border-left: 4px solid #6366f1; padding: 0.75rem 1.25rem; background: #f5f3ff; border-radius: 0 0.5rem 0.5rem 0; margin: 1.5rem 0; color: #4338ca; font-style: italic; }
+.release-typography a { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
+.release-typography a:hover { color: #3730a3; }
+.release-typography img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 1.25rem 0; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.release-typography hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+</style>
+
+<script>
+function compartilharMateria() {
+    var titulo = '<%= release.titulo.replace(/'/g, "\\'") %>';
+    var url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ title: titulo, url: url }).catch(function() {});
+    } else {
+        navigator.clipboard.writeText(url).then(function() {
+            var toast = document.getElementById('share-toast');
+            toast.style.display = 'flex';
+            setTimeout(function() { toast.style.display = 'none'; }, 2800);
+        }).catch(function() {
+            prompt('Copie o link abaixo:', url);
+        });
+    }
+}
+</script>

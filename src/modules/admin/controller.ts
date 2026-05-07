@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import slugify from 'slugify';
 import { User, Secretaria, Configuracao } from '../../database/models/index.ts';
+import { bustConfigCache } from '../../lib/config-cache.ts';
 
 // ─── Secretarias ──────────────────────────────────────────────────────────────
 
@@ -51,6 +52,23 @@ export const destroySecretaria = async (req: Request, res: Response) => {
   try {
     await Secretaria.destroy({ where: { id: req.params.id } });
     res.redirect('/admin/secretarias');
+  } catch (error) {
+    console.error(error);
+    res.redirect('/admin/secretarias');
+  }
+};
+
+// ─── Secretarias (form views) ─────────────────────────────────────────────────
+
+export const novaSecretariaView = (req: Request, res: Response) => {
+  res.render('admin/secretaria-form', { title: 'Nova Secretaria', secretaria: null, errors: [] });
+};
+
+export const editSecretariaView = async (req: Request, res: Response) => {
+  try {
+    const secretaria = await Secretaria.findByPk(req.params.id);
+    if (!secretaria) return res.redirect('/admin/secretarias');
+    res.render('admin/secretaria-form', { title: 'Editar Secretaria', secretaria, errors: [] });
   } catch (error) {
     console.error(error);
     res.redirect('/admin/secretarias');
@@ -130,6 +148,40 @@ export const toggleUsuarioAtivo = async (req: Request, res: Response) => {
   }
 };
 
+export const novoUsuarioView = async (req: Request, res: Response) => {
+  try {
+    const secretarias = await Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] });
+    res.render('admin/usuario-form', { title: 'Novo Usuário', usuario: null, secretarias, errors: [] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const editUsuarioView = async (req: Request, res: Response) => {
+  try {
+    const usuario = await User.findByPk(req.params.id, {
+      include: [{ model: Secretaria, as: 'secretaria' }],
+    });
+    if (!usuario) return res.redirect('/admin/usuarios');
+    const secretarias = await Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] });
+    res.render('admin/usuario-form', { title: 'Editar Usuário', usuario, secretarias, errors: [] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const destroyUsuario = async (req: Request, res: Response) => {
+  try {
+    await User.destroy({ where: { id: req.params.id } });
+    res.redirect('/admin/usuarios');
+  } catch (error) {
+    console.error(error);
+    res.redirect('/admin/usuarios');
+  }
+};
+
 // ─── Configuracoes ────────────────────────────────────────────────────────────
 
 export const configView = async (req: Request, res: Response) => {
@@ -144,9 +196,14 @@ export const configView = async (req: Request, res: Response) => {
 
 export const saveConfig = async (req: Request, res: Response) => {
   try {
-    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, site_oficial } = req.body;
+    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, site_oficial, status_eventos_json } = req.body;
     const [config] = await Configuracao.findOrCreate({ where: { id: 1 }, defaults: {} as any });
-    await config.update({ titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, site_oficial });
+    await config.update({
+      titulo_site, subtitulo_site, descricao_site,
+      email_contato, telefone_contato, instagram, site_oficial,
+      status_eventos: status_eventos_json || null,
+    });
+    bustConfigCache();
     res.render('admin/configuracoes', { title: 'Configurações', config, success: true });
   } catch (error) {
     console.error(error);

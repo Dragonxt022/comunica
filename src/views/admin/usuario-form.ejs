@@ -1,0 +1,158 @@
+<div class="space-y-6">
+
+    <!-- Cabeçalho -->
+    <div class="flex items-center gap-3">
+        <a href="/admin/usuarios" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </a>
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900"><%= usuario ? 'Editar Usuário' : 'Novo Usuário' %></h2>
+            <p class="text-sm text-gray-500"><%= usuario ? 'Atualize os dados, perfil e secretaria vinculada.' : 'Preencha os dados e escolha o perfil de acesso.' %></p>
+        </div>
+    </div>
+
+    <% if(errors && errors.length > 0) { %>
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div><% errors.forEach(e => { %><p><%= e %></p><% }) %></div>
+        </div>
+    <% } %>
+
+    <form action="<%= usuario ? '/admin/usuarios/' + usuario.id : '/admin/usuarios' %>" method="POST" class="space-y-5">
+
+        <!-- Dados Pessoais -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Dados pessoais</h3>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Nome completo <span class="text-red-500">*</span></label>
+                <input type="text" name="nome" required
+                    value="<%= usuario ? usuario.nome : '' %>"
+                    placeholder="Ex: Maria da Silva"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail <span class="text-red-500">*</span></label>
+                <input type="email" name="email" required
+                    value="<%= usuario ? usuario.email : '' %>"
+                    placeholder="usuario@prefeitura.gov.br"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <% if(usuario) { %>Nova senha <span class="text-gray-400 font-normal">(deixe vazio para manter a atual)</span><% } else { %>Senha <span class="text-red-500">*</span><% } %>
+                </label>
+                <input type="password" name="senha" minlength="6"
+                    <%= usuario ? '' : 'required' %>
+                    placeholder="<%= usuario ? '••••••' : 'Mínimo 6 caracteres' %>"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+            </div>
+        </div>
+
+        <!-- Perfil de Acesso -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Perfil de acesso <span class="text-red-500">*</span></h3>
+            <p class="text-xs text-gray-500">Defina o nível de permissão deste usuário no sistema.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="role" value="secretaria" class="peer sr-only"
+                        <%= (!usuario || usuario.role === 'secretaria') ? 'checked' : '' %>>
+                    <div class="h-full p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-sm font-bold text-gray-800">Secretaria</span>
+                            <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-blue-500 flex items-center justify-center mt-0.5 flex-shrink-0" style="border-color: inherit">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">Cadastra eventos e abre chamados de comunicação para a sua secretaria.</p>
+                    </div>
+                </label>
+
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="role" value="secom" class="peer sr-only"
+                        <%= usuario && usuario.role === 'secom' ? 'checked' : '' %>>
+                    <div class="h-full p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-sm font-bold text-gray-800">SECOM</span>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">Gerencia a comunicação, atende chamados e pode aprovar eventos de qualquer secretaria.</p>
+                    </div>
+                </label>
+
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="role" value="imprensa" class="peer sr-only"
+                        <%= usuario && usuario.role === 'imprensa' ? 'checked' : '' %>>
+                    <div class="h-full p-4 rounded-xl border-2 border-gray-200 peer-checked:border-orange-400 peer-checked:bg-orange-50 hover:border-gray-300 transition">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-sm font-bold text-gray-800">Imprensa</span>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">Acesso somente à agenda pública de eventos e releases publicados.</p>
+                    </div>
+                </label>
+
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="role" value="admin" class="peer sr-only"
+                        <%= usuario && usuario.role === 'admin' ? 'checked' : '' %>>
+                    <div class="h-full p-4 rounded-xl border-2 border-gray-200 peer-checked:border-purple-500 peer-checked:bg-purple-50 hover:border-gray-300 transition">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-sm font-bold text-gray-800">Administrador</span>
+                            <span class="text-[10px] font-bold bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">TOTAL</span>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">Acesso completo: gerencia usuários, secretarias, releases e configurações do sistema.</p>
+                    </div>
+                </label>
+
+            </div>
+        </div>
+
+        <!-- Secretaria e Status -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Vínculo e status</h3>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Secretaria vinculada</label>
+                <select name="secretaria_id"
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    <option value="">Nenhuma</option>
+                    <% secretarias.forEach(s => { %>
+                        <option value="<%= s.id %>" <%= usuario && usuario.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
+                    <% }) %>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Obrigatório para usuários com perfil <strong>Secretaria</strong>.</p>
+            </div>
+
+            <% if(usuario) { %>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Conta ativa</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Usuários inativos não conseguem fazer login</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="ativo" class="sr-only peer" <%= usuario.ativo ? 'checked' : '' %>>
+                    <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-blue-600
+                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                        peer-checked:after:translate-x-full relative"></div>
+                </label>
+            </div>
+            <% } %>
+        </div>
+
+        <!-- Ações -->
+        <div class="flex justify-end gap-3">
+            <a href="/admin/usuarios"
+                class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition font-medium">
+                Cancelar
+            </a>
+            <button type="submit"
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition font-semibold shadow-sm inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <%= usuario ? 'Salvar Alterações' : 'Criar Usuário' %>
+            </button>
+        </div>
+
+    </form>
+</div>
