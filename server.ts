@@ -40,10 +40,6 @@ const sessionStore = new SequelizeStore({
 });
 
 // Middlewares
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Secure: ${req.secure} - Protocol: ${req.protocol}`);
-  next();
-});
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -55,7 +51,7 @@ app.use(helmet({
       "font-src": ["'self'", "https://fonts.gstatic.com"],
       "img-src": ["'self'", "data:", "blob:"],
       "connect-src": ["'self'"],
-      "frame-ancestors": ["'self'", "https://ais-dev-wltizb6zqqbkcceo477run-9268626090.us-west2.run.app", "https://ais-pre-wltizb6zqqbkcceo477run-9268626090.us-west2.run.app", "https://*.google.com", "https://*.googleusercontent.com"],
+      "frame-ancestors": ["'self'"],
     },
   },
   xFrameOptions: false,
@@ -182,20 +178,6 @@ async function startServer() {
     
     // Health Check
     app.get('/health', (req, res) => res.send('OK'));
-    
-    // Session Debug
-    app.get('/session-debug', (req, res) => {
-      res.json({
-        hasSession: !!(req as any).session,
-        sessionID: req.sessionID,
-        userData: (req as any).session.user || null,
-        cookie: req.session.cookie,
-        headers: req.headers,
-        secure: req.secure,
-        protocol: req.protocol,
-        ip: req.ip
-      });
-    });
     
     // Protected Routes
     app.get('/', isAuthenticated, async (req, res) => {

@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  console.log(`Checking auth for ${req.path}. Session ID: ${(req as any).sessionID}. User:`, (req as any).session.user);
   if ((req as any).session.user) {
     return next();
   }
-  console.log('User not authenticated, redirecting to /login');
   res.redirect('/login');
 };
 

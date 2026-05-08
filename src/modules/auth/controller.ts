@@ -87,18 +87,15 @@ export const login = async (req: Request, res: Response) => {
       secretaria_nome: user.secretaria?.nome || null,
     };
 
-    console.log('Session user set:', (req as any).session.user);
-
     (req as any).session.save((err: any) => {
       if (err) {
         console.error('Session save error:', err);
-        return res.render('auth/login', { 
-          title: 'Login', 
-          layout: 'layouts/blank', 
-          error: 'Erro ao iniciar sessão.' 
+        return res.render('auth/login', {
+          title: 'Login',
+          layout: 'layouts/blank',
+          error: 'Erro ao iniciar sessão.'
         });
       }
-      console.log('Session saved successfully, redirecting to /');
       res.redirect('/');
     });
   } catch (error) {
