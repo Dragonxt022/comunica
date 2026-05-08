@@ -21,13 +21,38 @@ document.addEventListener('alpine:init', function() {
 </script>
 
 <div class="space-y-6" x-data="eventoEditForm">
-    <div class="flex items-center gap-3">
-        <a href="/eventos" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </a>
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">Editar Evento</h2>
-            <p class="text-gray-500 text-sm">Atualize as informações do evento institucional.</p>
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-3">
+            <a href="/eventos" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Editar Evento</h2>
+                <p class="text-gray-500 text-sm">Atualize as informações do evento institucional.</p>
+            </div>
+        </div>
+        <!-- Adicionar ao Calendário -->
+        <div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">
+            <button @click.stop="calOpen = !calOpen"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Adicionar ao Calendário
+            </button>
+            <div x-show="calOpen" style="display:none"
+                class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-56">
+                <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Adicionar ao Calendário</div>
+                <a id="edit-gcal-link" href="#" target="_blank" rel="noopener" @click="calOpen = false"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
+                    <span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded flex items-center justify-center shrink-0">G</span>
+                    Google Calendar
+                </a>
+                <div class="h-px bg-gray-100 mx-3"></div>
+                <button onclick="editIcsDownload()"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Apple / iCal (.ics)
+                </button>
+            </div>
         </div>
     </div>
 
@@ -138,3 +163,47 @@ document.addEventListener('alpine:init', function() {
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    var _ev = {
+        titulo:      <%- JSON.stringify(evento.titulo) %>,
+        descricao:   <%- JSON.stringify(evento.descricao || '') %>,
+        local:       <%- JSON.stringify(evento.local || '') %>,
+        data_inicio: <%- JSON.stringify(evento.data_inicio) %>,
+        data_fim:    <%- JSON.stringify(evento.data_fim) %>
+    };
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    var fmtUtc = function(d) {
+        var dt = new Date(d);
+        return dt.getUTCFullYear()+pad(dt.getUTCMonth()+1)+pad(dt.getUTCDate())
+             +'T'+pad(dt.getUTCHours())+pad(dt.getUTCMinutes())+pad(dt.getUTCSeconds())+'Z';
+    };
+    var gcalLink = document.getElementById('edit-gcal-link');
+    if (gcalLink) {
+        gcalLink.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+            +'&text='+encodeURIComponent(_ev.titulo)
+            +'&dates='+fmtUtc(_ev.data_inicio)+'/'+fmtUtc(_ev.data_fim)
+            +'&details='+encodeURIComponent(_ev.descricao)
+            +'&location='+encodeURIComponent(_ev.local);
+    }
+    window.editIcsDownload = function() {
+        var esc = function(s) { return String(s||'').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'); };
+        var content = [
+            'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Comunica//PT-BR',
+            'CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+            'UID:'+Date.now()+'@comunica',
+            'DTSTART:'+fmtUtc(_ev.data_inicio),'DTEND:'+fmtUtc(_ev.data_fim),
+            'SUMMARY:'+esc(_ev.titulo),'DESCRIPTION:'+esc(_ev.descricao),'LOCATION:'+esc(_ev.local),
+            'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY',
+            'DESCRIPTION:Lembrete: '+esc(_ev.titulo),
+            'END:VALARM','END:VEVENT','END:VCALENDAR'
+        ].join('\r\n');
+        var blob = new Blob([content], {type:'text/calendar;charset=utf-8'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = _ev.titulo.replace(/[^a-z0-9]/gi,'_')+'.ics';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    };
+}());
+</script>
