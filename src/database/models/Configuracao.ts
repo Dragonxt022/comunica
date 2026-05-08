@@ -11,6 +11,7 @@ class Configuracao extends Model {
   public instagram!: string;
   public site_oficial!: string;
   public status_eventos!: string | null;
+  public metas_midia!: string | null;
 }
 
 Configuracao.init(
@@ -24,6 +25,7 @@ Configuracao.init(
     instagram: { type: DataTypes.STRING, defaultValue: '' },
     site_oficial: { type: DataTypes.STRING, defaultValue: '' },
     status_eventos: { type: DataTypes.TEXT, allowNull: true },
+    metas_midia: { type: DataTypes.TEXT, allowNull: true },
   },
   { sequelize, modelName: 'Configuracao', tableName: 'configuracoes' }
 );

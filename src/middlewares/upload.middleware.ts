@@ -75,3 +75,31 @@ export function uploadAvatar(req: any, res: any, done: (err?: any) => void) {
     done();
   });
 }
+
+const multerPrint = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      cb(null, getUploadDir());
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_MIME.has(file.mimetype) && ALLOWED_EXT.has(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas: JPEG, PNG, GIF ou WebP'));
+    }
+  },
+  limits: { fileSize: 15 * 1024 * 1024 },
+}).single('print_publicacao');
+
+export function uploadPrint(req: any, res: any, done: (err?: any) => void) {
+  multerPrint(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}

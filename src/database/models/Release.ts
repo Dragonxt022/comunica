@@ -13,6 +13,9 @@ class Release extends Model {
   public agendado_para!: Date | null;
   public secretaria_id!: number | null;
   public secretaria?: Secretaria;
+  public link_publicacao!: string | null;
+  public print_publicacao_url!: string | null;
+  public print_publicacao_nome!: string | null;
 }
 
 Release.init(
@@ -26,6 +29,9 @@ Release.init(
     publicado_em: { type: DataTypes.DATE, allowNull: true },
     agendado_para: { type: DataTypes.DATE, allowNull: true },
     secretaria_id: { type: DataTypes.INTEGER, allowNull: true },
+    link_publicacao: { type: DataTypes.STRING(500), allowNull: true },
+    print_publicacao_url: { type: DataTypes.STRING(500), allowNull: true },
+    print_publicacao_nome: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'Release', tableName: 'releases' }
 );

@@ -103,18 +103,22 @@ app.use(async (req, res, next) => {
   if (cached) {
     res.locals.config = cached.cfg;
     res.locals.statusEventos = cached.statusEventos;
+    res.locals.metas = cached.metas;
   } else {
     try {
       const cfg = await Configuracao.findOne({ where: { id: 1 } });
       const statusEventos = cfg?.status_eventos
         ? JSON.parse(cfg.status_eventos as string)
         : DEFAULT_STATUS_EVENTOS;
-      setConfigCache(cfg, statusEventos);
+      const metas = cfg?.metas_midia ? JSON.parse(cfg.metas_midia as string) : [];
+      setConfigCache(cfg, statusEventos, metas);
       res.locals.config = cfg;
       res.locals.statusEventos = statusEventos;
+      res.locals.metas = metas;
     } catch {
       res.locals.config = null;
       res.locals.statusEventos = DEFAULT_STATUS_EVENTOS;
+      res.locals.metas = [];
     }
   }
   next();
@@ -136,7 +140,11 @@ async function seed() {
   await addCol('releases', 'imagem_capa', 'VARCHAR(255) NULL');
   await addCol('releases', 'agendado_para', 'DATETIME NULL');
   await addCol('releases', 'secretaria_id', 'INTEGER NULL');
+  await addCol('releases', 'link_publicacao', 'VARCHAR(500) NULL');
+  await addCol('releases', 'print_publicacao_url', 'VARCHAR(500) NULL');
+  await addCol('releases', 'print_publicacao_nome', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'status_eventos', 'TEXT NULL');
+  await addCol('configuracoes', 'metas_midia', 'TEXT NULL');
   await addCol('users', 'avatar', 'VARCHAR(255) NULL');
   await addCol('users', 'celular', 'VARCHAR(50) NULL');
   await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
@@ -227,6 +235,20 @@ async function startServer() {
           }),
         ]);
 
+        // Progresso de metas do mês (apenas admin/secom)
+        const metasProgresso: Record<string, number> = {};
+        const metas: any[] = (res.locals.metas || []);
+        if ((sessionUser.role === 'admin' || sessionUser.role === 'secom') && metas.length > 0) {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const solsMes = await Solicitacao.findAll({
+            where: { createdAt: { [Op.gte]: startOfMonth } },
+            attributes: ['tipo_midia'],
+          });
+          for (const s of solsMes) {
+            metasProgresso[(s as any).tipo_midia] = (metasProgresso[(s as any).tipo_midia] || 0) + 1;
+          }
+        }
+
         res.render('index', {
           title: 'Dashboard',
           solicitacoesPendentes,
@@ -235,6 +257,8 @@ async function startServer() {
           totalUsuativos,
           proximosEventos,
           solicitacoesRecentes,
+          metas,
+          metasProgresso,
         });
       } catch (error) {
         console.error('Dashboard error:', error);

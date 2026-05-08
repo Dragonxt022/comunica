@@ -187,7 +187,8 @@ export const destroyUsuario = async (req: Request, res: Response) => {
 export const configView = async (req: Request, res: Response) => {
   try {
     const config = await Configuracao.findOne({ where: { id: 1 } });
-    res.render('admin/configuracoes', { title: 'Configurações', config, success: false });
+    const metas = config?.metas_midia ? JSON.parse(config.metas_midia as string) : [];
+    res.render('admin/configuracoes', { title: 'Configurações', config, metas, success: false });
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
@@ -196,15 +197,17 @@ export const configView = async (req: Request, res: Response) => {
 
 export const saveConfig = async (req: Request, res: Response) => {
   try {
-    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, site_oficial, status_eventos_json } = req.body;
+    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, site_oficial, status_eventos_json, metas_midia_json } = req.body;
     const [config] = await Configuracao.findOrCreate({ where: { id: 1 }, defaults: {} as any });
     await config.update({
       titulo_site, subtitulo_site, descricao_site,
       email_contato, telefone_contato, instagram, site_oficial,
       status_eventos: status_eventos_json || null,
+      metas_midia: metas_midia_json || null,
     });
     bustConfigCache();
-    res.render('admin/configuracoes', { title: 'Configurações', config, success: true });
+    const metas = config.metas_midia ? JSON.parse(config.metas_midia as string) : [];
+    res.render('admin/configuracoes', { title: 'Configurações', config, metas, success: true });
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

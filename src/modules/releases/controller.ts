@@ -102,21 +102,29 @@ export const update = async (req: Request, res: Response) => {
   try {
     const release = await Release.findByPk(req.params.id);
     if (!release) return res.redirect('/releases');
-    const { titulo, subtitulo, conteudo, imagem_capa, secretaria_id, publicacao_tipo, agendado_para } = req.body;
+    const { titulo, subtitulo, conteudo, imagem_capa, secretaria_id, publicacao_tipo, agendado_para, link_publicacao } = req.body;
     const isPublicado = publicacao_tipo === 'publicar';
     const agendadoPara = publicacao_tipo === 'agendar' && agendado_para ? new Date(agendado_para) : null;
 
+    const file = (req as any).file;
+    let printUrl: string | undefined;
+    if (file) {
+      const pubDir = path.join(process.cwd(), 'public');
+      printUrl = '/' + path.relative(pubDir, file.path).split(path.sep).join('/');
+    }
+
     await release.update({
       titulo,
-      subtitulo:     subtitulo   || null,
+      subtitulo:             subtitulo   || null,
       conteudo,
-      imagem_capa:   imagem_capa !== undefined ? (imagem_capa || null) : release.imagem_capa,
-      secretaria_id: secretaria_id || null,
-      publicado:     isPublicado,
-      publicado_em:  isPublicado
-        ? (release.publicado ? release.publicado_em : new Date())
-        : (agendadoPara || null),
-      agendado_para: agendadoPara,
+      imagem_capa:           imagem_capa !== undefined ? (imagem_capa || null) : release.imagem_capa,
+      secretaria_id:         secretaria_id || null,
+      publicado:             isPublicado,
+      publicado_em:          isPublicado ? (release.publicado ? release.publicado_em : new Date()) : (agendadoPara || null),
+      agendado_para:         agendadoPara,
+      link_publicacao:       link_publicacao?.trim() || release.link_publicacao,
+      print_publicacao_url:  printUrl !== undefined ? printUrl : release.print_publicacao_url,
+      print_publicacao_nome: file ? file.originalname : release.print_publicacao_nome,
     });
     res.redirect('/releases');
   } catch (error) {

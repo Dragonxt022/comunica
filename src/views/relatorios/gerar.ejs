@@ -37,10 +37,11 @@
     <table>
         <thead>
             <tr>
-                <th style="width:45%">Título</th>
-                <th style="width:22%">Secretaria</th>
-                <th style="width:15%">Publicado em</th>
-                <th style="width:18%">Status</th>
+                <th style="width:35%">Título</th>
+                <th style="width:20%">Secretaria</th>
+                <th style="width:12%">Publicado em</th>
+                <th style="width:18%">Link</th>
+                <th style="width:15%">Print</th>
             </tr>
         </thead>
         <tbody>
@@ -62,7 +63,16 @@
                     <%= new Date(r.publicado_em).toLocaleDateString('pt-BR') %>
                     <% } else { %>—<% } %>
                 </td>
-                <td><span class="badge badge-pub">Publicado</span></td>
+                <td>
+                    <% if(r.link_publicacao) { %>
+                    <a href="<%= r.link_publicacao %>" class="link-pub" target="_blank">Ver publicação</a>
+                    <% } else { %><span style="color:#94a3b8">—</span><% } %>
+                </td>
+                <td>
+                    <% if(r.print_publicacao_url) { %>
+                    <img src="<%= r.print_publicacao_url %>" class="arte-final-img" alt="Print" style="max-height:48px">
+                    <% } else { %><span style="color:#94a3b8">—</span><% } %>
+                </td>
             </tr>
             <% }) %>
         </tbody>
