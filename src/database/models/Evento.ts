@@ -14,6 +14,7 @@ class Evento extends Model {
   public status!: string;
   public secretaria_id!: number;
   public criado_por!: number;
+  public arquivado!: boolean;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -60,6 +61,10 @@ Evento.init(
     criado_por: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    arquivado: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {

@@ -89,6 +89,31 @@ export const updateStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const arquivar = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    await Evento.update({ arquivado: true } as any, { where: { id } });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error archiving evento:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
+export const historico = async (req: Request, res: Response) => {
+  try {
+    const eventos = await Evento.findAll({
+      where: { arquivado: true } as any,
+      include: [{ model: Secretaria, as: 'secretaria' }],
+      order: [['data_inicio', 'DESC']],
+    });
+    res.render('eventos/historico', { title: 'Histórico de Eventos', eventos });
+  } catch (error) {
+    console.error('Error listing historico:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
 export const store = async (req: Request, res: Response) => {
   try {
     const { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id } = req.body;

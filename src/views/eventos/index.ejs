@@ -22,23 +22,28 @@ document.addEventListener('alpine:init', function() {
             view: localStorage.getItem('cal_view') || 'lista',
             filtroTexto: '',
             filtroStatus: '',
+            filtroDataInicio: '',
+            filtroDataFim: '',
             dragging: null,
             toast: '',
             toastOk: true,
             calYear: new Date().getFullYear(),
             calMonth: new Date().getMonth(),
+            listPage: 1,
+            listPerPage: 20,
 
             init: function() {
                 this.$watch('view', function(v) { localStorage.setItem('cal_view', v); });
+                this.$watch('filtroTexto',     function() { this.listPage = 1; }.bind(this));
+                this.$watch('filtroStatus',    function() { this.listPage = 1; }.bind(this));
+                this.$watch('filtroDataInicio',function() { this.listPage = 1; }.bind(this));
+                this.$watch('filtroDataFim',   function() { this.listPage = 1; }.bind(this));
 
-                // SSE — atualiza status em tempo real sem reload
                 var self = this;
                 window.onSSEUpdate = function(data) {
                     if (data.type !== 'evento_status') return;
                     var ev = self.eventos.find(function(e) { return e.id === data.id; });
-                    if (ev && ev.status !== data.status) {
-                        ev.status = data.status;
-                    }
+                    if (ev && ev.status !== data.status) ev.status = data.status;
                 };
             },
 
@@ -47,17 +52,45 @@ document.addEventListener('alpine:init', function() {
             },
 
             get eventosFiltrados() {
-                var txt = this.filtroTexto.toLowerCase();
-                var st  = this.filtroStatus;
+                var txt  = this.filtroTexto.toLowerCase();
+                var st   = this.filtroStatus;
+                var dIni = this.filtroDataInicio ? new Date(this.filtroDataInicio + 'T00:00:00') : null;
+                var dFim = this.filtroDataFim    ? new Date(this.filtroDataFim    + 'T23:59:59') : null;
                 return this.eventos.filter(function(e) {
-                    var matchTxt = !txt || e.titulo.toLowerCase().indexOf(txt) >= 0 || (e.local || '').toLowerCase().indexOf(txt) >= 0;
-                    var matchSt  = !st  || e.status === st;
-                    return matchTxt && matchSt;
+                    if (txt && e.titulo.toLowerCase().indexOf(txt) < 0 && (e.local||'').toLowerCase().indexOf(txt) < 0) return false;
+                    if (st  && e.status !== st) return false;
+                    var d = new Date(e.data_inicio);
+                    if (dIni && d < dIni) return false;
+                    if (dFim && d > dFim) return false;
+                    return true;
                 });
+            },
+
+            get listaTotalPages() {
+                return Math.max(1, Math.ceil(this.eventosFiltrados.length / this.listPerPage));
+            },
+
+            get eventosPaginados() {
+                var start = (this.listPage - 1) * this.listPerPage;
+                return this.eventosFiltrados.slice(start, start + this.listPerPage);
+            },
+
+            listPageRange: function() {
+                var total = this.listaTotalPages;
+                var cur   = this.listPage;
+                var start = Math.max(1, cur - 2);
+                var end   = Math.min(total, cur + 2);
+                var pages = [];
+                for (var i = start; i <= end; i++) pages.push(i);
+                return pages;
             },
 
             eventosPorStatus: function(statusKey) {
                 return this.eventosFiltrados.filter(function(e) { return e.status === statusKey; });
+            },
+
+            isExpired: function(e) {
+                return new Date(e.data_fim) < new Date();
             },
 
             updateStatus: async function(id, status) {
@@ -80,6 +113,19 @@ document.addEventListener('alpine:init', function() {
                 } catch(err) {
                     if (ev) ev.status = prev;
                     this.showToast('Erro de conexão', false);
+                }
+            },
+
+            arquivar: async function(id) {
+                try {
+                    var r    = await fetch('/eventos/' + id + '/arquivar', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                    var data = await r.json();
+                    if (data.ok) {
+                        this.eventos = this.eventos.filter(function(e) { return e.id !== id; });
+                        this.showToast('Evento arquivado.', true);
+                    }
+                } catch(err) {
+                    this.showToast('Erro ao arquivar', false);
                 }
             },
 
@@ -108,10 +154,7 @@ document.addEventListener('alpine:init', function() {
 
             fmtISO: function(d) {
                 var dt = new Date(d);
-                var y  = dt.getFullYear();
-                var m  = String(dt.getMonth() + 1).padStart(2, '0');
-                var dd = String(dt.getDate()).padStart(2, '0');
-                return y + '-' + m + '-' + dd;
+                return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
             },
 
             fmtTime: function(d) {
@@ -206,23 +249,42 @@ document.addEventListener('alpine:init', function() {
             <h2 class="text-2xl font-bold text-gray-900">Calendário Institucional</h2>
             <p class="text-gray-500">Agendamentos de eventos e ações de todas as secretarias.</p>
         </div>
-        <a href="/eventos/novo"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Agendar Evento
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="/eventos/historico"
+               class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                Histórico
+            </a>
+            <a href="/eventos/novo"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Agendar Evento
+            </a>
+        </div>
     </div>
 
     <!-- Barra de controles -->
-    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center">
+    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center">
         <input type="text" x-model="filtroTexto" placeholder="Buscar eventos..."
-            class="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-        <select x-model="filtroStatus" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            class="flex-1 min-w-[160px] px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        <select x-model="filtroStatus" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
             <option value="">Todos os status</option>
             <template x-for="s in statusList" :key="s.key">
                 <option :value="s.key" x-text="s.label"></option>
             </template>
         </select>
+        <div class="flex items-center gap-2">
+            <input type="date" x-model="filtroDataInicio" title="Data inicial"
+                class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm w-36">
+            <span class="text-gray-400 text-sm">até</span>
+            <input type="date" x-model="filtroDataFim" title="Data final"
+                class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm w-36">
+        </div>
+        <button @click="filtroTexto=''; filtroStatus=''; filtroDataInicio=''; filtroDataFim=''; listPage=1"
+            x-show="filtroTexto || filtroStatus || filtroDataInicio || filtroDataFim"
+            class="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition">
+            Limpar filtros ✕
+        </button>
         <!-- Tabs de visualização -->
         <div class="ml-auto flex rounded-lg border border-gray-200 overflow-hidden">
             <button @click="view = 'lista'"
@@ -246,7 +308,7 @@ document.addEventListener('alpine:init', function() {
         </div>
     </div>
 
-    <!-- LISTA -->
+    <!-- ─── LISTA ─────────────────────────────────────────────────────── -->
     <div x-show="view === 'lista'" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div x-show="eventosFiltrados.length === 0" class="py-16 text-center text-gray-400">
             <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -259,13 +321,13 @@ document.addEventListener('alpine:init', function() {
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Evento</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Local</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Secretaria</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Responsáveis</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Resp.</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm">
-                    <template x-for="e in eventosFiltrados" :key="e.id">
+                    <template x-for="e in eventosPaginados" :key="e.id">
                         <tr class="hover:bg-gray-50/70 transition">
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-gray-900" x-text="e.titulo"></div>
@@ -286,7 +348,6 @@ document.addEventListener('alpine:init', function() {
                                         </template>
                                         <div x-show="e.responsaveis.length > 4"
                                              class="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-500"
-                                             :title="'+' + (e.responsaveis.length - 4) + ' outros'"
                                              x-text="'+' + (e.responsaveis.length - 4)"></div>
                                     </div>
                                     <span x-show="!e.responsaveis || e.responsaveis.length === 0" class="text-gray-300 text-sm">—</span>
@@ -299,36 +360,32 @@ document.addEventListener('alpine:init', function() {
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-2">
                                     <select @change="updateStatus(e.id, $event.target.value)"
-                                        :value="e.status"
                                         class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border outline-none cursor-pointer"
                                         :style="'background:' + statusConfig(e.status).cor + '18;color:' + statusConfig(e.status).cor + ';border-color:' + statusConfig(e.status).cor + '40'">
                                         <template x-for="s in statusList" :key="s.key">
-                                            <option :value="s.key" x-text="s.label"></option>
+                                            <option :value="s.key" :selected="s.key === e.status" x-text="s.label"></option>
                                         </template>
                                     </select>
                                     <a :href="'/eventos/' + e.id + '/editar'"
-                                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                        title="Editar evento">
+                                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </a>
                                     <div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">
                                         <button @click.stop="calOpen = !calOpen"
-                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                                            title="Adicionar ao Calendário">
+                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Adicionar ao Calendário">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                         </button>
                                         <div x-show="calOpen" style="display:none"
-                                            class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-52">
-                                            <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Adicionar ao Calendário</div>
+                                            class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-48">
+                                            <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Calendário</div>
                                             <a :href="gcalUrl(e)" target="_blank" rel="noopener" @click="calOpen = false"
-                                                class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
-                                                <span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded flex items-center justify-center shrink-0">G</span>
+                                                class="flex items-center gap-3 px-4 py-2.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
+                                                <span class="w-4 h-4 bg-blue-600 text-white text-[9px] font-black rounded flex items-center justify-center shrink-0">G</span>
                                                 Google Calendar
                                             </a>
-                                            <div class="h-px bg-gray-100 mx-3"></div>
                                             <button @click="icsDownload(e); calOpen = false"
-                                                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
-                                                <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                class="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 transition">
+                                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                                 Apple / iCal (.ics)
                                             </button>
                                         </div>
@@ -339,89 +396,118 @@ document.addEventListener('alpine:init', function() {
                     </template>
                 </tbody>
             </table>
+
+            <!-- Paginação da lista -->
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                <span class="text-xs text-gray-500"
+                    x-text="eventosFiltrados.length + ' evento' + (eventosFiltrados.length !== 1 ? 's' : '') + ' — página ' + listPage + ' de ' + listaTotalPages"></span>
+                <div class="flex items-center gap-1" x-show="listaTotalPages > 1">
+                    <button @click="listPage = Math.max(1, listPage - 1)"
+                        :disabled="listPage === 1"
+                        class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition disabled:opacity-40">← Ant.</button>
+                    <template x-for="p in listPageRange()" :key="p">
+                        <button @click="listPage = p"
+                            class="px-3 py-1.5 text-xs font-medium border rounded-lg transition"
+                            :class="p === listPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                            x-text="p"></button>
+                    </template>
+                    <button @click="listPage = Math.min(listaTotalPages, listPage + 1)"
+                        :disabled="listPage === listaTotalPages"
+                        class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition disabled:opacity-40">Próx. →</button>
+                </div>
+            </div>
         </div>
-        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400"
-            x-text="eventosFiltrados.length + (eventosFiltrados.length !== 1 ? ' eventos' : ' evento')"></div>
     </div>
 
-    <!-- KANBAN (scroll horizontal com colunas dinâmicas) -->
-    <div x-show="view === 'kanban'" class="flex gap-4 overflow-x-auto pb-3">
-        <template x-for="col in statusList" :key="col.key">
-            <div class="flex-shrink-0 w-64 rounded-xl border flex flex-col"
-                :style="'border-color:' + col.cor + '40;background:' + col.cor + '08'"
-                @dragover.prevent
-                @drop="onDrop($event, col.key)">
-                <!-- Header da coluna -->
-                <div class="px-4 py-3 border-b flex items-center justify-between"
-                    :style="'border-color:' + col.cor + '30'">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full" :style="'background:' + col.cor"></span>
-                        <span class="text-sm font-bold" :style="'color:' + col.cor" x-text="col.label"></span>
+    <!-- ─── KANBAN ─────────────────────────────────────────────────────── -->
+    <div x-show="view === 'kanban'">
+        <div class="mb-3 flex items-center gap-2 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Eventos expirados e concluídos podem ser arquivados clicando no ícone <strong>📦</strong> no card. Veja o histórico em <a href="/eventos/historico" class="underline font-medium">Histórico</a>.
+        </div>
+        <div class="flex gap-4 overflow-x-auto pb-3">
+            <template x-for="col in statusList" :key="col.key">
+                <div class="flex-shrink-0 w-64 rounded-xl border flex flex-col"
+                    :style="'border-color:' + col.cor + '40;background:' + col.cor + '08'"
+                    @dragover.prevent
+                    @drop="onDrop($event, col.key)">
+                    <div class="px-4 py-3 border-b flex items-center justify-between"
+                        :style="'border-color:' + col.cor + '30'">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" :style="'background:' + col.cor"></span>
+                            <span class="text-sm font-bold" :style="'color:' + col.cor" x-text="col.label"></span>
+                        </div>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                            :style="'background:' + col.cor + '25;color:' + col.cor"
+                            x-text="eventosPorStatus(col.key).length"></span>
                     </div>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                        :style="'background:' + col.cor + '25;color:' + col.cor"
-                        x-text="eventosPorStatus(col.key).length"></span>
-                </div>
-                <!-- Cards -->
-                <div class="p-3 space-y-2 flex-1 min-h-[140px]">
-                    <template x-for="e in eventosPorStatus(col.key)" :key="e.id">
-                        <div draggable="true"
-                            @dragstart="onDragStart($event, e)"
-                            class="bg-white rounded-lg p-3 shadow-sm cursor-grab hover:shadow-md transition border"
-                            :style="'border-color:' + col.cor + '30'">
-                            <div class="font-semibold text-sm text-gray-900 leading-tight" x-text="e.titulo"></div>
-                            <div class="text-xs text-gray-400 mt-1 truncate" x-text="e.local"></div>
-                            <div class="flex items-center justify-between mt-2">
-                                <span class="text-xs text-gray-400" x-text="fmtDate(e.data_inicio)"></span>
-                                <div class="flex items-center gap-1.5">
-                                    <span x-show="e.secretaria" class="text-xs font-semibold px-1.5 py-0.5 rounded"
-                                        :style="'background:' + (e.secretaria ? e.secretaria.cor : '') + '20;color:' + (e.secretaria ? e.secretaria.cor : '')"
-                                        x-text="e.secretaria ? e.secretaria.nome : ''"></span>
-                                    <div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">
-                                        <button @click.stop="calOpen = !calOpen"
-                                            class="p-0.5 text-gray-300 hover:text-emerald-500 transition rounded"
-                                            title="Adicionar ao Calendário">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <div class="p-3 space-y-2 flex-1 min-h-[140px]">
+                        <template x-for="e in eventosPorStatus(col.key)" :key="e.id">
+                            <div draggable="true"
+                                @dragstart="onDragStart($event, e)"
+                                class="bg-white rounded-lg p-3 shadow-sm cursor-grab hover:shadow-md transition border"
+                                :style="'border-color:' + col.cor + '30'">
+                                <div class="font-semibold text-sm text-gray-900 leading-tight" x-text="e.titulo"></div>
+                                <div class="text-xs text-gray-400 mt-1 truncate" x-text="e.local"></div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-xs text-gray-400" x-text="fmtDate(e.data_inicio)"></span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span x-show="e.secretaria" class="text-xs font-semibold px-1.5 py-0.5 rounded"
+                                            :style="'background:' + (e.secretaria ? e.secretaria.cor : '') + '20;color:' + (e.secretaria ? e.secretaria.cor : '')"
+                                            x-text="e.secretaria ? e.secretaria.nome : ''"></span>
+
+                                        <!-- Botão arquivar (só para eventos expirados concluídos/publicados) -->
+                                        <button x-show="isExpired(e) && (e.status === 'concluido' || e.status === 'publicado')"
+                                            @click.stop="arquivar(e.id)"
+                                            class="p-0.5 text-gray-300 hover:text-amber-500 transition rounded"
+                                            title="Arquivar evento">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                                         </button>
-                                        <div x-show="calOpen" style="display:none"
-                                            class="absolute right-0 top-full mt-1 z-40 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-48">
-                                            <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Calendário</div>
-                                            <a :href="gcalUrl(e)" target="_blank" rel="noopener" @click="calOpen = false"
-                                                class="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
-                                                <span class="w-4 h-4 bg-blue-600 text-white text-[9px] font-black rounded flex items-center justify-center shrink-0">G</span>
-                                                Google Calendar
-                                            </a>
-                                            <div class="h-px bg-gray-100 mx-2"></div>
-                                            <button @click="icsDownload(e); calOpen = false"
-                                                class="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition">
-                                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                                Apple / iCal
+
+                                        <!-- Calendário -->
+                                        <div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">
+                                            <button @click.stop="calOpen = !calOpen"
+                                                class="p-0.5 text-gray-300 hover:text-emerald-500 transition rounded" title="Adicionar ao Calendário">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                             </button>
+                                            <div x-show="calOpen" style="display:none"
+                                                class="absolute right-0 top-full mt-1 z-40 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-48">
+                                                <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Calendário</div>
+                                                <a :href="gcalUrl(e)" target="_blank" rel="noopener" @click="calOpen = false"
+                                                    class="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
+                                                    <span class="w-4 h-4 bg-blue-600 text-white text-[9px] font-black rounded flex items-center justify-center shrink-0">G</span>
+                                                    Google Calendar
+                                                </a>
+                                                <button @click="icsDownload(e); calOpen = false"
+                                                    class="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition">
+                                                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                    Apple / iCal
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div x-show="e.responsaveis && e.responsaveis.length > 0" class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
-                                <div class="flex -space-x-1">
-                                    <template x-for="r in e.responsaveis.slice(0, 3)" :key="r.id">
-                                        <div class="w-5 h-5 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[9px] font-bold text-indigo-600"
-                                             :title="r.nome" x-text="r.nome.charAt(0)"></div>
-                                    </template>
+                                <div x-show="e.responsaveis && e.responsaveis.length > 0" class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+                                    <div class="flex -space-x-1">
+                                        <template x-for="r in e.responsaveis.slice(0, 3)" :key="r.id">
+                                            <div class="w-5 h-5 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[9px] font-bold text-indigo-600"
+                                                 :title="r.nome" x-text="r.nome.charAt(0)"></div>
+                                        </template>
+                                    </div>
+                                    <span x-show="e.responsaveis.length > 3" class="text-[10px] text-gray-400" x-text="'+' + (e.responsaveis.length - 3)"></span>
                                 </div>
-                                <span x-show="e.responsaveis.length > 3" class="text-[10px] text-gray-400 font-medium" x-text="'+' + (e.responsaveis.length - 3)"></span>
                             </div>
-                        </div>
-                    </template>
-                    <div x-show="eventosPorStatus(col.key).length === 0"
-                        class="text-center py-6 text-xs italic opacity-40" x-text="'Nenhum evento'"></div>
+                        </template>
+                        <div x-show="eventosPorStatus(col.key).length === 0"
+                            class="text-center py-6 text-xs italic opacity-40">Nenhum evento</div>
+                    </div>
                 </div>
-            </div>
-        </template>
+            </template>
+        </div>
     </div>
 
-    <!-- CALENDÁRIO -->
+    <!-- ─── CALENDÁRIO ────────────────────────────────────────────────── -->
     <div x-show="view === 'calendario'" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <!-- Navegação -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <button @click="prevMonth()" class="p-2 rounded-lg hover:bg-gray-100 transition text-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -431,13 +517,11 @@ document.addEventListener('alpine:init', function() {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </button>
         </div>
-        <!-- Cabeçalho dos dias -->
         <div class="grid grid-cols-7 border-b border-gray-100 bg-gray-50">
             <template x-for="d in ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']">
                 <div class="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider" x-text="d"></div>
             </template>
         </div>
-        <!-- Grade -->
         <div class="grid grid-cols-7 divide-x divide-y divide-gray-100">
             <template x-for="(day, idx) in calendarDays()" :key="idx">
                 <div class="min-h-[90px] p-1.5"
@@ -450,7 +534,6 @@ document.addEventListener('alpine:init', function() {
                                 'text-gray-700 hover:bg-blue-100 hover:text-blue-700 cursor-pointer': day.currentMonth && !day.isToday
                             }"
                             class="text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full transition"
-                            :title="day.currentMonth ? 'Criar evento neste dia' : ''"
                             x-text="day.day"></a>
                     </div>
                     <div class="space-y-0.5">
@@ -459,16 +542,32 @@ document.addEventListener('alpine:init', function() {
                                 <div class="px-1.5 py-0.5 rounded text-xs font-medium truncate cursor-pointer leading-tight"
                                     :style="'background:' + statusConfig(e.status).cor + '20;color:' + statusConfig(e.status).cor"
                                     x-text="e.titulo"></div>
-                                <!-- Mini status picker -->
-                                <div class="absolute z-20 left-0 top-full mt-0.5 hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-xs font-semibold min-w-[140px]">
-                                    <template x-for="s in statusList" :key="s.key">
-                                        <button @click="updateStatus(e.id, s.key)"
-                                            class="px-3 py-1.5 text-left whitespace-nowrap hover:opacity-80 transition flex items-center gap-1.5"
-                                            :style="'color:' + s.cor">
-                                            <span class="w-1.5 h-1.5 rounded-full" :style="'background:' + s.cor"></span>
-                                            <span x-text="s.label"></span>
-                                        </button>
-                                    </template>
+                                <!-- Detalhes do evento ao passar o mouse -->
+                                <div class="absolute z-30 left-0 top-full mt-0.5 hidden group-hover:block bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-56 pointer-events-none">
+                                    <p class="font-bold text-gray-900 text-xs leading-snug" x-text="e.titulo"></p>
+                                    <div class="mt-2 space-y-1">
+                                        <p class="text-[10px] text-gray-500 flex items-center gap-1">
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span x-text="e.local || 'Local não definido'"></span>
+                                        </p>
+                                        <p class="text-[10px] text-gray-500 flex items-center gap-1">
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span x-text="fmtTime(e.data_inicio) + ' – ' + fmtTime(e.data_fim)"></span>
+                                        </p>
+                                        <p x-show="e.secretaria" class="text-[10px] font-semibold flex items-center gap-1">
+                                            <span class="w-2 h-2 rounded-full shrink-0" :style="'background:' + (e.secretaria ? e.secretaria.cor : '#ccc')"></span>
+                                            <span x-text="e.secretaria ? e.secretaria.nome : ''"></span>
+                                        </p>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                            :style="'background:' + statusConfig(e.status).cor + '20;color:' + statusConfig(e.status).cor"
+                                            x-text="statusConfig(e.status).label"></span>
+                                        <a :href="'/eventos/' + e.id + '/editar'"
+                                           class="text-[10px] text-blue-600 font-semibold hover:underline pointer-events-auto">
+                                            Editar →
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </template>

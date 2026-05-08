@@ -1,0 +1,142 @@
+<!-- Cabeçalho do relatório -->
+<div class="report-header">
+    <div>
+        <div class="brand">Comunica</div>
+        <div style="font-size:8pt;color:#64748b;margin-top:2pt;">Secretaria de Comunicação Municipal</div>
+    </div>
+    <div class="meta">
+        <div><strong>Relatório de Comunicação</strong></div>
+        <div>Período: <%= periodoLabel %></div>
+        <div>Gerado em: <%= geradoEm %></div>
+    </div>
+</div>
+
+<h1 class="report-title">Relatório de Comunicação</h1>
+<p class="report-subtitle">Período de referência: <strong><%= periodoLabel %></strong></p>
+
+<!-- Sumário -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="num"><%= releases.length %></div>
+        <div class="lbl">Releases publicados</div>
+    </div>
+    <div class="summary-card">
+        <div class="num"><%= solicitacoes.length %></div>
+        <div class="lbl">Solicitações de produção</div>
+    </div>
+    <div class="summary-card">
+        <div class="num"><%= solicitacoes.filter(function(s){ return s.status === 'finalizado' || s.status === 'concluído'; }).length %></div>
+        <div class="lbl">Produção concluída</div>
+    </div>
+</div>
+
+<% if(releases.length > 0) { %>
+<!-- ─── RELEASES ─────────────────────────────────────────────────── -->
+<div class="section">
+    <div class="section-title">Releases Publicados (<%= releases.length %>)</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:45%">Título</th>
+                <th style="width:22%">Secretaria</th>
+                <th style="width:15%">Publicado em</th>
+                <th style="width:18%">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% releases.forEach(function(r) { %>
+            <tr>
+                <td>
+                    <strong><%= r.titulo %></strong>
+                    <% if(r.subtitulo) { %><br><span style="color:#64748b;font-size:8pt"><%= r.subtitulo %></span><% } %>
+                </td>
+                <td>
+                    <% if(r.secretaria) { %>
+                    <span class="badge badge-sec" style="background:<%= r.secretaria.cor %>22;color:<%= r.secretaria.cor %>">
+                        <%= r.secretaria.nome %>
+                    </span>
+                    <% } else { %>—<% } %>
+                </td>
+                <td>
+                    <% if(r.publicado_em) { %>
+                    <%= new Date(r.publicado_em).toLocaleDateString('pt-BR') %>
+                    <% } else { %>—<% } %>
+                </td>
+                <td><span class="badge badge-pub">Publicado</span></td>
+            </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<% if(solicitacoes.length > 0) { %>
+<!-- ─── SOLICITAÇÕES ──────────────────────────────────────────────── -->
+<div class="section">
+    <div class="section-title">Solicitações de Produção (<%= solicitacoes.length %>)</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:5%">#</th>
+                <th style="width:30%">Solicitação</th>
+                <th style="width:18%">Secretaria</th>
+                <th style="width:14%">Tipo de Mídia</th>
+                <th style="width:10%">Status</th>
+                <th style="width:12%">Arte Final</th>
+                <th style="width:11%">Link</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% solicitacoes.forEach(function(s) {
+                var statusBadge = {
+                    pendente:    'badge-pend',
+                    aprovado:    '',
+                    'produção':  '',
+                    'concluído': 'badge-conc',
+                    finalizado:  'badge-conc',
+                    cancelado:   'badge-canc',
+                };
+            %>
+            <tr>
+                <td style="color:#94a3b8">#<%= s.id %></td>
+                <td>
+                    <strong><%= s.titulo %></strong>
+                    <% if(s.prioridade === 'alta') { %><br><span style="color:#dc2626;font-size:7.5pt">● Alta prioridade</span><% } %>
+                </td>
+                <td>
+                    <% if(s.secretaria) { %>
+                    <span class="badge badge-sec" style="background:<%= s.secretaria.cor %>22;color:<%= s.secretaria.cor %>">
+                        <%= s.secretaria.nome %>
+                    </span>
+                    <% } else { %>—<% } %>
+                </td>
+                <td><%= s.tipo_midia %></td>
+                <td>
+                    <span class="badge <%= statusBadge[s.status] || '' %>"><%= s.status %></span>
+                </td>
+                <td>
+                    <% if(s.arte_final_url) { %>
+                    <img src="<%= s.arte_final_url %>" class="arte-final-img" alt="Arte final">
+                    <% } else { %><span style="color:#94a3b8">—</span><% } %>
+                </td>
+                <td>
+                    <% if(s.link_publicacao) { %>
+                    <a href="<%= s.link_publicacao %>" class="link-pub" target="_blank">Ver link</a>
+                    <% } else { %><span style="color:#94a3b8">—</span><% } %>
+                </td>
+            </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<% if(releases.length === 0 && solicitacoes.length === 0) { %>
+<div class="empty-msg">Nenhum dado encontrado para o período e filtros selecionados.</div>
+<% } %>
+
+<!-- Rodapé -->
+<div class="report-footer">
+    <span>Comunica — Plataforma de Comunicação Municipal</span>
+    <span>Gerado em <%= geradoEm %></span>
+</div>

@@ -12,6 +12,9 @@ class Solicitacao extends Model {
   public status!: string;
   public secretaria_id!: number;
   public criado_por!: number;
+  public arte_final_url!: string | null;
+  public arte_final_nome!: string | null;
+  public link_publicacao!: string | null;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -51,6 +54,9 @@ Solicitacao.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    arte_final_url: { type: DataTypes.STRING(500), allowNull: true },
+    arte_final_nome: { type: DataTypes.STRING, allowNull: true },
+    link_publicacao: { type: DataTypes.STRING(500), allowNull: true },
   },
   {
     sequelize,

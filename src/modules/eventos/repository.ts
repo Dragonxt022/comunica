@@ -1,9 +1,9 @@
 import { Evento, Secretaria, User } from '../../database/models/index.ts';
 
 class EventoRepository {
-  async findAll(where = {}) {
+  async findAll(where: any = {}) {
     return await Evento.findAll({
-      where,
+      where: { arquivado: false, ...where },
       include: [
         { model: Secretaria, as: 'secretaria' },
         { model: User, as: 'autor' },

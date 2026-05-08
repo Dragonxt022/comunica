@@ -12,6 +12,19 @@ class SolicitacaoRepository {
     });
   }
 
+  async findAndCountAll(where: any = {}, limit?: number, offset?: number) {
+    return Solicitacao.findAndCountAll({
+      where,
+      include: [
+        { model: Secretaria, as: 'secretaria' },
+        { model: User, as: 'autor' },
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+  }
+
   async findById(id: number) {
     return await Solicitacao.findByPk(id, {
       include: [

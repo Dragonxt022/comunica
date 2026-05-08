@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { User, Secretaria } from '../../database/models/index.ts';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 
 export const perfilView = async (req: Request, res: Response) => {
   try {
@@ -17,12 +19,24 @@ export const perfilView = async (req: Request, res: Response) => {
 export const perfilUpdate = async (req: Request, res: Response) => {
   const sessionUser = (req as any).session.user;
   try {
-    const { nome, email, senha_atual, nova_senha } = req.body;
+    const { nome, email, celular, senha_atual, nova_senha } = req.body;
     const usuario = await User.findByPk(sessionUser.id, {
       include: [{ model: Secretaria, as: 'secretaria' }],
     });
     if (!usuario) return res.redirect('/perfil');
 
+    const updates: Record<string, any> = { nome, email, celular: celular || null };
+
+    // Handle avatar upload
+    if ((req as any).file) {
+      if (usuario.avatar) {
+        const oldPath = path.join(process.cwd(), 'public', usuario.avatar);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      updates.avatar = '/uploads/avatars/' + (req as any).file.filename;
+    }
+
+    // Handle password change
     if (nova_senha && nova_senha.trim()) {
       if (!senha_atual) {
         return res.render('perfil', { title: 'Meu Perfil', usuario, success: false, error: 'Informe a senha atual para alterá-la.' });
@@ -31,13 +45,15 @@ export const perfilUpdate = async (req: Request, res: Response) => {
       if (!ok) {
         return res.render('perfil', { title: 'Meu Perfil', usuario, success: false, error: 'Senha atual incorreta.' });
       }
-      await usuario.update({ nome, email, senha_hash: await bcrypt.hash(nova_senha, 12) });
-    } else {
-      await usuario.update({ nome, email });
+      updates.senha_hash = await bcrypt.hash(nova_senha, 12);
     }
+
+    await usuario.update(updates);
 
     sessionUser.nome = nome;
     sessionUser.email = email;
+    sessionUser.celular = celular || null;
+    if (updates.avatar) sessionUser.avatar = updates.avatar;
 
     const updated = await User.findByPk(sessionUser.id, {
       include: [{ model: Secretaria, as: 'secretaria' }],
@@ -85,6 +101,8 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
       secretaria_id: user.secretaria_id,
       secretaria_nome: user.secretaria?.nome || null,
+      avatar: user.avatar || null,
+      celular: user.celular || null,
     };
 
     (req as any).session.save((err: any) => {

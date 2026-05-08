@@ -16,6 +16,7 @@ import eventosRoutes from './src/modules/eventos/routes.ts';
 import solicitacoesRoutes from './src/modules/solicitacoes/routes.ts';
 import releasesRoutes from './src/modules/releases/routes.ts';
 import adminRoutes from './src/modules/admin/routes.ts';
+import relatoriosRoutes from './src/modules/relatorios/routes.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
@@ -136,6 +137,12 @@ async function seed() {
   await addCol('releases', 'agendado_para', 'DATETIME NULL');
   await addCol('releases', 'secretaria_id', 'INTEGER NULL');
   await addCol('configuracoes', 'status_eventos', 'TEXT NULL');
+  await addCol('users', 'avatar', 'VARCHAR(255) NULL');
+  await addCol('users', 'celular', 'VARCHAR(50) NULL');
+  await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('solicitacoes', 'arte_final_url', 'VARCHAR(500) NULL');
+  await addCol('solicitacoes', 'arte_final_nome', 'VARCHAR(255) NULL');
+  await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
 
   // Migrate old event statuses to new values (idempotent)
   await sequelize.query(`UPDATE eventos SET status = 'em_planejamento' WHERE status = 'pendente'`);
@@ -245,6 +252,7 @@ async function startServer() {
     app.use('/eventos', isAuthenticated, eventosRoutes);
     app.use('/releases', isAuthenticated, releasesRoutes);
     app.use('/admin', isAuthenticated, adminRoutes);
+    app.use('/relatorios', isAuthenticated, relatoriosRoutes);
 
     // Audit helper available in req
     app.use((req, res, next) => {

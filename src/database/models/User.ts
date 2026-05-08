@@ -13,6 +13,8 @@ class User extends Model {
   public ultimo_login!: Date | null;
   public secretaria_id!: number | null;
   public secretaria?: Secretaria;
+  public avatar!: string | null;
+  public celular!: string | null;
 
   public async checkPassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.senha_hash);
@@ -62,6 +64,14 @@ User.init(
         model: 'secretarias',
         key: 'id',
       },
+    },
+    avatar: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    celular: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Relatório' %></title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10pt;
+            color: #1a1a1a;
+            background: white;
+        }
+
+        /* Margens A4 para impressão */
+        @page {
+            size: A4 portrait;
+            margin: 18mm 16mm 18mm 16mm;
+        }
+
+        .page-wrap {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 16mm 14mm;
+        }
+
+        /* Cabeçalho */
+        .report-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding-bottom: 10pt;
+            border-bottom: 2pt solid #1e293b;
+            margin-bottom: 14pt;
+        }
+        .report-header .brand { font-size: 16pt; font-weight: 700; color: #1e293b; }
+        .report-header .meta  { text-align: right; font-size: 8pt; color: #64748b; line-height: 1.6; }
+
+        h1.report-title {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4pt;
+        }
+        .report-subtitle { font-size: 9pt; color: #64748b; margin-bottom: 18pt; }
+
+        /* Seções */
+        .section { margin-bottom: 20pt; }
+        .section-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #1e293b;
+            border-bottom: 1pt solid #e2e8f0;
+            padding-bottom: 4pt;
+            margin-bottom: 8pt;
+        }
+
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            page-break-inside: auto;
+        }
+        thead { background: #f1f5f9; }
+        th {
+            padding: 5pt 7pt;
+            text-align: left;
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            border-bottom: 1pt solid #cbd5e1;
+        }
+        td {
+            padding: 5pt 7pt;
+            vertical-align: top;
+            border-bottom: 0.5pt solid #e2e8f0;
+            line-height: 1.4;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr { page-break-inside: avoid; }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 1pt 5pt;
+            border-radius: 20pt;
+            font-size: 7.5pt;
+            font-weight: 700;
+        }
+        .badge-pub   { background: #dcfce7; color: #166534; }
+        .badge-rascunho { background: #fef9c3; color: #854d0e; }
+        .badge-pend  { background: #fef9c3; color: #854d0e; }
+        .badge-conc  { background: #ccfbf1; color: #134e4a; }
+        .badge-canc  { background: #fee2e2; color: #991b1b; }
+        .badge-sec   { display: inline-block; padding: 1pt 5pt; border-radius: 20pt; font-size: 7.5pt; font-weight: 700; }
+
+        /* Arte final */
+        .arte-final-img {
+            max-width: 60pt;
+            max-height: 45pt;
+            object-fit: cover;
+            border-radius: 3pt;
+            border: 0.5pt solid #e2e8f0;
+        }
+        .link-pub { color: #2563eb; font-size: 8pt; }
+
+        /* Numeração de páginas */
+        @media print {
+            .page-wrap { padding: 0; }
+            .no-print { display: none; }
+        }
+
+        /* Rodapé */
+        .report-footer {
+            margin-top: 20pt;
+            padding-top: 8pt;
+            border-top: 0.5pt solid #e2e8f0;
+            font-size: 7.5pt;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Vazio */
+        .empty-msg { color: #94a3b8; font-style: italic; font-size: 9pt; padding: 8pt 0; }
+
+        /* Sumário */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8pt;
+            margin-bottom: 16pt;
+        }
+        .summary-card {
+            border: 0.5pt solid #e2e8f0;
+            border-radius: 5pt;
+            padding: 7pt 10pt;
+            background: #f8fafc;
+        }
+        .summary-card .num  { font-size: 18pt; font-weight: 700; color: #1e293b; }
+        .summary-card .lbl  { font-size: 8pt; color: #64748b; margin-top: 1pt; }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+    <%- body %>
+</div>
+<script>
+    window.onload = function() {
+        setTimeout(function() { window.print(); }, 400);
+    };
+</script>
+</body>
+</html>

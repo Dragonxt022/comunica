@@ -1,0 +1,137 @@
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <div>
+        <h2 class="text-xl font-semibold text-gray-900">Gerar Relatório</h2>
+        <p class="text-sm text-gray-400 mt-0.5">Selecione o período e os dados para incluir no relatório imprimível.</p>
+    </div>
+
+    <form id="form-relatorio" action="/relatorios/gerar" method="POST"
+          class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+
+        <!-- Período -->
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Período</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Data inicial</label>
+                    <input type="date" name="data_inicio" required
+                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Data final</label>
+                    <input type="date" name="data_fim" required
+                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Secretaria (opcional) -->
+        <div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5">Secretaria <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <select name="secretaria_id"
+                class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <option value="">Todas as secretarias</option>
+                <% secretarias.forEach(function(s) { %>
+                <option value="<%= s.id %>"><%= s.nome %></option>
+                <% }) %>
+            </select>
+        </div>
+
+        <!-- O que incluir -->
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Incluir no relatório</h3>
+            <div class="space-y-3">
+                <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                    <input type="checkbox" name="incluir_releases" value="1" checked
+                        class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Releases publicados</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Releases publicados no período selecionado.</p>
+                    </div>
+                </label>
+
+                <label id="label-solicitacoes"
+                    class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                    <input type="checkbox" name="incluir_solicitacoes" value="1" checked id="chk-solic"
+                        class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onchange="toggleTipos(this.checked)">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Solicitações de produção</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Chamados abertos no período, por tipo de mídia.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Tipos de mídia (visível quando solicitações está marcado) -->
+        <div id="tipos-midia-section" class="space-y-2.5">
+            <h3 class="text-sm font-semibold text-gray-800">Tipos de mídia a incluir</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <% tiposMidia.forEach(function(tipo) { %>
+                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition">
+                    <input type="checkbox" name="tipos_midia" value="<%= tipo %>" checked
+                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <%= tipo %>
+                </label>
+                <% }) %>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="setAllTipos(true)"  class="text-xs text-blue-600 hover:underline">Selecionar todos</button>
+                <span class="text-gray-300">|</span>
+                <button type="button" onclick="setAllTipos(false)" class="text-xs text-gray-500 hover:underline">Desmarcar todos</button>
+            </div>
+        </div>
+
+        <!-- Botão gerar -->
+        <div class="pt-2 border-t border-gray-100 flex justify-end">
+            <button type="submit" id="btn-gerar"
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Gerar Relatório
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleTipos(show) {
+    document.getElementById('tipos-midia-section').style.display = show ? '' : 'none';
+}
+
+function setAllTipos(checked) {
+    document.querySelectorAll('[name="tipos_midia"]').forEach(function(cb) { cb.checked = checked; });
+}
+
+document.getElementById('form-relatorio').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btn-gerar');
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Gerando...';
+
+    var form = e.target;
+    var data = new FormData(form);
+    var params = new URLSearchParams();
+    for (var pair of data.entries()) {
+        params.append(pair[0], pair[1]);
+    }
+
+    fetch('/relatorios/gerar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+    })
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+        var w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Gerar Relatório';
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Gerar Relatório';
+        alert('Erro ao gerar relatório.');
+    });
+});
+</script>

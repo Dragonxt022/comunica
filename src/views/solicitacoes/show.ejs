@@ -107,7 +107,7 @@
                     %>
                     <% statusOpts.forEach(function(opt) { %>
                     <button type="button"
-                        onclick="setStatus('<%= opt.key %>')"
+                        onclick="<%= opt.key === 'concluído' ? 'abrirModalConcluir()' : "setStatus('" + opt.key + "')" %>"
                         class="px-4 py-2 rounded-lg border-2 text-sm font-semibold transition <%= opt.cls %>
                             <%= sol.status === opt.key ? 'ring-2 ring-offset-1 ring-current opacity-100' : 'opacity-70' %>"
                         id="btn-<%= opt.key %>">
@@ -338,6 +338,40 @@
 
         </div>
 
+        <!-- Arte final e link de publicação -->
+        <% if(sol.arte_final_url || sol.link_publicacao) { %>
+        <div class="bg-teal-50 border border-teal-200 rounded-xl p-5 space-y-3">
+            <h3 class="text-xs font-semibold text-teal-700 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Material Entregue
+            </h3>
+            <% if(sol.arte_final_url) { %>
+            <div>
+                <p class="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-2">Arte Final</p>
+                <div class="flex items-center gap-3 p-3 bg-white border border-teal-100 rounded-lg">
+                    <img src="<%= sol.arte_final_url %>" alt="Arte final"
+                         class="w-16 h-16 object-cover rounded-lg border border-teal-200 flex-shrink-0">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800 truncate"><%= sol.arte_final_nome || 'Arte final' %></p>
+                        <a href="<%= sol.arte_final_url %>" target="_blank"
+                           class="text-xs text-teal-600 hover:underline mt-0.5 inline-block">Visualizar / baixar →</a>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+            <% if(sol.link_publicacao) { %>
+            <div>
+                <p class="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-1.5">Link de Publicação</p>
+                <a href="<%= sol.link_publicacao %>" target="_blank" rel="noopener"
+                   class="flex items-center gap-2 p-3 bg-white border border-teal-100 rounded-lg hover:border-teal-300 transition group">
+                    <svg class="w-4 h-4 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    <span class="text-sm text-teal-700 truncate group-hover:underline"><%= sol.link_publicacao %></span>
+                </a>
+            </div>
+            <% } %>
+        </div>
+        <% } %>
+
         <!-- Sidebar de metadados -->
         <div class="space-y-5">
 
@@ -452,8 +486,68 @@
         </div>
     </div>
 
-    
+
 </div>
+
+<!-- ─── Modal: Concluir com Arte Final ─────────────────────────────── -->
+<% if(user && user.role !== 'secretaria') { %>
+<div id="modal-concluir" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Concluir Solicitação
+            </h3>
+            <button onclick="fecharModalConcluir()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <p class="text-sm text-gray-600">Opcionalmente, anexe a arte final produzida e informe o link de publicação.</p>
+
+        <form id="form-concluir" enctype="multipart/form-data" class="space-y-4">
+
+            <!-- Arte Final -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Arte Final
+                    <span class="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
+                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-sm text-gray-500">Clique para selecionar imagem ou arquivo</span>
+                    <input type="file" name="arte_final" class="hidden" accept="image/*,.pdf"
+                        onchange="previewArteFinal(this)">
+                </label>
+                <div id="arte-preview-wrap" class="hidden mt-2">
+                    <img id="arte-preview-img" src="" alt="Preview" class="max-h-32 rounded-lg border border-gray-200 object-contain">
+                </div>
+            </div>
+
+            <!-- Link de publicação -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Link de Publicação
+                    <span class="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <input type="url" name="link_publicacao" placeholder="https://..."
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+
+            <div class="flex gap-3 pt-1">
+                <button type="button" onclick="fecharModalConcluir()"
+                    class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition text-sm">
+                    Cancelar
+                </button>
+                <button type="submit" id="btn-confirmar-concluir"
+                    class="flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition text-sm">
+                    Confirmar Conclusão
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<% } %>
 
 <script>
 (function() {
@@ -605,5 +699,49 @@
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
     }
+
+    /* ── Modal concluir ──────────────────────────────────────────── */
+    var arteFinalPreviewSrc = null;
+
+    window.abrirModalConcluir = function() {
+        document.getElementById('modal-concluir').classList.remove('hidden');
+    };
+
+    window.fecharModalConcluir = function() {
+        document.getElementById('modal-concluir').classList.add('hidden');
+    };
+
+    window.previewArteFinal = function(input) {
+        if (!input.files || !input.files[0]) return;
+        var isImage = input.files[0].type.startsWith('image/');
+        if (!isImage) { document.getElementById('arte-preview-wrap').classList.add('hidden'); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = document.getElementById('arte-preview-img');
+            img.src = e.target.result;
+            document.getElementById('arte-preview-wrap').classList.remove('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    };
+
+    document.getElementById('form-concluir')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = document.getElementById('btn-confirmar-concluir');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        var fd = new FormData(this);
+        fetch('/solicitacoes/' + SOL_ID + '/concluir', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok) { alert(data.error || 'Erro ao concluir'); btn.disabled = false; btn.textContent = 'Confirmar'; return; }
+                fecharModalConcluir();
+                applyStatusToUI('concluído');
+                refreshFeed();
+                var msg = document.getElementById('status-msg');
+                if (msg) { msg.classList.remove('hidden'); msg.classList.add('flex'); setTimeout(function() { msg.classList.add('hidden'); msg.classList.remove('flex'); }, 3000); }
+            })
+            .catch(function() { alert('Erro de conexão.'); btn.disabled = false; btn.textContent = 'Confirmar'; });
+    });
 }());
 </script>

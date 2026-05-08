@@ -6,6 +6,8 @@ import { Release, Secretaria } from '../../database/models/index.ts';
 export const list = async (req: Request, res: Response) => {
   try {
     const { q, secretaria, status } = req.query as Record<string, string>;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = 15;
 
     // Auto-publish scheduled releases past their time
     await Release.update(
@@ -20,15 +22,29 @@ export const list = async (req: Request, res: Response) => {
     if (status === 'rascunho') { where.publicado = false; where.agendado_para = null; }
     if (status === 'agendado') { where.publicado = false; where.agendado_para = { [Op.ne]: null }; }
 
-    const [releases, secretarias] = await Promise.all([
-      Release.findAll({
+    const [{ count, rows: releases }, secretarias] = await Promise.all([
+      Release.findAndCountAll({
         where,
         include: [{ model: Secretaria, as: 'secretaria' }],
         order: [['created_at', 'DESC']],
+        limit: perPage,
+        offset: (page - 1) * perPage,
       }),
       Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] }),
     ]);
-    res.render('releases/index', { title: 'Releases', releases, secretarias, q: q || '', filtroSecretaria: secretaria || '', filtroStatus: status || '' });
+
+    const totalPages = Math.ceil(count / perPage);
+    res.render('releases/index', {
+      title: 'Releases',
+      releases,
+      secretarias,
+      q: q || '',
+      filtroSecretaria: secretaria || '',
+      filtroStatus: status || '',
+      currentPage: page,
+      totalPages,
+      total: count,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

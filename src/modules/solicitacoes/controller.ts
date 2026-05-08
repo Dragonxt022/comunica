@@ -6,12 +6,40 @@ import { sseBroker } from '../../lib/sse.ts';
 export const list = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    let where = {};
+    const { q, status: filtroStatus, prioridade: filtroPrioridade } = req.query as Record<string, string>;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = 20;
+
+    const { Op } = await import('sequelize');
+
+    let where: any = {};
     if (user.role === 'secretaria') {
-      where = { secretaria_id: user.secretaria_id };
+      where.secretaria_id = user.secretaria_id;
     }
-    const solicitacoes = await SolicitacaoRepository.findAll(where);
-    res.render('solicitacoes/index', { title: 'Minhas Solicitações', solicitacoes });
+    if (q) where.titulo = { [Op.like]: `%${q}%` };
+    if (filtroStatus) where.status = filtroStatus;
+    if (filtroPrioridade) where.prioridade = filtroPrioridade;
+
+    const { count, rows: solicitacoes } = await SolicitacaoRepository.findAndCountAll(where, perPage, (page - 1) * perPage);
+
+    // summary counts (all, ignoring pagination)
+    const allSolics = await SolicitacaoRepository.findAll(user.role === 'secretaria' ? { secretaria_id: user.secretaria_id } : {});
+    const counts: Record<string, number> = {};
+    ['pendente','aprovado','produção','concluído','cancelado','finalizado'].forEach(s => {
+      counts[s] = allSolics.filter((x: any) => x.status === s).length;
+    });
+
+    res.render('solicitacoes/index', {
+      title: 'Solicitações',
+      solicitacoes,
+      counts,
+      q: q || '',
+      filtroStatus: filtroStatus || '',
+      filtroPrioridade: filtroPrioridade || '',
+      currentPage: page,
+      totalPages: Math.ceil(count / perPage),
+      total: count,
+    });
   } catch (error) {
     console.error('Error listing solicitacoes:', error);
     res.status(500).send('Internal Server Error');
@@ -245,5 +273,57 @@ export const updateSolicitacao = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating solicitacao:', error);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+export const concluir = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
+
+    const id = Number(req.params.id);
+    const { link_publicacao } = req.body;
+    const file = (req as any).file;
+
+    const updates: any = { status: 'concluído' };
+    if (file) {
+      updates.arte_final_url = `/uploads/solicitacoes/${file.filename}`;
+      updates.arte_final_nome = file.originalname;
+    }
+    if (link_publicacao?.trim()) {
+      updates.link_publicacao = link_publicacao.trim();
+    }
+
+    await SolicitacaoRepository.update(id, updates);
+    await SolicitacaoComentario.create({
+      solicitacao_id: id,
+      autor_id: user.id,
+      tipo: 'evento',
+      texto: `Status alterado para "concluído"`,
+    });
+
+    if (updates.arte_final_url || updates.link_publicacao) {
+      await SolicitacaoComentario.create({
+        solicitacao_id: id,
+        autor_id: user.id,
+        tipo: 'conclusao',
+        texto: updates.link_publicacao || null,
+        arquivo_url: updates.arte_final_url || null,
+        arquivo_nome: updates.arte_final_nome || null,
+      });
+    }
+
+    sseBroker.broadcast({
+      type: 'solicitacao_status',
+      id,
+      status: 'concluído',
+      updatedBy: user.nome,
+      updatedById: user.id,
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error concluding solicitacao:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
   }
 };

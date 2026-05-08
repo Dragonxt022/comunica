@@ -130,8 +130,30 @@
                 <% }) %>
             </tbody>
         </table>
-        <div class="px-6 py-3 border-t border-gray-100 text-xs text-gray-400">
-            <%= releases.length %> release<%= releases.length !== 1 ? 's' : '' %> encontrado<%= releases.length !== 1 ? 's' : '' %>
+        <!-- Rodapé com paginação -->
+        <div class="px-6 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+            <p class="text-xs text-gray-500">
+                <strong><%= total %></strong> release<%= total !== 1 ? 's' : '' %> encontrado<%= total !== 1 ? 's' : '' %>
+            </p>
+            <% if(totalPages > 1) { %>
+            <div class="flex items-center gap-1">
+                <% if(currentPage > 1) { %>
+                <a href="?page=<%= currentPage - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroSecretaria ? '&secretaria=' + filtroSecretaria : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %>"
+                   class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
+                <% } %>
+                <% for(var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
+                <a href="?page=<%= p %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroSecretaria ? '&secretaria=' + filtroSecretaria : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %>"
+                   class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
+                          <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
+                    <%= p %>
+                </a>
+                <% } %>
+                <% if(currentPage < totalPages) { %>
+                <a href="?page=<%= currentPage + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroSecretaria ? '&secretaria=' + filtroSecretaria : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %>"
+                   class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
+                <% } %>
+            </div>
+            <% } %>
         </div>
         <% } %>
     </div>
