@@ -30,6 +30,7 @@ router.get('/nova', isAuthenticated, SolicitacaoController.createView);
 router.post('/', isAuthenticated, SolicitacaoController.store);
 router.get('/:id', isAuthenticated, SolicitacaoController.show);
 router.post('/:id/status', isAuthenticated, SolicitacaoController.updateStatus);
+router.post('/:id/material', isAuthenticated, upload.single('arte_final'), SolicitacaoController.updateMaterial);
 router.post('/:id/concluir', isAuthenticated, upload.single('arte_final'), SolicitacaoController.concluir);
 router.post('/:id/comentarios', isAuthenticated, upload.single('arquivo'), SolicitacaoController.addComentario);
 router.post('/:id/aprovar', isAuthenticated, SolicitacaoController.aprovar);

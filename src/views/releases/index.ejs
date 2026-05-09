@@ -52,6 +52,7 @@
                 <a href="/releases/novo" class="mt-3 inline-block text-blue-600 font-medium hover:underline text-sm">Criar o primeiro release</a>
             </div>
         <% } else { %>
+        <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-100">
             <thead>
                 <tr>
@@ -64,7 +65,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-100 text-sm">
                 <% releases.forEach(function(r) { %>
-                <tr class="hover:bg-gray-50/60 transition">
+                <tr class="hover:bg-gray-50/60 transition cursor-pointer" onclick="window.location='/releases/<%= r.id %>/editar'">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <% if(r.imagem_capa) { %>
@@ -82,8 +83,9 @@
                     </td>
                     <td class="px-6 py-4">
                         <% if(r.secretaria) { %>
-                        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                              style="background-color: <%= r.secretaria.cor %>">
+                        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium text-white max-w-[110px] truncate"
+                              style="background-color: <%= r.secretaria.cor %>"
+                              title="<%= r.secretaria.nome %>">
                             <%= r.secretaria.nome %>
                         </span>
                         <% } else { %><span class="text-gray-400 text-xs">—</span><% } %>
@@ -130,6 +132,7 @@
                 <% }) %>
             </tbody>
         </table>
+        </div><!-- /overflow-x-auto -->
         <!-- Rodapé com paginação -->
         <div class="px-6 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <p class="text-xs text-gray-500">

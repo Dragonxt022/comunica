@@ -149,7 +149,9 @@ document.addEventListener('alpine:init', function() {
             },
 
             fmtDate: function(d) {
-                return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                var s = typeof d === 'string' ? d : (d ? new Date(d).toISOString() : '');
+                var m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+                return m ? m[3] + '/' + m[2] + '/' + m[1] : '--/--/----';
             },
 
             fmtISO: function(d) {
@@ -158,7 +160,9 @@ document.addEventListener('alpine:init', function() {
             },
 
             fmtTime: function(d) {
-                return new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                var s = typeof d === 'string' ? d : (d ? new Date(d).toISOString() : '');
+                var m = s.match(/[T ](\d{2}):(\d{2})/);
+                return m ? m[1] + ':' + m[2] : '--:--';
             },
 
             gcalUrl: function(e) {
@@ -244,12 +248,12 @@ document.addEventListener('alpine:init', function() {
 <div class="space-y-6" x-data="eventosApp">
 
     <!-- Cabeçalho -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Calendário Institucional</h2>
             <p class="text-gray-500">Agendamentos de eventos e ações de todas as secretarias.</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <a href="/eventos/historico"
                class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition inline-flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
@@ -315,6 +319,7 @@ document.addEventListener('alpine:init', function() {
             <p class="font-medium">Nenhum evento encontrado.</p>
         </div>
         <div x-show="eventosFiltrados.length > 0">
+            <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-100">
                 <thead class="bg-gray-50">
                     <tr>
@@ -328,15 +333,16 @@ document.addEventListener('alpine:init', function() {
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm">
                     <template x-for="e in eventosPaginados" :key="e.id">
-                        <tr class="hover:bg-gray-50/70 transition">
+                        <tr class="hover:bg-gray-50/70 transition cursor-pointer" @click="window.location = '/eventos/' + e.id + '/editar'">
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-gray-900" x-text="e.titulo"></div>
                                 <div class="text-xs text-gray-400 mt-0.5 line-clamp-1" x-text="e.descricao"></div>
                             </td>
                             <td class="px-6 py-4 text-gray-600 text-sm" x-text="e.local"></td>
                             <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full inline-block max-w-[120px] truncate"
                                     :style="'background:' + (e.secretaria ? e.secretaria.cor : '#eee') + '30;color:' + (e.secretaria ? e.secretaria.cor : '#555')"
+                                    :title="e.secretaria ? e.secretaria.nome : ''"
                                     x-text="e.secretaria ? e.secretaria.nome : '—'"></span>
                             </td>
                             <td class="px-6 py-4">
@@ -397,6 +403,7 @@ document.addEventListener('alpine:init', function() {
                 </tbody>
             </table>
 
+            </div><!-- /overflow-x-auto -->
             <!-- Paginação da lista -->
             <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
                 <span class="text-xs text-gray-500"
@@ -538,12 +545,17 @@ document.addEventListener('alpine:init', function() {
                     </div>
                     <div class="space-y-0.5">
                         <template x-for="e in getEventsForDay(day.date)" :key="e.id">
-                            <div class="group relative">
+                            <div class="relative" x-data="{ tipOpen: false, tipTimer: null }">
                                 <div class="px-1.5 py-0.5 rounded text-xs font-medium truncate cursor-pointer leading-tight"
                                     :style="'background:' + statusConfig(e.status).cor + '20;color:' + statusConfig(e.status).cor"
-                                    x-text="e.titulo"></div>
-                                <!-- Detalhes do evento ao passar o mouse -->
-                                <div class="absolute z-30 left-0 top-full mt-0.5 hidden group-hover:block bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-56 pointer-events-none">
+                                    x-text="e.titulo"
+                                    @mouseenter="clearTimeout(tipTimer); tipOpen = true"
+                                    @mouseleave="tipTimer = setTimeout(function(){ tipOpen = false; }, 150)"></div>
+                                <!-- Detalhes do evento -->
+                                <div x-show="tipOpen" style="display:none"
+                                    class="absolute z-30 left-0 top-full bg-white border border-gray-200 rounded-xl shadow-xl p-3 w-56"
+                                    @mouseenter="clearTimeout(tipTimer); tipOpen = true"
+                                    @mouseleave="tipTimer = setTimeout(function(){ tipOpen = false; }, 150)">
                                     <p class="font-bold text-gray-900 text-xs leading-snug" x-text="e.titulo"></p>
                                     <div class="mt-2 space-y-1">
                                         <p class="text-[10px] text-gray-500 flex items-center gap-1">
@@ -564,7 +576,7 @@ document.addEventListener('alpine:init', function() {
                                             :style="'background:' + statusConfig(e.status).cor + '20;color:' + statusConfig(e.status).cor"
                                             x-text="statusConfig(e.status).label"></span>
                                         <a :href="'/eventos/' + e.id + '/editar'"
-                                           class="text-[10px] text-blue-600 font-semibold hover:underline pointer-events-auto">
+                                           class="text-[10px] text-blue-600 font-semibold hover:underline">
                                             Editar →
                                         </a>
                                     </div>

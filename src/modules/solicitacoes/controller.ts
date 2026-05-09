@@ -276,6 +276,45 @@ export const updateSolicitacao = async (req: Request, res: Response) => {
   }
 };
 
+export const updateMaterial = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
+
+    const id = Number(req.params.id);
+    const { link_publicacao } = req.body;
+    const file = (req as any).file;
+
+    const updates: any = {};
+    if (file) {
+      updates.arte_final_url = `/uploads/solicitacoes/${file.filename}`;
+      updates.arte_final_nome = file.originalname;
+    }
+    if (link_publicacao !== undefined) {
+      updates.link_publicacao = link_publicacao.trim() || null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.json({ ok: true });
+    }
+
+    await SolicitacaoRepository.update(id, updates);
+    await SolicitacaoComentario.create({
+      solicitacao_id: id,
+      autor_id: user.id,
+      tipo: 'evento',
+      texto: 'Material atualizado.',
+    });
+
+    sseBroker.broadcast({ type: 'solicitacao_comentario', id, autor: user.nome, updatedById: user.id });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error updating material:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
 export const concluir = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;

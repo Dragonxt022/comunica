@@ -10,7 +10,12 @@ function parseIds(raw: any): number[] {
 
 export const list = async (req: Request, res: Response) => {
   try {
-    const eventos = await EventoRepository.findAll();
+    const user = (req as any).session.user;
+    const where: any = {};
+    if (user?.role === 'secretaria' && user?.secretaria_id) {
+      where.secretaria_id = user.secretaria_id;
+    }
+    const eventos = await EventoRepository.findAll(where);
     res.render('eventos/index', { title: 'Calendário Institucional', eventos });
   } catch (error) {
     console.error('Error listing eventos:', error);

@@ -145,6 +145,10 @@ async function seed() {
   await addCol('releases', 'print_publicacao_nome', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'status_eventos', 'TEXT NULL');
   await addCol('configuracoes', 'metas_midia', 'TEXT NULL');
+  await addCol('configuracoes', 'facebook', 'VARCHAR(255) NULL');
+  await addCol('configuracoes', 'youtube', 'VARCHAR(255) NULL');
+  await addCol('configuracoes', 'twitter', 'VARCHAR(255) NULL');
+  await addCol('configuracoes', 'whatsapp', 'VARCHAR(50) NULL');
   await addCol('users', 'avatar', 'VARCHAR(255) NULL');
   await addCol('users', 'celular', 'VARCHAR(50) NULL');
   await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
@@ -204,6 +208,8 @@ async function startServer() {
         weekEnd.setHours(23, 59, 59, 999);
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
+        const calStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const calEnd   = new Date(now.getFullYear(), now.getMonth() + 5, 1);
 
         const whereRole = sessionUser.role === 'secretaria'
           ? { secretaria_id: sessionUser.secretaria_id }
@@ -218,14 +224,13 @@ async function startServer() {
           solicitacoesRecentes,
         ] = await Promise.all([
           Solicitacao.count({ where: { status: 'pendente', ...whereRole } }),
-          Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] }, ...whereRole } }),
+          Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] } } }),
           Release.count({ where: { publicado: true } }),
           User.count({ where: { ativo: true } }),
           Evento.findAll({
-            where: { data_inicio: { [Op.gte]: now }, ...whereRole },
+            where: { data_inicio: { [Op.between]: [calStart, calEnd] }, arquivado: false },
             include: [{ model: Secretaria, as: 'secretaria' }],
             order: [['data_inicio', 'ASC']],
-            limit: 5,
           }),
           Solicitacao.findAll({
             where: whereRole,

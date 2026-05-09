@@ -78,6 +78,7 @@
             <a href="/solicitacoes/nova" class="mt-3 inline-block text-blue-600 font-medium hover:underline text-sm">Abrir um chamado</a>
         </div>
         <% } else { %>
+        <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-100">
             <thead class="bg-gray-50">
                 <tr>
@@ -103,7 +104,7 @@
                     };
                     var priCls = s.prioridade === 'alta' ? 'text-red-600' : s.prioridade === 'media' ? 'text-yellow-600' : 'text-gray-400';
                 %>
-                <tr class="hover:bg-gray-50/60 transition">
+                <tr class="hover:bg-gray-50/60 transition cursor-pointer" onclick="window.location='/solicitacoes/<%= s.id %>'">
                     <td class="px-4 py-3 text-gray-400 font-mono text-xs">#<%= s.id %></td>
                     <td class="px-4 py-3 max-w-xs">
                         <div class="font-medium text-gray-900 truncate"><%= s.titulo %></div>
@@ -111,8 +112,9 @@
                     </td>
                     <td class="px-4 py-3">
                         <% if(s.secretaria) { %>
-                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white"
-                              style="background-color: <%= s.secretaria.cor %>">
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white max-w-[110px] truncate"
+                              style="background-color: <%= s.secretaria.cor %>"
+                              title="<%= s.secretaria.nome %>">
                             <%= s.secretaria.nome %>
                         </span>
                         <% } else { %><span class="text-gray-300">—</span><% } %>
@@ -148,6 +150,7 @@
             </tbody>
         </table>
 
+        </div><!-- /overflow-x-auto -->
         <!-- Rodapé com paginação -->
         <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <p class="text-xs text-gray-500">
