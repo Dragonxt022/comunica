@@ -17,6 +17,8 @@ import solicitacoesRoutes from './src/modules/solicitacoes/routes.ts';
 import releasesRoutes from './src/modules/releases/routes.ts';
 import adminRoutes from './src/modules/admin/routes.ts';
 import relatoriosRoutes from './src/modules/relatorios/routes.ts';
+import pushRoutes from './src/modules/push/routes.ts';
+import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
@@ -145,6 +147,17 @@ async function seed() {
   await addCol('releases', 'print_publicacao_nome', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'status_eventos', 'TEXT NULL');
   await addCol('configuracoes', 'metas_midia', 'TEXT NULL');
+  // Push subscriptions table
+  await sequelize.query(`CREATE TABLE IF NOT EXISTS \`push_subscriptions\` (
+    \`id\`        INTEGER PRIMARY KEY AUTOINCREMENT,
+    \`user_id\`   INTEGER NOT NULL,
+    \`endpoint\`  TEXT    NOT NULL,
+    \`p256dh\`    TEXT    NOT NULL,
+    \`auth\`      TEXT    NOT NULL,
+    \`createdAt\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    \`updatedAt\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(\`user_id\`, \`endpoint\`)
+  )`);
   await addCol('configuracoes', 'facebook', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'youtube', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'twitter', 'VARCHAR(255) NULL');
@@ -282,6 +295,29 @@ async function startServer() {
     app.use('/releases', isAuthenticated, releasesRoutes);
     app.use('/admin', isAuthenticated, adminRoutes);
     app.use('/relatorios', isAuthenticated, relatoriosRoutes);
+    app.use('/push', pushRoutes);
+
+    // Lembrete de eventos próximos (a cada hora)
+    setInterval(async () => {
+      try {
+        const agora = new Date();
+        const em24h = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+        const em25h = new Date(agora.getTime() + 25 * 60 * 60 * 1000);
+        const eventos = await Evento.findAll({
+          where: { data_inicio: { [Op.between]: [em24h, em25h] }, arquivado: false },
+          include: [{ model: Secretaria, as: 'secretaria' }],
+        });
+        for (const ev of eventos) {
+          const hora = new Date(ev.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          await sendToRole(['admin', 'secom'], {
+            title: '📅 Evento amanhã',
+            body: `${ev.titulo} às ${hora}`,
+            url: `/eventos`,
+            tag: `evento-lembrete-${ev.id}`,
+          });
+        }
+      } catch (e) { /* silencioso */ }
+    }, 60 * 60 * 1000);
 
     // Audit helper available in req
     app.use((req, res, next) => {

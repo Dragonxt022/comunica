@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import SolicitacaoRepository from './repository.ts';
 import { Secretaria, SolicitacaoComentario, User } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
+import { sendToRole, sendToUser } from '../../lib/push.ts';
 
 export const list = async (req: Request, res: Response) => {
   try {
@@ -134,6 +135,13 @@ export const store = async (req: Request, res: Response) => {
       texto: 'Chamado aberto.',
     });
 
+    sendToRole(['admin', 'secom'], {
+      title: '📋 Nova solicitação',
+      body: `${titulo} (${tipo_midia})`,
+      url: `/solicitacoes/${sol.id}`,
+      tag: `sol-nova-${sol.id}`,
+    }).catch(() => {});
+
     res.redirect('/solicitacoes');
   } catch (error) {
     console.error('Error storing solicitacao:', error);
@@ -201,6 +209,15 @@ export const aprovar = async (req: Request, res: Response) => {
       updatedBy: user.nome,
       updatedById: user.id,
     });
+
+    if (sol.criado_por) {
+      sendToUser(sol.criado_por, {
+        title: '✅ Solicitação aprovada',
+        body: `"${sol.titulo}" foi aprovada e encerrada.`,
+        url: `/solicitacoes/${id}`,
+        tag: `sol-aprovada-${id}`,
+      }).catch(() => {});
+    }
 
     return res.redirect(`/solicitacoes/${id}`);
   } catch (error) {
@@ -359,6 +376,16 @@ export const concluir = async (req: Request, res: Response) => {
       updatedBy: user.nome,
       updatedById: user.id,
     });
+
+    const solParaPush = await SolicitacaoRepository.findById(id);
+    if (solParaPush?.criado_por) {
+      sendToUser(solParaPush.criado_por, {
+        title: '🎨 Material entregue',
+        body: `"${solParaPush.titulo}" está pronto para revisão.`,
+        url: `/solicitacoes/${id}`,
+        tag: `sol-concluida-${id}`,
+      }).catch(() => {});
+    }
 
     return res.json({ ok: true });
   } catch (error) {
