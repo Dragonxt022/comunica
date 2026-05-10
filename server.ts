@@ -136,7 +136,7 @@ async function seed() {
     try {
       await sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
     } catch (e: any) {
-      if (!e.message?.includes('duplicate column name')) throw e;
+      if (!e.message?.toLowerCase().includes('duplicate column name')) throw e;
       // coluna já existe — sem ação necessária
     }
   };
