@@ -172,6 +172,8 @@ export const addComentario = async (req: Request, res: Response) => {
       return res.redirect(`/solicitacoes/${id}#feed`);
     }
 
+    const sol = await SolicitacaoRepository.findById(id);
+
     await SolicitacaoComentario.create({
       solicitacao_id: id,
       autor_id: user.id,
@@ -187,6 +189,25 @@ export const addComentario = async (req: Request, res: Response) => {
       autor: user.nome,
       updatedById: user.id,
     });
+
+    const tituloSol = sol?.titulo || `#${id}`;
+    const corpoNotif = `${user.nome}: "${texto?.trim()?.substring(0, 60) || (file ? file.originalname : '')}"`;
+
+    if (user.role === 'secretaria') {
+      notificarRole(['admin', 'secom'], {
+        titulo: '💬 Novo comentário',
+        corpo: `${tituloSol} — ${corpoNotif}`,
+        url: `/solicitacoes/${id}`,
+        tipo: 'solicitacao_comentario',
+      }).catch(() => {});
+    } else if (sol?.criado_por && sol.criado_por !== user.id) {
+      notificar(sol.criado_por, {
+        titulo: '💬 Novo comentário',
+        corpo: `${tituloSol} — ${corpoNotif}`,
+        url: `/solicitacoes/${id}`,
+        tipo: 'solicitacao_comentario',
+      }).catch(() => {});
+    }
 
     return res.redirect(`/solicitacoes/${id}#feed`);
   } catch (error) {
@@ -222,14 +243,12 @@ export const aprovar = async (req: Request, res: Response) => {
       updatedById: user.id,
     });
 
-    if (sol.criado_por) {
-      notificar(sol.criado_por, {
-        titulo: '✅ Solicitação aprovada',
-        corpo: `"${sol.titulo}" foi aprovada e encerrada.`,
-        url: `/solicitacoes/${id}`,
-        tipo: 'solicitacao_aprovada',
-      }).catch(() => {});
-    }
+    notificarRole(['admin', 'secom'], {
+      titulo: '✅ Solicitação aprovada',
+      corpo: `"${sol.titulo}" foi aprovada e encerrada.`,
+      url: `/solicitacoes/${id}`,
+      tipo: 'solicitacao_aprovada',
+    }).catch(() => {});
 
     return res.redirect(`/solicitacoes/${id}`);
   } catch (error) {

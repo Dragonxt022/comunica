@@ -1,11 +1,16 @@
 <%
 const tipoMeta = {
-  solicitacao_nova:      { icon: '📋', cor: 'blue'  },
-  solicitacao_producao:  { icon: '⚙️', cor: 'orange' },
-  solicitacao_concluida: { icon: '🎨', cor: 'purple' },
-  solicitacao_aprovada:  { icon: '✅', cor: 'green'  },
-  solicitacao_revisao:   { icon: '🔄', cor: 'amber'  },
-  evento_lembrete:       { icon: '📅', cor: 'blue'   },
+  solicitacao_nova:       { icon: '📋', cor: 'blue'   },
+  solicitacao_producao:   { icon: '⚙️', cor: 'orange' },
+  solicitacao_concluida:  { icon: '🎨', cor: 'purple' },
+  solicitacao_aprovada:   { icon: '✅', cor: 'green'  },
+  solicitacao_revisao:    { icon: '🔄', cor: 'amber'  },
+  solicitacao_comentario: { icon: '💬', cor: 'slate'  },
+  evento_novo:            { icon: '📅', cor: 'blue'   },
+  evento_atualizado:      { icon: '✏️', cor: 'indigo' },
+  evento_publicado:       { icon: '✅', cor: 'green'  },
+  evento_cancelado:       { icon: '❌', cor: 'red'    },
+  evento_lembrete:        { icon: '⏰', cor: 'yellow' },
 };
 function meta(tipo) { return tipoMeta[tipo] || { icon: '🔔', cor: 'gray' }; }
 function timeAgo(date) {
@@ -99,20 +104,30 @@ function notifPage() {
     var serverItems = <%- JSON.stringify(notificacoes) %>;
 
     var ICONS = {
-        solicitacao_nova:      '📋',
-        solicitacao_producao:  '⚙️',
-        solicitacao_concluida: '🎨',
-        solicitacao_aprovada:  '✅',
-        solicitacao_revisao:   '🔄',
-        evento_lembrete:       '📅',
+        solicitacao_nova:       '📋',
+        solicitacao_producao:   '⚙️',
+        solicitacao_concluida:  '🎨',
+        solicitacao_aprovada:   '✅',
+        solicitacao_revisao:    '🔄',
+        solicitacao_comentario: '💬',
+        evento_novo:            '📅',
+        evento_atualizado:      '✏️',
+        evento_publicado:       '✅',
+        evento_cancelado:       '❌',
+        evento_lembrete:        '⏰',
     };
     var BG = {
-        solicitacao_nova:      'bg-blue-100',
-        solicitacao_producao:  'bg-orange-100',
-        solicitacao_concluida: 'bg-purple-100',
-        solicitacao_aprovada:  'bg-green-100',
-        solicitacao_revisao:   'bg-amber-100',
-        evento_lembrete:       'bg-blue-100',
+        solicitacao_nova:       'bg-blue-100',
+        solicitacao_producao:   'bg-orange-100',
+        solicitacao_concluida:  'bg-purple-100',
+        solicitacao_aprovada:   'bg-green-100',
+        solicitacao_revisao:    'bg-amber-100',
+        solicitacao_comentario: 'bg-slate-100',
+        evento_novo:            'bg-blue-100',
+        evento_atualizado:      'bg-indigo-100',
+        evento_publicado:       'bg-green-100',
+        evento_cancelado:       'bg-red-100',
+        evento_lembrete:        'bg-yellow-100',
     };
 
     return {

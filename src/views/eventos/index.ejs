@@ -363,7 +363,7 @@ document.addEventListener('alpine:init', function() {
                                 <div class="font-medium text-gray-900" x-text="fmtDate(e.data_inicio)"></div>
                                 <div class="text-xs text-gray-400" x-text="fmtTime(e.data_inicio) + ' – ' + fmtTime(e.data_fim)"></div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" @click.stop>
                                 <div class="flex items-center gap-2">
                                     <select @change="updateStatus(e.id, $event.target.value)"
                                         class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border outline-none cursor-pointer"

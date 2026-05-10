@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import EventoRepository from './repository.ts';
 import { Secretaria, Evento, User, EventoResponsavel } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
+import { notificar, notificarRole } from '../../lib/notificacao.ts';
 
 function parseIds(raw: any): number[] {
   if (!raw) return [];
@@ -52,6 +53,8 @@ export const update = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id } = req.body;
+
+    const eventoAntes = await EventoRepository.findById(id);
     await EventoRepository.update(id, { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id });
 
     const ids = parseIds(req.body.responsaveis);
@@ -59,6 +62,25 @@ export const update = async (req: Request, res: Response) => {
     if (ids.length) {
       await EventoResponsavel.bulkCreate(ids.map(uid => ({ evento_id: id, user_id: uid })));
     }
+
+    // Detecta o que mudou para montar corpo útil da notificação
+    const mudancas: string[] = [];
+    if (eventoAntes) {
+      const fmtDt = (d: any) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      if (eventoAntes.titulo !== titulo) mudancas.push(`título alterado`);
+      if (eventoAntes.local !== local) mudancas.push(`local: ${local || 'removido'}`);
+      const dAntes = fmtDt(eventoAntes.data_inicio);
+      const dDepois = fmtDt(data_inicio);
+      if (dAntes !== dDepois) mudancas.push(`data: ${dDepois}`);
+    }
+    const corpo = mudancas.length > 0 ? mudancas.join(' · ') : 'Informações atualizadas.';
+
+    notificarRole(['admin', 'secom'], {
+      titulo: '✏️ Evento atualizado',
+      corpo: `${titulo} — ${corpo}`,
+      url: `/eventos`,
+      tipo: 'evento_atualizado',
+    }).catch(() => {});
 
     res.redirect('/eventos');
   } catch (error) {
@@ -77,6 +99,7 @@ export const updateStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ ok: false, error: 'Status inválido' });
     }
 
+    const evento = await EventoRepository.findById(id);
     await Evento.update({ status }, { where: { id } });
 
     sseBroker.broadcast({
@@ -86,6 +109,36 @@ export const updateStatus = async (req: Request, res: Response) => {
       updatedBy: user?.nome || 'Sistema',
       updatedById: user?.id || 0,
     });
+
+    if (evento) {
+      if (status === 'publicado') {
+        // Notifica a secretaria responsável pelo evento
+        if (evento.criado_por) {
+          notificar(evento.criado_por, {
+            titulo: '✅ Evento publicado',
+            corpo: `"${evento.titulo}" foi publicado na agenda.`,
+            url: `/eventos`,
+            tipo: 'evento_publicado',
+          }).catch(() => {});
+        }
+      } else if (status === 'cancelado') {
+        // Notifica admin + secom e também a secretaria criadora
+        notificarRole(['admin', 'secom'], {
+          titulo: '❌ Evento cancelado',
+          corpo: `"${evento.titulo}" foi cancelado.`,
+          url: `/eventos`,
+          tipo: 'evento_cancelado',
+        }).catch(() => {});
+        if (evento.criado_por) {
+          notificar(evento.criado_por, {
+            titulo: '❌ Evento cancelado',
+            corpo: `"${evento.titulo}" foi cancelado.`,
+            url: `/eventos`,
+            tipo: 'evento_cancelado',
+          }).catch(() => {});
+        }
+      }
+    }
 
     return res.json({ ok: true });
   } catch (error) {
@@ -140,6 +193,14 @@ export const store = async (req: Request, res: Response) => {
     if (ids.length) {
       await EventoResponsavel.bulkCreate(ids.map(uid => ({ evento_id: (evento as any).id, user_id: uid })));
     }
+
+    const dataFmt = new Date(data_inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    notificarRole(['admin', 'secom'], {
+      titulo: '📅 Novo evento cadastrado',
+      corpo: `${titulo} — ${dataFmt}${local ? ' · ' + local : ''}`,
+      url: `/eventos`,
+      tipo: 'evento_novo',
+    }).catch(() => {});
 
     res.redirect('/eventos');
   } catch (error) {
