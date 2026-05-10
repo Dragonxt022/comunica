@@ -1,0 +1,159 @@
+<%
+const tipoMeta = {
+  solicitacao_nova:      { icon: '📋', cor: 'blue'  },
+  solicitacao_producao:  { icon: '⚙️', cor: 'orange' },
+  solicitacao_concluida: { icon: '🎨', cor: 'purple' },
+  solicitacao_aprovada:  { icon: '✅', cor: 'green'  },
+  solicitacao_revisao:   { icon: '🔄', cor: 'amber'  },
+  evento_lembrete:       { icon: '📅', cor: 'blue'   },
+};
+function meta(tipo) { return tipoMeta[tipo] || { icon: '🔔', cor: 'gray' }; }
+function timeAgo(date) {
+  var d = new Date(date), now = new Date();
+  var diff = Math.floor((now - d) / 1000);
+  if (diff < 60)   return 'agora mesmo';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm atrás';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h atrás';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+%>
+<div class="max-w-2xl mx-auto space-y-5"
+     x-data="notifPage()"
+     x-init="init()">
+
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Notificações</h2>
+            <p class="text-sm text-gray-500 mt-0.5">
+                <span x-text="total"></span> no total ·
+                <span x-text="unread" class="font-semibold text-blue-600"></span> não lidas
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button @click="marcarTodas()"
+                class="px-3 py-1.5 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+                Marcar todas como lidas
+            </button>
+            <button @click="excluirLidas()"
+                class="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                Excluir lidas
+            </button>
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="space-y-2">
+        <template x-if="items.length === 0">
+            <div class="text-center py-16 text-gray-400 text-sm">
+                <div class="text-4xl mb-3">🔔</div>
+                Nenhuma notificação.
+            </div>
+        </template>
+
+        <template x-for="n in items" :key="n.id">
+            <div class="bg-white border rounded-xl p-4 flex items-start gap-3 transition-all duration-200"
+                 :class="n.lida ? 'border-gray-100 opacity-70' : 'border-blue-100 shadow-sm'">
+
+                <!-- Indicador não-lida -->
+                <div class="shrink-0 mt-1">
+                    <div class="w-2 h-2 rounded-full transition-all" :class="n.lida ? 'bg-transparent' : 'bg-blue-500'"></div>
+                </div>
+
+                <!-- Ícone do tipo -->
+                <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg"
+                     :class="tipoClass(n.tipo)">
+                    <span x-text="tipoIcon(n.tipo)"></span>
+                </div>
+
+                <!-- Conteúdo -->
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800" x-text="n.titulo"></p>
+                    <p x-show="n.corpo" class="text-xs text-gray-500 mt-0.5 leading-relaxed" x-text="n.corpo"></p>
+                    <p class="text-[10px] text-gray-400 mt-1" x-text="fmtDate(n.createdAt)"></p>
+                </div>
+
+                <!-- Ações -->
+                <div class="shrink-0 flex items-center gap-1">
+                    <template x-if="n.url">
+                        <a :href="n.url" @click="marcarLida(n)"
+                           class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Abrir">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
+                    </template>
+                    <template x-if="!n.lida">
+                        <button @click="marcarLida(n)" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition" title="Marcar como lida">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </template>
+                    <button @click="excluir(n)" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition" title="Excluir">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function notifPage() {
+    var serverItems = <%- JSON.stringify(notificacoes) %>;
+
+    var ICONS = {
+        solicitacao_nova:      '📋',
+        solicitacao_producao:  '⚙️',
+        solicitacao_concluida: '🎨',
+        solicitacao_aprovada:  '✅',
+        solicitacao_revisao:   '🔄',
+        evento_lembrete:       '📅',
+    };
+    var BG = {
+        solicitacao_nova:      'bg-blue-100',
+        solicitacao_producao:  'bg-orange-100',
+        solicitacao_concluida: 'bg-purple-100',
+        solicitacao_aprovada:  'bg-green-100',
+        solicitacao_revisao:   'bg-amber-100',
+        evento_lembrete:       'bg-blue-100',
+    };
+
+    return {
+        items: serverItems,
+        get total() { return this.items.length; },
+        get unread() { return this.items.filter(function(n) { return !n.lida; }).length; },
+
+        init() {},
+
+        tipoIcon(tipo) { return ICONS[tipo] || '🔔'; },
+        tipoClass(tipo) { return BG[tipo] || 'bg-gray-100'; },
+
+        fmtDate(dateStr) {
+            var d = new Date(dateStr), now = new Date();
+            var diff = Math.floor((now - d) / 1000);
+            if (diff < 60)    return 'agora mesmo';
+            if (diff < 3600)  return Math.floor(diff / 60) + 'm atrás';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h atrás';
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' });
+        },
+
+        async marcarLida(n) {
+            if (n.lida) return;
+            await fetch('/notificacoes/' + n.id + '/lida', { method: 'POST' });
+            n.lida = true;
+        },
+
+        async marcarTodas() {
+            await fetch('/notificacoes/all-lida', { method: 'POST' });
+            this.items.forEach(function(n) { n.lida = true; });
+        },
+
+        async excluir(n) {
+            await fetch('/notificacoes/' + n.id, { method: 'DELETE' });
+            this.items = this.items.filter(function(i) { return i.id !== n.id; });
+        },
+
+        async excluirLidas() {
+            await fetch('/notificacoes/excluir-lidas', { method: 'POST' });
+            this.items = this.items.filter(function(n) { return !n.lida; });
+        },
+    };
+}
+</script>

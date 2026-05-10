@@ -9,6 +9,7 @@ import Auditoria from './Auditoria.ts';
 import Configuracao from './Configuracao.ts';
 import EventoResponsavel from './EventoResponsavel.ts';
 import PushSubscription from './PushSubscription.ts';
+import Notificacao from './Notificacao.ts';
 
 Evento.belongsToMany(User, { through: EventoResponsavel, as: 'responsaveis', foreignKey: 'evento_id', otherKey: 'user_id' });
 User.belongsToMany(Evento, { through: EventoResponsavel, as: 'responsaveis_em_eventos', foreignKey: 'user_id', otherKey: 'evento_id' });
@@ -25,4 +26,5 @@ export {
   Configuracao,
   EventoResponsavel,
   PushSubscription,
+  Notificacao,
 };

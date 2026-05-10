@@ -18,6 +18,7 @@ import releasesRoutes from './src/modules/releases/routes.ts';
 import adminRoutes from './src/modules/admin/routes.ts';
 import relatoriosRoutes from './src/modules/relatorios/routes.ts';
 import pushRoutes from './src/modules/push/routes.ts';
+import notificacoesRoutes from './src/modules/notificacoes/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -147,17 +148,7 @@ async function seed() {
   await addCol('releases', 'print_publicacao_nome', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'status_eventos', 'TEXT NULL');
   await addCol('configuracoes', 'metas_midia', 'TEXT NULL');
-  // Push subscriptions table
-  await sequelize.query(`CREATE TABLE IF NOT EXISTS \`push_subscriptions\` (
-    \`id\`        INTEGER PRIMARY KEY AUTOINCREMENT,
-    \`user_id\`   INTEGER NOT NULL,
-    \`endpoint\`  TEXT    NOT NULL,
-    \`p256dh\`    TEXT    NOT NULL,
-    \`auth\`      TEXT    NOT NULL,
-    \`createdAt\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    \`updatedAt\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(\`user_id\`, \`endpoint\`)
-  )`);
+  // PushSubscription e Notificacao são criados pelo sequelize.sync acima
   await addCol('configuracoes', 'facebook', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'youtube', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'twitter', 'VARCHAR(255) NULL');
@@ -296,6 +287,7 @@ async function startServer() {
     app.use('/admin', isAuthenticated, adminRoutes);
     app.use('/relatorios', isAuthenticated, relatoriosRoutes);
     app.use('/push', pushRoutes);
+    app.use('/notificacoes', notificacoesRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {

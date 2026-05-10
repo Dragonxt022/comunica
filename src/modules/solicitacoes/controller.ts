@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import SolicitacaoRepository from './repository.ts';
 import { Secretaria, SolicitacaoComentario, User } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
-import { sendToRole, sendToUser } from '../../lib/push.ts';
+import { notificar, notificarRole } from '../../lib/notificacao.ts';
 
 export const list = async (req: Request, res: Response) => {
   try {
@@ -106,6 +106,18 @@ export const updateStatus = async (req: Request, res: Response) => {
       updatedById: user.id,
     });
 
+    if (status === 'produção') {
+      const sol = await SolicitacaoRepository.findById(id);
+      if (sol?.criado_por) {
+        notificar(sol.criado_por, {
+          titulo: '⚙️ Solicitação em produção',
+          corpo: `"${sol.titulo}" entrou em produção.`,
+          url: `/solicitacoes/${id}`,
+          tipo: 'solicitacao_producao',
+        }).catch(() => {});
+      }
+    }
+
     return res.json({ ok: true });
   } catch (error) {
     console.error('Error updating solicitacao status:', error);
@@ -135,11 +147,11 @@ export const store = async (req: Request, res: Response) => {
       texto: 'Chamado aberto.',
     });
 
-    sendToRole(['admin', 'secom'], {
-      title: '📋 Nova solicitação',
-      body: `${titulo} (${tipo_midia})`,
+    notificarRole(['admin', 'secom'], {
+      titulo: '📋 Nova solicitação',
+      corpo: `${titulo} (${tipo_midia})`,
       url: `/solicitacoes/${sol.id}`,
-      tag: `sol-nova-${sol.id}`,
+      tipo: 'solicitacao_nova',
     }).catch(() => {});
 
     res.redirect('/solicitacoes');
@@ -211,11 +223,11 @@ export const aprovar = async (req: Request, res: Response) => {
     });
 
     if (sol.criado_por) {
-      sendToUser(sol.criado_por, {
-        title: '✅ Solicitação aprovada',
-        body: `"${sol.titulo}" foi aprovada e encerrada.`,
+      notificar(sol.criado_por, {
+        titulo: '✅ Solicitação aprovada',
+        corpo: `"${sol.titulo}" foi aprovada e encerrada.`,
         url: `/solicitacoes/${id}`,
-        tag: `sol-aprovada-${id}`,
+        tipo: 'solicitacao_aprovada',
       }).catch(() => {});
     }
 
@@ -253,6 +265,13 @@ export const pedirRevisao = async (req: Request, res: Response) => {
       updatedBy: user.nome,
       updatedById: user.id,
     });
+
+    notificarRole(['admin', 'secom'], {
+      titulo: '🔄 Revisão solicitada',
+      corpo: `"${sol.titulo}" precisa de revisão.`,
+      url: `/solicitacoes/${id}`,
+      tipo: 'solicitacao_revisao',
+    }).catch(() => {});
 
     return res.redirect(`/solicitacoes/${id}#feed`);
   } catch (error) {
@@ -379,11 +398,11 @@ export const concluir = async (req: Request, res: Response) => {
 
     const solParaPush = await SolicitacaoRepository.findById(id);
     if (solParaPush?.criado_por) {
-      sendToUser(solParaPush.criado_por, {
-        title: '🎨 Material entregue',
-        body: `"${solParaPush.titulo}" está pronto para revisão.`,
+      notificar(solParaPush.criado_por, {
+        titulo: '🎨 Material disponível para revisão',
+        corpo: `"${solParaPush.titulo}" está pronto para revisão.`,
         url: `/solicitacoes/${id}`,
-        tag: `sol-concluida-${id}`,
+        tipo: 'solicitacao_concluida',
       }).catch(() => {});
     }
 
