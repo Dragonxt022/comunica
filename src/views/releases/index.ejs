@@ -111,7 +111,7 @@
                         <% } %>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end items-center gap-2">
+                        <div class="flex justify-end items-center gap-2" onclick="event.stopPropagation()">
                             <% if(r.publicado) { %>
                             <a href="/imprensa/releases/<%= r.id %>" target="_blank"
                                class="text-xs font-medium px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition">Ver</a>

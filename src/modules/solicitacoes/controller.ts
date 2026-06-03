@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
 import SolicitacaoRepository from './repository.ts';
-import { Secretaria, SolicitacaoComentario, User } from '../../database/models/index.ts';
+import { Secretaria, SolicitacaoComentario, User, Evento, EventoResponsavel } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
+
+function parseIds(raw: any): number[] {
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map(Number).filter(Boolean);
+}
 
 export const list = async (req: Request, res: Response) => {
   try {
@@ -33,6 +38,7 @@ export const list = async (req: Request, res: Response) => {
     res.render('solicitacoes/index', {
       title: 'Solicitações',
       solicitacoes,
+      kanbanSolics: allSolics,
       counts,
       q: q || '',
       filtroStatus: filtroStatus || '',
@@ -50,7 +56,8 @@ export const list = async (req: Request, res: Response) => {
 export const createView = async (req: Request, res: Response) => {
   try {
     const secretarias = await Secretaria.findAll({ where: { ativo: true } });
-    res.render('solicitacoes/create', { title: 'Nova Solicitação', secretarias });
+    const users = await User.findAll({ where: { ativo: true }, include: [{ model: Secretaria, as: 'secretaria' }] });
+    res.render('solicitacoes/create', { title: 'Nova Solicitação', secretarias, users });
   } catch (error) {
     console.error('Error creating solicitacao view:', error);
     res.status(500).send('Internal Server Error');
@@ -106,14 +113,22 @@ export const updateStatus = async (req: Request, res: Response) => {
       updatedById: user.id,
     });
 
-    if (status === 'produção') {
+    const notifMap: Record<string, { titulo: string; corpo: string; tipo: string }> = {
+      'produção':   { titulo: '⚙️ Em produção',          corpo: `sua solicitação entrou em produção.`,              tipo: 'solicitacao_producao'  },
+      'concluído':  { titulo: '🎨 Pronto para revisão',  corpo: `o material está pronto — aguardando sua aprovação.`, tipo: 'solicitacao_concluida' },
+      'finalizado': { titulo: '✅ Material finalizado',   corpo: `sua solicitação foi finalizada com sucesso.`,        tipo: 'solicitacao_aprovada'  },
+      'cancelado':  { titulo: '❌ Solicitação cancelada', corpo: `sua solicitação foi cancelada pela SECOM.`,          tipo: 'solicitacao_cancelada' },
+    };
+
+    if (notifMap[status]) {
       const sol = await SolicitacaoRepository.findById(id);
       if (sol?.criado_por) {
+        const n = notifMap[status];
         notificar(sol.criado_por, {
-          titulo: '⚙️ Solicitação em produção',
-          corpo: `"${sol.titulo}" entrou em produção.`,
+          titulo: n.titulo,
+          corpo: `"${sol.titulo}" — ${n.corpo}`,
           url: `/solicitacoes/${id}`,
-          tipo: 'solicitacao_producao',
+          tipo: n.tipo,
         }).catch(() => {});
       }
     }
@@ -127,32 +142,71 @@ export const updateStatus = async (req: Request, res: Response) => {
 
 export const store = async (req: Request, res: Response) => {
   try {
-    const { titulo, descricao, prioridade, tipo_midia, secretaria_id } = req.body;
+    const { titulo, descricao, prioridade, secretaria_id, criar_evento, data_inicio, data_fim, local, tipo_evento } = req.body;
     const user = (req as any).session.user;
 
-    const sol = await SolicitacaoRepository.create({
-      titulo,
-      descricao,
-      prioridade,
-      tipo_midia,
-      secretaria_id: user.role === 'admin' || user.role === 'secom' ? secretaria_id : user.secretaria_id,
-      criado_por: user.id,
-      status: 'pendente',
-    });
+    let tipos: string[] = Array.isArray(req.body.tipos_midia)
+      ? req.body.tipos_midia
+      : req.body.tipos_midia ? [req.body.tipos_midia] : [];
+    if (tipos.length === 0) tipos = ['Outros'];
 
-    await SolicitacaoComentario.create({
-      solicitacao_id: sol.id,
-      autor_id: user.id,
-      tipo: 'evento',
-      texto: 'Chamado aberto.',
-    });
+    const secId = user.role === 'admin' || user.role === 'secom' ? secretaria_id : user.secretaria_id;
 
-    notificarRole(['admin', 'secom'], {
-      titulo: '📋 Nova solicitação',
-      corpo: `${titulo} (${tipo_midia})`,
-      url: `/solicitacoes/${sol.id}`,
-      tipo: 'solicitacao_nova',
-    }).catch(() => {});
+    const { prazo } = req.body;
+
+    for (const tipo_midia of tipos) {
+      const sol = await SolicitacaoRepository.create({
+        titulo,
+        descricao,
+        prioridade,
+        tipo_midia,
+        prazo: prazo || null,
+        secretaria_id: secId,
+        criado_por: user.id,
+        status: 'pendente',
+      });
+
+      await SolicitacaoComentario.create({
+        solicitacao_id: sol.id,
+        autor_id: user.id,
+        tipo: 'evento',
+        texto: 'Chamado aberto.',
+      });
+
+      notificarRole(['admin', 'secom'], {
+        titulo: '📋 Nova solicitação',
+        corpo: `${titulo} (${tipo_midia})`,
+        url: `/solicitacoes/${sol.id}`,
+        tipo: 'solicitacao_nova',
+      }).catch(() => {});
+    }
+
+    if (criar_evento === '1' && data_inicio && data_fim) {
+      const evento = await Evento.create({
+        titulo,
+        descricao,
+        local: local?.trim() || 'A definir',
+        data_inicio,
+        data_fim,
+        tipo: tipo_evento || 'Outros',
+        secretaria_id: secId,
+        criado_por: user.id,
+        status: 'em_planejamento',
+      } as any);
+
+      const ids = parseIds(req.body['responsaveis[]'] || req.body.responsaveis);
+      if (ids.length) {
+        await EventoResponsavel.bulkCreate(ids.map((uid: number) => ({ evento_id: (evento as any).id, user_id: uid })));
+      }
+
+      const dataFmt = new Date(data_inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      notificarRole(['admin', 'secom'], {
+        titulo: '📅 Novo evento cadastrado',
+        corpo: `${titulo} — ${dataFmt}${local ? ' · ' + local : ''}`,
+        url: `/eventos`,
+        tipo: 'evento_novo',
+      }).catch(() => {});
+    }
 
     res.redirect('/solicitacoes');
   } catch (error) {
@@ -213,6 +267,28 @@ export const addComentario = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error adding comentario:', error);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+export const getComentariosJson = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const comentarios = await SolicitacaoComentario.findAll({
+      where: { solicitacao_id: id },
+      include: [{ model: User, as: 'autor', attributes: ['id', 'nome', 'avatar'] }],
+      order: [['createdAt', 'ASC']],
+    });
+    res.json(comentarios.map(c => ({
+      id: c.id,
+      tipo: c.tipo,
+      texto: c.texto,
+      arquivo_url: c.arquivo_url,
+      arquivo_nome: c.arquivo_nome,
+      createdAt: c.createdAt,
+      autor: c.autor ? { id: (c.autor as any).id, nome: (c.autor as any).nome, avatar: (c.autor as any).avatar } : null,
+    })));
+  } catch (error) {
+    res.status(500).json([]);
   }
 };
 
@@ -318,8 +394,8 @@ export const editView = async (req: Request, res: Response) => {
 export const updateSolicitacao = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    const { titulo, descricao, prioridade, tipo_midia, secretaria_id } = req.body;
-    const updateData: any = { titulo, descricao, prioridade, tipo_midia };
+    const { titulo, descricao, prioridade, tipo_midia, secretaria_id, prazo } = req.body;
+    const updateData: any = { titulo, descricao, prioridade, tipo_midia, prazo: prazo || null };
     if (user.role === 'admin' || user.role === 'secom') {
       updateData.secretaria_id = secretaria_id;
     }
@@ -337,7 +413,7 @@ export const updateMaterial = async (req: Request, res: Response) => {
     if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
     const id = Number(req.params.id);
-    const { link_publicacao } = req.body;
+    const { link_publicacao, link_arquivo_matriz } = req.body;
     const file = (req as any).file;
 
     const updates: any = {};
@@ -347,6 +423,9 @@ export const updateMaterial = async (req: Request, res: Response) => {
     }
     if (link_publicacao !== undefined) {
       updates.link_publicacao = link_publicacao.trim() || null;
+    }
+    if (link_arquivo_matriz !== undefined) {
+      updates.link_arquivo_matriz = link_arquivo_matriz.trim() || null;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -376,7 +455,7 @@ export const concluir = async (req: Request, res: Response) => {
     if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
     const id = Number(req.params.id);
-    const { link_publicacao } = req.body;
+    const { link_publicacao, link_arquivo_matriz } = req.body;
     const file = (req as any).file;
 
     const updates: any = { status: 'concluído' };
@@ -386,6 +465,9 @@ export const concluir = async (req: Request, res: Response) => {
     }
     if (link_publicacao?.trim()) {
       updates.link_publicacao = link_publicacao.trim();
+    }
+    if (link_arquivo_matriz?.trim()) {
+      updates.link_arquivo_matriz = link_arquivo_matriz.trim();
     }
 
     await SolicitacaoRepository.update(id, updates);

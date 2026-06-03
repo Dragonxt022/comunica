@@ -381,7 +381,18 @@
                         </a>
                     </div>
                     <% } %>
-                    <% if(!sol.arte_final_url && !sol.link_publicacao) { %>
+                    <% if(sol.link_arquivo_matriz) { %>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Arquivo Matriz</p>
+                        <a href="<%= sol.link_arquivo_matriz %>" target="_blank" rel="noopener"
+                           class="flex items-center gap-2 p-2.5 bg-indigo-50 border border-indigo-200 rounded-lg hover:border-indigo-400 transition group">
+                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="text-xs text-indigo-700 truncate group-hover:underline flex-1">Acessar arquivo matriz</span>
+                            <svg class="w-3 h-3 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                    </div>
+                    <% } %>
+                    <% if(!sol.arte_final_url && !sol.link_publicacao && !sol.link_arquivo_matriz) { %>
                     <p class="text-xs text-gray-400 italic">Nenhum material entregue ainda.</p>
                     <% } %>
 
@@ -412,6 +423,15 @@
                                     value="<%= sol.link_publicacao || '' %>"
                                     placeholder="https://..."
                                     class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1.5">
+                                    Link do Arquivo Matriz <span class="text-gray-400">(Google Drive, Dropbox…)</span>
+                                </label>
+                                <input type="url" name="link_arquivo_matriz"
+                                    value="<%= sol.link_arquivo_matriz || '' %>"
+                                    placeholder="https://drive.google.com/..."
+                                    class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" onclick="toggleUpdateMaterial()"
@@ -473,6 +493,39 @@
                             <%= sol.tipo_midia %>
                         </span>
                     </div>
+
+                    <% if(sol.prazo) {
+                        var hoje2 = new Date().toISOString().slice(0,10);
+                        var pStr2 = String(sol.prazo).slice(0,10);
+                        var partes = pStr2.split('-');
+                        var pFmt = partes[2] + '/' + partes[1] + '/' + partes[0];
+                        var atrasado2 = pStr2 < hoje2 && !['finalizado','cancelado'].includes(sol.status);
+                        var hoje2dt = new Date(); hoje2dt.setHours(12,0,0,0);
+                        var prazo2dt = new Date(pStr2 + 'T12:00:00');
+                        var dias = Math.round((prazo2dt - hoje2dt) / 86400000);
+                    %>
+                    <div class="pt-2 border-t border-gray-100">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prazo de Entrega</p>
+                        <div class="flex items-center gap-2">
+                            <% if(atrasado2) { %>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <%= pFmt %> — Atrasado
+                            </span>
+                            <% } else if(dias <= 2) { %>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <%= pFmt %> (<%= dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : dias + 'd' %>)
+                            </span>
+                            <% } else { %>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <%= pFmt %> (<%= dias %>d)
+                            </span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% } %>
 
                     <div class="pt-2 border-t border-gray-100">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Secretaria</p>
@@ -586,6 +639,22 @@
                 </label>
                 <input type="url" name="link_publicacao" placeholder="https://..."
                     class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+
+            <!-- Link arquivo matriz -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Link do Arquivo Matriz
+                    <span class="text-gray-400 font-normal">(Google Drive, Dropbox… — opcional)</span>
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <input type="url" name="link_arquivo_matriz" placeholder="https://drive.google.com/..."
+                        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Cole aqui o link do arquivo original (AI, PSD, Canva etc.) para que a equipe possa reutilizá-lo futuramente.</p>
             </div>
 
             <div class="flex gap-3 pt-1">

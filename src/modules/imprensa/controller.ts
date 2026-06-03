@@ -34,6 +34,13 @@ export const agendaPublica = async (req: Request, res: Response) => {
   }
 };
 
+export const ajudaPublica = (_req: Request, res: Response) => {
+  res.render('public/ajuda', {
+    title: 'Central de Ajuda',
+    layout: 'layouts/public',
+  });
+};
+
 export const detalheRelease = async (req: Request, res: Response) => {
   try {
     const release = await Release.findOne({

@@ -127,6 +127,86 @@
     </div>
     <% } %>
 
+    <!-- Linha extra: Em produção + Finalizadas este mês -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-blue-400 p-5 flex items-center gap-4">
+            <div class="bg-blue-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Em Produção Agora</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= solicitacoesEmProducao %></p>
+                <a href="/solicitacoes" class="text-xs text-blue-600 font-medium hover:underline">Ver em produção &rarr;</a>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 border-l-4 border-l-teal-400 p-5 flex items-center gap-4">
+            <div class="bg-teal-50 rounded-lg p-2.5 shrink-0">
+                <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-400">Finalizadas Este Mês</p>
+                <p class="text-2xl font-bold text-gray-900 leading-tight"><%= finalizadasMes %></p>
+                <a href="/biblioteca" class="text-xs text-teal-600 font-medium hover:underline">Ver na biblioteca &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico semanal + Top secretarias -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Volume Semanal (Chart.js) -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gray-900">Volume de Solicitações — Últimas 8 Semanas</h3>
+                <a href="/relatorios" class="text-xs font-medium text-blue-600 hover:underline">Relatório completo →</a>
+            </div>
+            <canvas id="chartSemanal" height="90"></canvas>
+        </div>
+
+        <!-- Top Secretarias -->
+        <% if(user.role !== 'secretaria' && topSecretarias.length > 0) { %>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gray-900">Top Secretarias</h3>
+                <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">por demanda</span>
+            </div>
+            <div class="space-y-2.5">
+                <% var maxTotal = topSecretarias[0] ? topSecretarias[0].total : 1; %>
+                <% topSecretarias.forEach(function(sec, idx) { %>
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
+                                  style="background:<%= sec.cor %>"><%= idx + 1 %></span>
+                            <span class="font-medium text-gray-700 truncate" title="<%= sec.nome %>"><%= sec.nome %></span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 ml-2">
+                            <% if(sec.pendentes > 0) { %>
+                            <span class="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded font-semibold"><%= sec.pendentes %> pend.</span>
+                            <% } %>
+                            <span class="font-bold text-gray-900"><%= sec.total %></span>
+                        </div>
+                    </div>
+                    <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-700"
+                             style="width:<%= Math.round(sec.total / maxTotal * 100) %>%;background:<%= sec.cor %>"></div>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+            <a href="/biblioteca" class="block text-center text-xs font-medium text-blue-600 hover:underline pt-1">
+                Ver biblioteca de artes →
+            </a>
+        </div>
+        <% } else if(user.role !== 'secretaria') { %>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 flex flex-col items-center justify-center text-center space-y-2">
+            <svg class="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path></svg>
+            <p class="text-xs text-gray-400">Nenhuma demanda registrada ainda.</p>
+        </div>
+        <% } %>
+
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <!-- Calendário Geral de Eventos (somente leitura) -->
@@ -245,6 +325,51 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    var labels   = <%- JSON.stringify(semanaLabels) %>;
+    var volumes  = <%- JSON.stringify(volumeSemanal) %>;
+    var ctx = document.getElementById('chartSemanal');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Solicitações',
+                    data: volumes,
+                    backgroundColor: volumes.map(function(_, i) {
+                        return i === volumes.length - 1 ? '#3b82f6' : '#bfdbfe';
+                    }),
+                    borderRadius: 5,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) { return 'Semana de ' + items[0].label; },
+                            label: function(item) { return item.raw + ' solicitaç' + (item.raw === 1 ? 'ão' : 'ões'); }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, font: { size: 11 } },
+                        grid: { color: '#f1f5f9' }
+                    },
+                    x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+}());
+</script>
 <script>
 (function() {
     var _DASH_EVENTOS = <%- JSON.stringify(proximosEventos.map(function(e) { return {

@@ -1,0 +1,342 @@
+<div class="space-y-16 md:space-y-24 px-4 sm:px-6 lg:px-0">
+
+    <!-- ── Hero ── -->
+    <header class="text-center space-y-6 py-6 md:py-10">
+        <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+            Central de Ajuda
+        </div>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+            Como usar o<br class="hidden sm:block">
+            <span class="text-blue-600"><%= config && config.titulo_site ? config.titulo_site : 'Comunica' %></span>
+        </h1>
+        <p class="text-base sm:text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+            Tudo que você precisa saber para abrir solicitações, acompanhar sua produção e usar o sistema.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <a href="/solicitacoes/nova"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold text-sm rounded-xl hover:bg-blue-700 transition shadow-sm shadow-blue-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Abrir Nova Solicitação
+            </a>
+            <a href="/login"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-bold text-sm rounded-xl border border-gray-200 hover:border-gray-300 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                Entrar no Sistema
+            </a>
+        </div>
+    </header>
+
+    <!-- ── Como funciona em 3 passos ── -->
+    <section>
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-blue-600 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Como funciona</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute top-4 right-4 text-5xl font-black text-gray-100 select-none group-hover:text-blue-50 transition">1</div>
+                <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 mb-1">Acesse o sistema</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Entre com o e-mail e senha fornecidos pela SECOM. Se não tem acesso, veja a seção abaixo.</p>
+                </div>
+                <a href="/login" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700 transition">
+                    Ir para o login
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute top-4 right-4 text-5xl font-black text-gray-100 select-none group-hover:text-blue-50 transition">2</div>
+                <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 mb-1">Abra uma solicitação</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Preencha o formulário com título, descrição, tipo de material e nível de prioridade.</p>
+                </div>
+                <a href="/solicitacoes/nova" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition">
+                    Abrir solicitação
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute top-4 right-4 text-5xl font-black text-gray-100 select-none group-hover:text-blue-50 transition">3</div>
+                <div class="w-11 h-11 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 mb-1">Acompanhe o andamento</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Você receberá notificações conforme o status avança: pendente → produção → finalizado.</p>
+                </div>
+                <a href="/solicitacoes" class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition">
+                    Ver minhas solicitações
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ── Vídeos de ajuda ── -->
+    <section id="videos">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-red-500 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Vídeos de Ajuda</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Vídeo 01 -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:shadow-lg transition">
+                <div class="relative cursor-pointer bg-gray-900 aspect-video" onclick="playVideo(this, 'rDsOaOcWT8M')">
+                    <img src="https://img.youtube.com/vi/rDsOaOcWT8M/maxresdefault.jpg"
+                         onerror="this.src='https://img.youtube.com/vi/rDsOaOcWT8M/hqdefault.jpg'"
+                         alt="Conhecendo o Sistema COMUNICA"
+                         class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <!-- Play button overlay -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- Duração / label -->
+                    <div class="absolute bottom-3 left-3 bg-black/70 text-white text-xs font-bold px-2 py-0.5 rounded">
+                        Aula 01
+                    </div>
+                </div>
+                <div class="p-5">
+                    <p class="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Introdução</p>
+                    <h3 class="text-base font-bold text-gray-900 mb-1.5">Conhecendo o Sistema COMUNICA</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Visão geral da plataforma: telas, menus, notificações e como navegar pelo sistema.</p>
+                    <a href="https://youtu.be/rDsOaOcWT8M" target="_blank" rel="noopener"
+                       class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        Ver no YouTube
+                    </a>
+                </div>
+            </div>
+
+            <!-- Vídeo 02 -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:shadow-lg transition">
+                <div class="relative cursor-pointer bg-gray-900 aspect-video" onclick="playVideo(this, 'mDB2M2Th6Pc')">
+                    <img src="https://img.youtube.com/vi/mDB2M2Th6Pc/maxresdefault.jpg"
+                         onerror="this.src='https://img.youtube.com/vi/mDB2M2Th6Pc/hqdefault.jpg'"
+                         alt="Como abrir uma Solicitação no COMUNICA"
+                         class="w-full h-full object-cover group-hover:opacity-90 transition">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                            <svg class="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-3 left-3 bg-black/70 text-white text-xs font-bold px-2 py-0.5 rounded">
+                        Aula 02
+                    </div>
+                </div>
+                <div class="p-5">
+                    <p class="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Passo a Passo</p>
+                    <h3 class="text-base font-bold text-gray-900 mb-1.5">Como abrir uma Solicitação</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Aprenda a registrar uma solicitação de produção: campos, prioridade, tipos de mídia e envio.</p>
+                    <a href="https://youtu.be/mDB2M2Th6Pc" target="_blank" rel="noopener"
+                       class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        Ver no YouTube
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ── Regras e Políticas ── -->
+    <section id="regras">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-amber-500 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Informações Importantes</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"></path></svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Ordem de Atendimento</h3>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed">
+                    As solicitações são atendidas conforme a <strong>ordem de envio</strong> e o <strong>nível de prioridade</strong> definido.
+                    Solicitações de alta prioridade recebem atenção prioritária dentro da fila.
+                </p>
+            </div>
+
+            <div class="bg-red-50 border border-red-200 rounded-2xl p-6 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Prazo no Mesmo Dia</h3>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed">
+                    Solicitações para entrega <strong>no mesmo dia</strong> serão analisadas individualmente.
+                    O atendimento só será garantido em casos de <strong>urgência comprovada</strong>, antes da publicação.
+                </p>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Tipos de Material</h3>
+                </div>
+                <ul class="text-sm text-gray-700 space-y-1 leading-relaxed">
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0"></span>Post para Redes Sociais</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0"></span>Arte Gráfica</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0"></span>Fotografia e Vídeo</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0"></span>Release e Nota à Imprensa</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0"></span>Cobertura e Transmissão ao Vivo</li>
+                </ul>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gray-200 rounded-xl flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900">Acompanhe sua Solicitação</h3>
+                </div>
+                <div class="space-y-2">
+                    <% [
+                        ['pendente', 'Aguardando análise da SECOM', '#f59e0b'],
+                        ['produção', 'Em execução pela equipe', '#3b82f6'],
+                        ['finalizado', 'Material entregue', '#10b981'],
+                        ['cancelado', 'Não será produzido', '#ef4444']
+                    ].forEach(function(s) { %>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white" style="background:<%= s[2] %>"><%= s[0] %></span>
+                        <span class="text-sm text-gray-600"><%= s[1] %></span>
+                    </div>
+                    <% }) %>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ── FAQ ── -->
+    <section id="faq">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-1 h-8 bg-indigo-600 rounded-full"></div>
+            <h2 class="text-2xl font-extrabold text-gray-900">Perguntas Frequentes</h2>
+        </div>
+
+        <div class="space-y-3 max-w-3xl">
+            <%
+            var faqs = [
+                {
+                    q: 'Não tenho acesso ao sistema. O que faço?',
+                    a: 'Envie o nome da sua secretaria e um e-mail válido para a equipe da SECOM. O acesso será criado e as credenciais enviadas para você.'
+                },
+                {
+                    q: 'Esqueci minha senha. Como recupero?',
+                    a: 'Na tela de login existe o link "Esqueci minha senha". Se não conseguir, entre em contato com a SECOM para redefinição manual.'
+                },
+                {
+                    q: 'Com quanto tempo de antecedência devo abrir uma solicitação?',
+                    a: 'Recomendamos pelo menos 48 horas de antecedência para materiais padrão. Para coberturas ao vivo ou peças complexas, o ideal é 72 horas ou mais.'
+                },
+                {
+                    q: 'Posso anexar referências ou arquivos na solicitação?',
+                    a: 'Sim. No campo de descrição você pode detalhar a ideia e, dependendo do tipo, é possível incluir informações complementares nos comentários após a abertura.'
+                },
+                {
+                    q: 'O que acontece quando minha solicitação é finalizada?',
+                    a: 'Você recebe uma notificação no sistema. A arte finalizada fica disponível na própria solicitação e também no acervo da Biblioteca de Artes.'
+                },
+                {
+                    q: 'Posso cancelar uma solicitação depois de enviada?',
+                    a: 'Sim, enquanto o status for "pendente". Depois que entrar em produção, entre em contato com a SECOM via sistema de comentários.'
+                }
+            ];
+            faqs.forEach(function(faq, i) { %>
+            <details class="bg-white border border-gray-200 rounded-xl group open:shadow-sm transition-shadow" <%= i === 0 ? 'open' : '' %>>
+                <summary class="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer select-none list-none">
+                    <span class="text-sm font-bold text-gray-900 group-open:text-blue-700 transition"><%= faq.q %></span>
+                    <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="px-6 pb-5">
+                    <p class="text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-4"><%= faq.a %></p>
+                </div>
+            </details>
+            <% }) %>
+        </div>
+    </section>
+
+    <!-- ── Solicitar acesso ── -->
+    <section id="acesso">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-white text-center space-y-6 shadow-xl shadow-blue-100">
+            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-2xl md:text-3xl font-extrabold mb-2">Ainda não tem acesso?</h2>
+                <p class="text-blue-100 max-w-lg mx-auto text-sm md:text-base leading-relaxed">
+                    Envie o <strong class="text-white">nome da sua secretaria</strong> e um <strong class="text-white">e-mail válido</strong> para a SECOM.
+                    Seu acesso será criado e as credenciais enviadas em breve.
+                </p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <% if(config && config.telefone_contato) { %>
+                <a href="https://wa.me/55<%= config.telefone_contato.replace(/\D/g,'') %>?text=Ol%C3%A1%2C+preciso+de+acesso+ao+sistema+Comunica.+Secretaria%3A+"
+                   target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-700 font-bold text-sm rounded-xl hover:bg-blue-50 transition shadow-sm">
+                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>
+                    Solicitar via WhatsApp
+                </a>
+                <% } %>
+                <% if(config && config.email_contato) { %>
+                <a href="mailto:<%= config.email_contato %>?subject=Solicita%C3%A7%C3%A3o%20de%20acesso%20ao%20Comunica"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-bold text-sm rounded-xl border border-white/20 hover:bg-white/20 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Enviar por e-mail
+                </a>
+                <% } %>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+function playVideo(container, videoId) {
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    iframe.className = 'absolute inset-0 w-full h-full';
+    iframe.setAttribute('allowfullscreen', '');
+    container.innerHTML = '';
+    container.appendChild(iframe);
+}
+
+// Smooth scroll para âncoras
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        var id = this.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) {
+            e.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+</script>

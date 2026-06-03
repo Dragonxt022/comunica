@@ -1,7 +1,158 @@
-<div class="space-y-5">
+<script>
+const _SOLICITACOES = <%- JSON.stringify(kanbanSolics.map(function(s) { return {
+    id: s.id,
+    titulo: s.titulo,
+    descricao: s.descricao,
+    prioridade: s.prioridade,
+    tipo_midia: s.tipo_midia,
+    status: s.status,
+    createdAt: s.createdAt,
+    prazo: s.prazo ? String(s.prazo).slice(0, 10) : null,
+    secretaria: s.secretaria ? { id: s.secretaria.id, nome: s.secretaria.nome, cor: s.secretaria.cor } : null
+}; })) %>;
+
+document.addEventListener('alpine:init', function() {
+    Alpine.data('solicitacoesApp', function() {
+        return {
+            solicitacoes: JSON.parse(JSON.stringify(_SOLICITACOES)),
+            view: localStorage.getItem('sol_view') || 'lista',
+            filtroTexto: '',
+            filtroPrioridade: '',
+            dragging: null,
+            dragOver: null,
+            toast: '',
+            toastOk: true,
+
+            init: function() {
+                this.$watch('view', function(v) { localStorage.setItem('sol_view', v); });
+                var self = this;
+                window.onSSEUpdate = function(data) {
+                    if (data.type !== 'solicitacao_status') return;
+                    var s = self.solicitacoes.find(function(x) { return x.id === data.id; });
+                    if (s) s.status = data.status;
+                };
+            },
+
+            get solicitacoesFiltradas() {
+                var txt = this.filtroTexto.toLowerCase().trim();
+                var pri = this.filtroPrioridade;
+                return this.solicitacoes.filter(function(s) {
+                    if (txt && s.titulo.toLowerCase().indexOf(txt) < 0) return false;
+                    if (pri && s.prioridade !== pri) return false;
+                    return true;
+                });
+            },
+
+            porStatus: function(key) {
+                return this.solicitacoesFiltradas.filter(function(s) { return s.status === key; });
+            },
+
+            updateStatus: async function(id, status) {
+                var sol  = this.solicitacoes.find(function(s) { return s.id === id; });
+                var prev = sol ? sol.status : null;
+                if (sol) sol.status = status;
+                try {
+                    var r    = await fetch('/solicitacoes/' + id + '/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: status })
+                    });
+                    var data = await r.json();
+                    if (data.ok) {
+                        this.showToast('Status atualizado!', true);
+                    } else {
+                        if (sol) sol.status = prev;
+                        this.showToast(data.error || 'Sem permissão para alterar status', false);
+                    }
+                } catch(err) {
+                    if (sol) sol.status = prev;
+                    this.showToast('Erro de conexão', false);
+                }
+            },
+
+            showToast: function(msg, ok) {
+                var self = this;
+                this.toast   = msg;
+                this.toastOk = ok;
+                setTimeout(function() { self.toast = ''; }, 2800);
+            },
+
+            onDragStart: function(event, sol) {
+                this.dragging = sol;
+                event.dataTransfer.effectAllowed = 'move';
+            },
+
+            onDragEnd: function() {
+                this.dragging  = null;
+                this.dragOver  = null;
+            },
+
+            onDrop: function(event, statusKey) {
+                if (this.dragging && this.dragging.status !== statusKey) {
+                    this.updateStatus(this.dragging.id, statusKey);
+                }
+                this.dragging = null;
+                this.dragOver = null;
+            },
+
+            priCls: function(p) {
+                return p === 'alta' ? 'text-red-500' : p === 'media' ? 'text-yellow-500' : 'text-gray-300';
+            },
+
+            fmtDate: function(d) {
+                var s = new Date(d);
+                return s.toLocaleDateString('pt-BR');
+            },
+
+            fmtPrazo: function(p) {
+                if (!p) return '';
+                var parts = String(p).split('-');
+                return parts[2] + '/' + parts[1] + '/' + parts[0];
+            },
+
+            isAtrasado: function(sol) {
+                if (!sol.prazo) return false;
+                if (['finalizado', 'cancelado', 'concluído'].includes(sol.status)) return false;
+                var hoje = new Date().toISOString().slice(0, 10);
+                return sol.prazo < hoje;
+            },
+
+            diasPrazo: function(sol) {
+                if (!sol.prazo) return null;
+                var hoje = new Date(); hoje.setHours(12, 0, 0, 0);
+                var p = new Date(sol.prazo + 'T12:00:00');
+                return Math.round((p - hoje) / 86400000);
+            },
+
+            drawer: null,
+            drawerComentarios: [],
+            drawerLoading: false,
+
+            openDrawer: async function(sol) {
+                this.drawer = sol;
+                this.drawerComentarios = [];
+                this.drawerLoading = true;
+                try {
+                    var r = await fetch('/solicitacoes/' + sol.id + '/comentarios');
+                    this.drawerComentarios = await r.json();
+                } catch(e) {}
+                this.drawerLoading = false;
+            },
+            closeDrawer: function() { this.drawer = null; this.drawerComentarios = []; },
+
+            fmtDateTime: function(d) {
+                var dt = new Date(d);
+                return dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+        };
+    });
+});
+</script>
+
+<div class="space-y-5" x-data="solicitacoesApp">
 
     <!-- Cabeçalho -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
             <h2 class="text-xl font-semibold text-gray-900">Fluxo de Solicitações</h2>
             <p class="text-sm text-gray-400 mt-0.5">Acompanhe a produção de materiais por parte da SECOM.</p>
@@ -32,20 +183,23 @@
         <% }) %>
     </div>
 
-    <!-- Filtros -->
-    <form method="GET" action="/solicitacoes" class="bg-white rounded-lg border border-gray-200 p-3 flex flex-wrap gap-3 items-end">
-        <div class="flex-1 min-w-[180px]">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
-            <div class="relative">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <input type="text" name="q" value="<%= q %>" placeholder="Buscar pelo título…"
-                    class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
+    <!-- Barra de controles unificada -->
+    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center">
+
+        <!-- Busca (Alpine para kanban + name para form lista) -->
+        <div class="relative flex-1 min-w-[160px]">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" name="q" x-model="filtroTexto"
+                value="<%= q %>" placeholder="Buscar pelo título…"
+                form="form-filtros"
+                class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
         </div>
-        <div class="min-w-[130px]">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
-            <select name="status" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                <option value="">Todos</option>
+
+        <!-- Status (só para lista) -->
+        <div x-show="view === 'lista'">
+            <select name="status" form="form-filtros"
+                class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <option value="">Todos os status</option>
                 <% [
                     ['pendente','Pendente'],['aprovado','Aprovado'],['produção','Produção'],
                     ['concluído','Concluído'],['finalizado','Finalizado'],['cancelado','Cancelado']
@@ -54,147 +208,522 @@
                 <% }) %>
             </select>
         </div>
-        <div class="min-w-[120px]">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Prioridade</label>
-            <select name="prioridade" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                <option value="">Todas</option>
-                <option value="alta"  <%= filtroPrioridade === 'alta'  ? 'selected' : '' %>>Alta</option>
-                <option value="media" <%= filtroPrioridade === 'media' ? 'selected' : '' %>>Média</option>
-                <option value="baixa" <%= filtroPrioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
-            </select>
-        </div>
-        <div class="flex gap-2">
-            <button type="submit" class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition">Filtrar</button>
+
+        <!-- Prioridade -->
+        <select name="prioridade" x-model="filtroPrioridade" form="form-filtros"
+            class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            <option value="">Todas prioridades</option>
+            <option value="alta"  <%= filtroPrioridade === 'alta'  ? 'selected' : '' %>>Alta</option>
+            <option value="media" <%= filtroPrioridade === 'media' ? 'selected' : '' %>>Média</option>
+            <option value="baixa" <%= filtroPrioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
+        </select>
+
+        <!-- Submit / Limpar só na lista -->
+        <div x-show="view === 'lista'" class="flex gap-2">
+            <button type="submit" form="form-filtros"
+                class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition">Filtrar</button>
             <a href="/solicitacoes" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Limpar</a>
         </div>
-    </form>
 
-    <!-- Tabela -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <% if(solicitacoes.length === 0) { %>
-        <div class="py-16 text-center">
-            <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            <p class="text-gray-400 font-medium">Nenhuma solicitação encontrada.</p>
-            <a href="/solicitacoes/nova" class="mt-3 inline-block text-blue-600 font-medium hover:underline text-sm">Abrir um chamado</a>
+        <!-- Limpar filtros kanban -->
+        <button x-show="view === 'kanban' && (filtroTexto || filtroPrioridade)"
+            @click="filtroTexto = ''; filtroPrioridade = ''"
+            type="button"
+            class="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition">
+            Limpar ✕
+        </button>
+
+        <!-- Toggle Lista / Kanban (ml-auto) -->
+        <div class="ml-auto flex rounded-lg border border-gray-200 overflow-hidden">
+            <button type="button" @click="view = 'lista'"
+                class="px-4 py-2 text-sm font-medium transition flex items-center gap-1.5"
+                :class="view === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                Lista
+            </button>
+            <button type="button" @click="view = 'kanban'"
+                class="px-4 py-2 text-sm font-medium transition border-l border-gray-200 flex items-center gap-1.5"
+                :class="view === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                Kanban
+            </button>
         </div>
-        <% } else { %>
-        <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solicitação</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Secretaria</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prioridade</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Data</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 text-sm">
-                <% solicitacoes.forEach(function(s) {
-                    var statusCls = {
-                        pendente:   'bg-yellow-100 text-yellow-800',
-                        aprovado:   'bg-blue-100 text-blue-800',
-                        'produção': 'bg-indigo-100 text-indigo-800',
-                        'concluído':'bg-teal-100 text-teal-800',
-                        finalizado: 'bg-green-100 text-green-800',
-                        cancelado:  'bg-red-100 text-red-700',
-                    };
-                    var priCls = s.prioridade === 'alta' ? 'text-red-600' : s.prioridade === 'media' ? 'text-yellow-600' : 'text-gray-400';
-                %>
-                <tr class="hover:bg-gray-50/60 transition cursor-pointer" onclick="window.location='/solicitacoes/<%= s.id %>'">
-                    <td class="px-4 py-3 text-gray-400 font-mono text-xs">#<%= s.id %></td>
-                    <td class="px-4 py-3 max-w-xs">
-                        <div class="font-medium text-gray-900 truncate"><%= s.titulo %></div>
-                        <div class="text-xs text-gray-400 truncate mt-0.5"><%= s.descricao %></div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <% if(s.secretaria) { %>
-                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white max-w-[110px] truncate"
-                              style="background-color: <%= s.secretaria.cor %>"
-                              title="<%= s.secretaria.nome %>">
-                            <%= s.secretaria.nome %>
-                        </span>
-                        <% } else { %><span class="text-gray-300">—</span><% } %>
-                    </td>
-                    <td class="px-4 py-3 text-xs text-gray-600">
-                        <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full font-medium uppercase tracking-wide"><%= s.tipo_midia %></span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span class="flex items-center gap-1.5 text-xs font-semibold <%= priCls %>">
-                            <% if(s.prioridade === 'alta') { %><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span><% } else if(s.prioridade === 'media') { %><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span><% } else { %><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span><% } %>
-                            <%= s.prioridade === 'alta' ? 'Alta' : s.prioridade === 'media' ? 'Média' : 'Baixa' %>
-                        </span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span id="sol-status-<%= s.id %>" data-sol-id="<%= s.id %>"
-                              class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <%= statusCls[s.status] || 'bg-gray-100 text-gray-700' %>">
-                            <%= s.status %>
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-xs text-gray-500">
-                        <%= new Date(s.createdAt).toLocaleDateString('pt-BR') %>
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                        <div class="flex justify-end items-center gap-2">
-                            <a href="/solicitacoes/<%= s.id %>/editar"
-                               class="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition">Editar</a>
-                            <a href="/solicitacoes/<%= s.id %>"
-                               class="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Detalhes</a>
-                        </div>
-                    </td>
-                </tr>
-                <% }) %>
-            </tbody>
-        </table>
+    </div>
 
-        </div><!-- /overflow-x-auto -->
-        <!-- Rodapé com paginação -->
-        <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <p class="text-xs text-gray-500">
-                Mostrando <strong><%= solicitacoes.length %></strong> de <strong><%= total %></strong> solicitações
-                <% if(filtroStatus || q || filtroPrioridade) { %>(filtrado)<% } %>
-            </p>
-            <% if(totalPages > 1) { %>
-            <div class="flex items-center gap-1">
-                <% if(currentPage > 1) { %>
-                <a href="?page=<%= currentPage - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
-                   class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
-                <% } %>
-                <% for(var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
-                <a href="?page=<%= p %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
-                   class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
-                          <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
-                    <%= p %>
-                </a>
-                <% } %>
-                <% if(currentPage < totalPages) { %>
-                <a href="?page=<%= currentPage + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
-                   class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
+    <!-- Form oculto para submit dos filtros (lista) -->
+    <form id="form-filtros" method="GET" action="/solicitacoes" class="hidden"></form>
+
+    <!-- ===================== VIEW LISTA ===================== -->
+    <div x-show="view === 'lista'" x-cloak>
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <% if(solicitacoes.length === 0) { %>
+            <div class="py-16 text-center">
+                <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <p class="text-gray-400 font-medium">Nenhuma solicitação encontrada.</p>
+                <a href="/solicitacoes/nova" class="mt-3 inline-block text-blue-600 font-medium hover:underline text-sm">Abrir um chamado</a>
+            </div>
+            <% } else { %>
+            <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solicitação</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Secretaria</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prioridade</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prazo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Abertura</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    <% solicitacoes.forEach(function(s) {
+                        var statusCls = {
+                            pendente:   'bg-yellow-100 text-yellow-800',
+                            aprovado:   'bg-blue-100 text-blue-800',
+                            'produção': 'bg-indigo-100 text-indigo-800',
+                            'concluído':'bg-teal-100 text-teal-800',
+                            finalizado: 'bg-green-100 text-green-800',
+                            cancelado:  'bg-red-100 text-red-700',
+                        };
+                        var priCls = s.prioridade === 'alta' ? 'text-red-600' : s.prioridade === 'media' ? 'text-yellow-600' : 'text-gray-400';
+                    %>
+                    <tr class="hover:bg-gray-50/60 transition cursor-pointer" onclick="window.location='/solicitacoes/<%= s.id %>'">
+                        <td class="px-4 py-3 text-gray-400 font-mono text-xs">#<%= s.id %></td>
+                        <td class="px-4 py-3 max-w-xs">
+                            <div class="font-medium text-gray-900 truncate"><%= s.titulo %></div>
+                            <div class="text-xs text-gray-400 truncate mt-0.5"><%= s.descricao %></div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <% if(s.secretaria) { %>
+                            <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white max-w-[110px] truncate"
+                                  style="background-color: <%= s.secretaria.cor %>"
+                                  title="<%= s.secretaria.nome %>">
+                                <%= s.secretaria.nome %>
+                            </span>
+                            <% } else { %><span class="text-gray-300">—</span><% } %>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-600">
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full font-medium uppercase tracking-wide"><%= s.tipo_midia %></span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="flex items-center gap-1.5 text-xs font-semibold <%= priCls %>">
+                                <% if(s.prioridade === 'alta') { %><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span><% } else if(s.prioridade === 'media') { %><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span><% } else { %><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span><% } %>
+                                <%= s.prioridade === 'alta' ? 'Alta' : s.prioridade === 'media' ? 'Média' : 'Baixa' %>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <% if(s.prazo) {
+                                var hojeIdx = new Date().toISOString().slice(0,10);
+                                var pStrIdx = String(s.prazo).slice(0,10);
+                                var ptIdx = pStrIdx.split('-');
+                                var pFmtIdx = ptIdx[2]+'/'+ptIdx[1]+'/'+ptIdx[0];
+                                var atrasadoIdx = pStrIdx < hojeIdx && !['finalizado','cancelado'].includes(s.status);
+                                var hojeIdxDt = new Date(); hojeIdxDt.setHours(12,0,0,0);
+                                var prazoIdxDt = new Date(pStrIdx+'T12:00:00');
+                                var diasIdx = Math.round((prazoIdxDt-hojeIdxDt)/86400000);
+                            %>
+                            <% if(atrasadoIdx) { %>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-[11px] font-bold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block"></span>
+                                Atrasado
+                            </span>
+                            <% } else if(diasIdx <= 2) { %>
+                            <span class="text-amber-600 font-semibold text-xs"><%= pFmtIdx %></span>
+                            <% } else { %>
+                            <span class="text-gray-500 text-xs"><%= pFmtIdx %></span>
+                            <% } %>
+                            <% } else { %>
+                            <span class="text-gray-300 text-xs">—</span>
+                            <% } %>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span id="sol-status-<%= s.id %>"
+                                  class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <%= statusCls[s.status] || 'bg-gray-100 text-gray-700' %>">
+                                <%= s.status %>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500">
+                            <%= new Date(s.createdAt).toLocaleDateString('pt-BR') %>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex justify-end items-center gap-2">
+                                <a href="/solicitacoes/<%= s.id %>/editar"
+                                   onclick="event.stopPropagation()"
+                                   class="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition">Editar</a>
+                                <a href="/solicitacoes/<%= s.id %>"
+                                   onclick="event.stopPropagation()"
+                                   class="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Detalhes</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+            </div>
+            <!-- Rodapé com paginação -->
+            <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                <p class="text-xs text-gray-500">
+                    Mostrando <strong><%= solicitacoes.length %></strong> de <strong><%= total %></strong> solicitações
+                    <% if(filtroStatus || q || filtroPrioridade) { %>(filtrado)<% } %>
+                </p>
+                <% if(totalPages > 1) { %>
+                <div class="flex items-center gap-1">
+                    <% if(currentPage > 1) { %>
+                    <a href="?page=<%= currentPage - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                       class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
+                    <% } %>
+                    <% for(var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
+                    <a href="?page=<%= p %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                       class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
+                              <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
+                        <%= p %>
+                    </a>
+                    <% } %>
+                    <% if(currentPage < totalPages) { %>
+                    <a href="?page=<%= currentPage + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                       class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
+                    <% } %>
+                </div>
                 <% } %>
             </div>
             <% } %>
         </div>
-        <% } %>
     </div>
-</div>
 
-<script>
-window.onSSEUpdate = function(data) {
-    if (data.type !== 'solicitacao_status') return;
-    var el = document.getElementById('sol-status-' + data.id);
-    if (!el) return;
-    var cls = {
-        pendente:    'bg-yellow-100 text-yellow-800',
-        aprovado:    'bg-blue-100 text-blue-800',
-        'produção':  'bg-indigo-100 text-indigo-800',
-        'concluído': 'bg-teal-100 text-teal-800',
-        finalizado:  'bg-green-100 text-green-800',
-        cancelado:   'bg-red-100 text-red-700',
-    };
-    el.textContent = data.status;
-    el.className = 'inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ' + (cls[data.status] || 'bg-gray-100 text-gray-700');
-};
-</script>
+    <!-- ===================== VIEW KANBAN ===================== -->
+    <div x-show="view === 'kanban'" x-cloak>
+        <%
+        var colunas = [
+            { key: 'pendente',   label: 'Pendente',   hd: 'bg-yellow-50 border-yellow-200 text-yellow-800', dot: 'bg-yellow-400' },
+            { key: 'aprovado',   label: 'Aprovado',   hd: 'bg-blue-50   border-blue-200   text-blue-800',   dot: 'bg-blue-500'   },
+            { key: 'produção',   label: 'Produção',   hd: 'bg-indigo-50 border-indigo-200 text-indigo-800', dot: 'bg-indigo-500' },
+            { key: 'concluído',  label: 'Concluído',  hd: 'bg-teal-50   border-teal-200   text-teal-800',   dot: 'bg-teal-500'   },
+            { key: 'finalizado', label: 'Finalizado', hd: 'bg-green-50  border-green-200  text-green-800',  dot: 'bg-green-500'  },
+            { key: 'cancelado',  label: 'Cancelado',  hd: 'bg-red-50    border-red-200    text-red-800',    dot: 'bg-red-400'    },
+        ];
+        %>
+        <div class="overflow-x-auto pb-3">
+            <div class="flex gap-4" style="min-width: max-content">
+                <% colunas.forEach(function(col) { %>
+                <div class="w-72 flex flex-col gap-2"
+                     @dragover.prevent="dragOver = '<%= col.key %>'"
+                     @dragleave="dragOver === '<%= col.key %>' && (dragOver = null)"
+                     @drop.prevent="onDrop($event, '<%= col.key %>')">
+
+                    <!-- Cabeçalho da coluna -->
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg border transition <%= col.hd %>"
+                         :class="dragOver === '<%= col.key %>' ? 'ring-2 ring-blue-400 ring-offset-1' : ''">
+                        <span class="w-2 h-2 rounded-full <%= col.dot %> shrink-0"></span>
+                        <span class="text-xs font-bold uppercase tracking-widest flex-1"><%= col.label %></span>
+                        <span class="text-xs font-bold opacity-60" x-text="porStatus('<%= col.key %>').length"></span>
+                    </div>
+
+                    <!-- Zona de drop vazia -->
+                    <div class="flex flex-col gap-2 min-h-[80px] rounded-lg transition"
+                         :class="dragOver === '<%= col.key %>' ? 'bg-blue-50/60 ring-2 ring-dashed ring-blue-300' : ''">
+
+                        <template x-if="porStatus('<%= col.key %>').length === 0 && dragOver !== '<%= col.key %>'">
+                            <div class="flex items-center justify-center h-14 rounded-lg border-2 border-dashed border-gray-200">
+                                <span class="text-xs text-gray-300">Nenhuma</span>
+                            </div>
+                        </template>
+
+                        <template x-for="sol in porStatus('<%= col.key %>')" :key="sol.id">
+                            <div
+                                draggable="true"
+                                @dragstart="onDragStart($event, sol)"
+                                @dragend="onDragEnd()"
+                                class="bg-white rounded-lg border border-gray-200 p-3 shadow-sm cursor-grab active:cursor-grabbing group space-y-2 transition"
+                                :class="dragging && dragging.id === sol.id ? 'opacity-40 scale-95' : 'hover:shadow-md hover:border-blue-200'">
+
+                                <div class="flex items-start justify-between gap-2">
+                                    <span class="text-xs text-gray-400 font-mono" x-text="'#' + sol.id"></span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+                                              :class="priCls(sol.prioridade)">
+                                            <span x-show="sol.prioridade === 'alta'" class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block"></span>
+                                            <span x-text="sol.prioridade === 'alta' ? 'Alta' : sol.prioridade === 'media' ? 'Média' : 'Baixa'"></span>
+                                        </span>
+                                        <button @click.stop="openDrawer(sol)"
+                                            class="p-0.5 text-gray-300 hover:text-blue-500 transition rounded"
+                                            title="Ver detalhes">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <a :href="'/solicitacoes/' + sol.id"
+                                   @click.stop
+                                   class="block text-sm font-semibold text-gray-800 leading-snug line-clamp-2 hover:text-blue-700 transition"
+                                   x-text="sol.titulo"></a>
+
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded font-medium uppercase tracking-wide truncate max-w-[120px]"
+                                          x-text="sol.tipo_midia"></span>
+                                    <template x-if="sol.secretaria">
+                                        <span class="w-4 h-4 rounded-full shrink-0 block"
+                                              :style="'background-color:' + sol.secretaria.cor"
+                                              :title="sol.secretaria.nome"></span>
+                                    </template>
+                                </div>
+
+                                <!-- Prazo -->
+                                <template x-if="sol.prazo">
+                                    <div class="flex items-center gap-1.5">
+                                        <template x-if="isAtrasado(sol)">
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-50 border border-red-200 rounded text-[10px] font-bold text-red-700">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                                Atrasado · <span x-text="fmtPrazo(sol.prazo)"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="!isAtrasado(sol) && diasPrazo(sol) !== null && diasPrazo(sol) <= 2">
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-semibold text-amber-700">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span x-text="diasPrazo(sol) === 0 ? 'Hoje' : diasPrazo(sol) === 1 ? 'Amanhã' : fmtPrazo(sol.prazo)"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="!isAtrasado(sol) && (diasPrazo(sol) === null || diasPrazo(sol) > 2)">
+                                            <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                <span x-text="fmtPrazo(sol.prazo)"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <p class="text-[10px] text-gray-400" x-text="fmtDate(sol.createdAt)"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drawer (teleportado para o body para evitar problemas de overflow/stacking) -->
+    <template x-teleport="body">
+        <div @keydown.escape.window="closeDrawer()">
+            <!-- Backdrop -->
+            <div x-show="drawer !== null"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-black/40 z-[200]"
+                 @click="closeDrawer()">
+            </div>
+
+            <!-- Panel (desliza da direita para a esquerda) -->
+            <div x-show="drawer !== null"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="fixed inset-y-0 right-0 w-1/2 min-w-[360px] bg-white z-[201] shadow-2xl flex flex-col">
+
+                <!-- Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Solicitação</p>
+                        <h3 class="text-base font-bold text-gray-900 leading-snug truncate" x-text="drawer ? '#' + drawer.id + ' — ' + drawer.titulo : ''"></h3>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 ml-3">
+                        <a :href="'/solicitacoes/' + (drawer ? drawer.id : '') + '/editar'"
+                           class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </a>
+                        <button @click="closeDrawer()" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="flex-1 overflow-y-auto">
+
+                    <!-- Detalhes -->
+                    <div class="p-6 space-y-4 border-b border-gray-100">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+                                    :class="{
+                                        'bg-yellow-100 text-yellow-800': drawer && drawer.status === 'pendente',
+                                        'bg-blue-100 text-blue-800': drawer && drawer.status === 'aprovado',
+                                        'bg-indigo-100 text-indigo-800': drawer && drawer.status === 'produção',
+                                        'bg-teal-100 text-teal-800': drawer && drawer.status === 'concluído',
+                                        'bg-green-100 text-green-800': drawer && drawer.status === 'finalizado',
+                                        'bg-red-100 text-red-700': drawer && drawer.status === 'cancelado'
+                                    }"
+                                    x-text="drawer ? drawer.status : ''"></span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Prioridade</p>
+                                <span class="text-sm font-bold flex items-center gap-1.5"
+                                    :class="{
+                                        'text-red-600': drawer && drawer.prioridade === 'alta',
+                                        'text-yellow-600': drawer && drawer.prioridade === 'media',
+                                        'text-gray-400': drawer && drawer.prioridade === 'baixa'
+                                    }">
+                                    <span x-show="drawer && drawer.prioridade === 'alta'" class="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block"></span>
+                                    <span x-text="drawer ? (drawer.prioridade === 'alta' ? 'Alta' : drawer.prioridade === 'media' ? 'Média' : 'Baixa') : ''"></span>
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Tipo de Mídia</p>
+                                <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold uppercase" x-text="drawer ? drawer.tipo_midia : ''"></span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Abertura</p>
+                                <p class="text-sm text-gray-700" x-text="drawer ? fmtDate(drawer.createdAt) : ''"></p>
+                            </div>
+                        </div>
+                        <div x-show="drawer && drawer.descricao">
+                            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Descrição</p>
+                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="drawer ? (drawer.descricao || '') : ''"></p>
+                        </div>
+                        <div x-show="drawer && drawer.secretaria">
+                            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Secretaria</p>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-semibold"
+                                :style="drawer && drawer.secretaria ? 'background-color:' + drawer.secretaria.cor : ''"
+                                x-text="drawer && drawer.secretaria ? drawer.secretaria.nome : ''"></span>
+                        </div>
+                    </div>
+
+                    <!-- Comentários -->
+                    <div class="p-6">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            Histórico de Atividade
+                            <span class="font-bold text-gray-400" x-text="'(' + drawerComentarios.length + ')'"></span>
+                        </h4>
+
+                        <!-- Loading -->
+                        <div x-show="drawerLoading" class="flex items-center justify-center py-8">
+                            <svg class="w-5 h-5 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Lista vazia -->
+                        <div x-show="!drawerLoading && drawerComentarios.length === 0"
+                             class="text-center py-8 text-sm text-gray-400">Nenhuma atividade ainda.</div>
+
+                        <!-- Entradas -->
+                        <div x-show="!drawerLoading" class="space-y-3">
+                            <template x-for="c in drawerComentarios" :key="c.id">
+                                <div>
+                                    <!-- Evento de sistema -->
+                                    <div x-show="c.tipo === 'evento'" class="flex items-center gap-2 py-0.5">
+                                        <div class="flex-1 h-px bg-gray-100"></div>
+                                        <span class="shrink-0 text-[10px] text-gray-400 font-medium px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100 text-center"
+                                            x-text="(c.texto || '') + (c.autor ? ' · ' + c.autor.nome : '') + ' · ' + fmtDateTime(c.createdAt)"></span>
+                                        <div class="flex-1 h-px bg-gray-100"></div>
+                                    </div>
+
+                                    <!-- Aprovação -->
+                                    <div x-show="c.tipo === 'aprovacao'" class="flex gap-2.5">
+                                        <div class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                            <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                        <div class="flex-1 bg-green-50 border border-green-200 rounded-xl rounded-tl-none p-3">
+                                            <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                                                <span class="text-xs font-bold text-green-800">Material Aprovado</span>
+                                                <span class="text-[10px] text-green-500" x-text="(c.autor ? c.autor.nome : '') + ' · ' + fmtDateTime(c.createdAt)"></span>
+                                            </div>
+                                            <p class="text-xs text-green-700" x-text="c.texto"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Revisão -->
+                                    <div x-show="c.tipo === 'revisao'" class="flex gap-2.5">
+                                        <div class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                                            <svg class="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        </div>
+                                        <div class="flex-1 bg-orange-50 border border-orange-200 rounded-xl rounded-tl-none p-3">
+                                            <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                                                <span class="text-xs font-bold text-orange-800">Revisão Solicitada</span>
+                                                <span class="text-[10px] text-orange-400" x-text="(c.autor ? c.autor.nome : '') + ' · ' + fmtDateTime(c.createdAt)"></span>
+                                            </div>
+                                            <p class="text-xs text-orange-700 whitespace-pre-wrap" x-text="c.texto"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Anexo -->
+                                    <div x-show="c.tipo === 'anexo'" class="flex gap-2.5">
+                                        <div class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold text-blue-700"
+                                             x-text="c.autor ? c.autor.nome.charAt(0).toUpperCase() : '?'"></div>
+                                        <div class="flex-1 bg-blue-50 border border-blue-200 rounded-xl rounded-tl-none p-3">
+                                            <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                                                <span class="text-xs font-semibold text-blue-900" x-text="c.autor ? c.autor.nome : ''"></span>
+                                                <span class="text-[10px] text-blue-400" x-text="fmtDateTime(c.createdAt)"></span>
+                                            </div>
+                                            <p x-show="c.texto" class="text-xs text-blue-800 mb-2" x-text="c.texto"></p>
+                                            <a :href="c.arquivo_url" target="_blank"
+                                               class="flex items-center gap-2 p-2 bg-white border border-blue-100 hover:border-blue-300 rounded-lg transition">
+                                                <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                                <span class="text-xs font-medium text-blue-700 truncate" x-text="c.arquivo_nome"></span>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Comentário normal -->
+                                    <div x-show="c.tipo === 'comentario'" class="flex gap-2.5">
+                                        <div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold text-gray-600"
+                                             x-text="c.autor ? c.autor.nome.charAt(0).toUpperCase() : '?'"></div>
+                                        <div class="flex-1 bg-gray-50 border border-gray-200 rounded-xl rounded-tl-none p-3">
+                                            <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                                                <span class="text-xs font-semibold text-gray-800" x-text="c.autor ? c.autor.nome : ''"></span>
+                                                <span class="text-[10px] text-gray-400" x-text="fmtDateTime(c.createdAt)"></span>
+                                            </div>
+                                            <p class="text-xs text-gray-700 whitespace-pre-wrap" x-text="c.texto"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="border-t border-gray-100 px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+                    <a :href="'/solicitacoes/' + (drawer ? drawer.id : '')"
+                       class="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+                        Ver página completa →
+                    </a>
+                    <a :href="'/solicitacoes/' + (drawer ? drawer.id : '') + '/editar'"
+                       class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Toast -->
+    <div x-show="toast" x-cloak x-transition
+         class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white flex items-center gap-2"
+         :class="toastOk ? 'bg-green-600' : 'bg-red-600'">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path x-show="toastOk" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+            <path x-show="!toastOk" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span x-text="toast"></span>
+    </div>
+
+</div>

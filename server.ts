@@ -1,3 +1,5 @@
+process.env.TZ = 'America/Porto_Velho';
+
 import express from 'express';
 import session from 'express-session';
 import connectSessionSequelize from 'connect-session-sequelize';
@@ -19,6 +21,8 @@ import adminRoutes from './src/modules/admin/routes.ts';
 import relatoriosRoutes from './src/modules/relatorios/routes.ts';
 import pushRoutes from './src/modules/push/routes.ts';
 import notificacoesRoutes from './src/modules/notificacoes/routes.ts';
+import bibliotecaRoutes from './src/modules/biblioteca/routes.ts';
+import apiRoutes from './src/modules/api/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -53,8 +57,9 @@ app.use(helmet({
       "script-src-attr": ["'unsafe-inline'"],
       "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com"],
       "font-src": ["'self'", "https://fonts.gstatic.com"],
-      "img-src": ["'self'", "data:", "blob:"],
+      "img-src": ["'self'", "data:", "blob:", "https://img.youtube.com", "https://i.ytimg.com"],
       "connect-src": ["'self'"],
+      "frame-src": ["https://www.youtube.com", "https://www.youtube-nocookie.com"],
       "frame-ancestors": ["'self'"],
     },
   },
@@ -158,7 +163,9 @@ async function seed() {
   await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('solicitacoes', 'arte_final_url', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'arte_final_nome', 'VARCHAR(255) NULL');
+  await addCol('solicitacoes', 'prazo', 'DATE NULL');
   await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
+  await addCol('solicitacoes', 'link_arquivo_matriz', 'VARCHAR(500) NULL');
 
   // Migrate old event statuses to new values (idempotent)
   await sequelize.query(`UPDATE eventos SET status = 'em_planejamento' WHERE status = 'pendente'`);
@@ -198,6 +205,7 @@ async function startServer() {
     app.use('/', authRoutes);
     app.get('/imprensa/agenda', ImprensaController.agendaPublica);
     app.get('/imprensa/releases/:id', ImprensaController.detalheRelease);
+    app.get('/ajuda', ImprensaController.ajudaPublica);
     
     // Health Check
     app.get('/health', (req, res) => res.send('OK'));
@@ -219,6 +227,10 @@ async function startServer() {
           ? { secretaria_id: sessionUser.secretaria_id }
           : {};
 
+        const startOf8Weeks = new Date(now);
+        startOf8Weeks.setDate(startOf8Weeks.getDate() - 56);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
         const [
           solicitacoesPendentes,
           eventosNaSemana,
@@ -226,6 +238,10 @@ async function startServer() {
           totalUsuativos,
           proximosEventos,
           solicitacoesRecentes,
+          solicitacoesEmProducao,
+          finalizadasMes,
+          solsOitoSemanas,
+          solsParaRanking,
         ] = await Promise.all([
           Solicitacao.count({ where: { status: 'pendente', ...whereRole } }),
           Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] } } }),
@@ -242,7 +258,67 @@ async function startServer() {
             order: [['created_at', 'DESC']],
             limit: 5,
           }),
+          Solicitacao.count({ where: { status: 'produção', ...whereRole } }),
+          Solicitacao.count({
+            where: {
+              status: { [Op.in]: ['finalizado', 'concluído'] },
+              updatedAt: { [Op.gte]: startOfMonth },
+              ...whereRole,
+            },
+          }),
+          Solicitacao.findAll({
+            where: { createdAt: { [Op.gte]: startOf8Weeks }, ...whereRole },
+            attributes: ['createdAt'],
+          }),
+          sessionUser.role !== 'secretaria'
+            ? Solicitacao.findAll({
+                where: { status: { [Op.notIn]: ['cancelado'] } },
+                attributes: ['secretaria_id', 'status'],
+                include: [{ model: Secretaria, as: 'secretaria', attributes: ['id', 'nome', 'cor'] }],
+              })
+            : Promise.resolve([]),
         ]);
+
+        // Agrega volume semanal (8 semanas, mais antiga → mais recente)
+        const dayOfWeek = now.getDay();
+        const daysToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const weeklyBuckets: Array<{ label: string; count: number; start: Date; end: Date }> = [];
+        for (let i = 7; i >= 0; i--) {
+          const monday = new Date(now);
+          monday.setDate(monday.getDate() + daysToMon - i * 7);
+          monday.setHours(0, 0, 0, 0);
+          const sunday = new Date(monday);
+          sunday.setDate(sunday.getDate() + 6);
+          sunday.setHours(23, 59, 59, 999);
+          weeklyBuckets.push({
+            label: monday.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+            count: 0,
+            start: monday,
+            end: sunday,
+          });
+        }
+        for (const s of solsOitoSemanas as any[]) {
+          const dt = new Date(s.createdAt);
+          for (const b of weeklyBuckets) {
+            if (dt >= b.start && dt <= b.end) { b.count++; break; }
+          }
+        }
+        const volumeSemanal = weeklyBuckets.map(b => b.count);
+        const semanaLabels  = weeklyBuckets.map(b => b.label);
+
+        // Top secretarias por demanda
+        const secMap: Record<string, { nome: string; cor: string; total: number; pendentes: number }> = {};
+        for (const s of solsParaRanking as any[]) {
+          const sec = s.secretaria;
+          if (!sec) continue;
+          const k = String(sec.id);
+          if (!secMap[k]) secMap[k] = { nome: sec.nome, cor: sec.cor, total: 0, pendentes: 0 };
+          secMap[k].total++;
+          if (s.status === 'pendente') secMap[k].pendentes++;
+        }
+        const topSecretarias = Object.values(secMap)
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 5);
 
         // Progresso de metas do mês (apenas admin/secom)
         const metasProgresso: Record<string, number> = {};
@@ -268,6 +344,11 @@ async function startServer() {
           solicitacoesRecentes,
           metas,
           metasProgresso,
+          solicitacoesEmProducao,
+          finalizadasMes,
+          volumeSemanal,
+          semanaLabels,
+          topSecretarias,
         });
       } catch (error) {
         console.error('Dashboard error:', error);
@@ -288,6 +369,8 @@ async function startServer() {
     app.use('/relatorios', isAuthenticated, relatoriosRoutes);
     app.use('/push', pushRoutes);
     app.use('/notificacoes', notificacoesRoutes);
+    app.use('/biblioteca', isAuthenticated, bibliotecaRoutes);
+    app.use('/api/v1', apiRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {
