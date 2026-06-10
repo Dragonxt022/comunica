@@ -10,9 +10,13 @@ import Configuracao from './Configuracao.ts';
 import EventoResponsavel from './EventoResponsavel.ts';
 import PushSubscription from './PushSubscription.ts';
 import Notificacao from './Notificacao.ts';
+import FormularioTemplate from './FormularioTemplate.ts';
+import Inscricao from './Inscricao.ts';
 
 Evento.belongsToMany(User, { through: EventoResponsavel, as: 'responsaveis', foreignKey: 'evento_id', otherKey: 'user_id' });
 User.belongsToMany(Evento, { through: EventoResponsavel, as: 'responsaveis_em_eventos', foreignKey: 'user_id', otherKey: 'evento_id' });
+
+Evento.hasMany(Inscricao, { foreignKey: 'evento_id', as: 'inscricoes' });
 
 export {
   User,
@@ -27,4 +31,6 @@ export {
   EventoResponsavel,
   PushSubscription,
   Notificacao,
+  FormularioTemplate,
+  Inscricao,
 };

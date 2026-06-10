@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Auditoria, Configuracao, Evento, Solicitacao, Release } from './src/database/models/index.ts';
+import { User, Secretaria, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -23,6 +23,9 @@ import pushRoutes from './src/modules/push/routes.ts';
 import notificacoesRoutes from './src/modules/notificacoes/routes.ts';
 import bibliotecaRoutes from './src/modules/biblioteca/routes.ts';
 import apiRoutes from './src/modules/api/routes.ts';
+import formulariosRoutes from './src/modules/formularios/routes.ts';
+import inscricoesRoutes from './src/modules/inscricoes/routes.ts';
+import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -166,6 +169,16 @@ async function seed() {
   await addCol('solicitacoes', 'prazo', 'DATE NULL');
   await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'link_arquivo_matriz', 'VARCHAR(500) NULL');
+  // Inscrições em eventos — novos campos na tabela existente
+  await addCol('eventos', 'aceita_inscricoes', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('eventos', 'formulario_template_id', 'INTEGER NULL');
+  await addCol('eventos', 'max_inscricoes', 'INTEGER NULL');
+  await addCol('eventos', 'inscricoes_abertas', 'BOOLEAN NOT NULL DEFAULT 1');
+  await addCol('eventos', 'token_inscricao', 'VARCHAR(64) NULL');
+  // Garante criação das novas tabelas mesmo se sync() não as pegou
+  await FormularioTemplate.sync({ force: false });
+  await Inscricao.sync({ force: false });
+
 
   // Migrate old event statuses to new values (idempotent)
   await sequelize.query(`UPDATE eventos SET status = 'em_planejamento' WHERE status = 'pendente'`);
@@ -371,6 +384,9 @@ async function startServer() {
     app.use('/notificacoes', notificacoesRoutes);
     app.use('/biblioteca', isAuthenticated, bibliotecaRoutes);
     app.use('/api/v1', apiRoutes);
+    app.use('/formularios', isAuthenticated, formulariosRoutes);
+    app.use('/eventos/:eventoId/inscricoes', isAuthenticated, inscricoesRoutes);
+    app.use('/inscricao', inscricaoPublicaRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {

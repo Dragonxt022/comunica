@@ -15,6 +15,11 @@ class Evento extends Model {
   public secretaria_id!: number;
   public criado_por!: number;
   public arquivado!: boolean;
+  public aceita_inscricoes!: boolean;
+  public formulario_template_id!: number | null;
+  public max_inscricoes!: number | null;
+  public inscricoes_abertas!: boolean;
+  public token_inscricao!: string;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -65,6 +70,27 @@ Evento.init(
     arquivado: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    aceita_inscricoes: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    formulario_template_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    max_inscricoes: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    inscricoes_abertas: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    token_inscricao: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
     },
   },
   {

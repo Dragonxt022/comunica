@@ -1,0 +1,138 @@
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<div class="max-w-xl mx-auto">
+
+  <!-- Cabeçalho do evento -->
+  <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style="background: <%= evento.secretaria && evento.secretaria.cor ? evento.secretaria.cor + '20' : '#eff6ff' %>">
+        <svg class="w-6 h-6" style="color: <%= evento.secretaria && evento.secretaria.cor ? evento.secretaria.cor : '#2563eb' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-bold text-gray-900 leading-tight"><%= evento.titulo %></h1>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) %>
+          </span>
+          <% if (evento.local) { %>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <%= evento.local %>
+          </span>
+          <% } %>
+        </div>
+        <% if (vagas !== null) { %>
+        <div class="mt-2">
+          <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium <%= vagas <= 10 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700' %>">
+            <span class="w-1.5 h-1.5 rounded-full <%= vagas <= 10 ? 'bg-red-500' : 'bg-green-500' %>"></span>
+            <%= vagas %> vaga<%= vagas !== 1 ? 's' : '' %> disponível<%= vagas !== 1 ? 'veis' : '' %>
+          </span>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <% if (evento.descricao) { %>
+    <p class="text-sm text-gray-600 mt-4 leading-relaxed border-t border-gray-100 pt-4"><%= evento.descricao %></p>
+    <% } %>
+  </div>
+
+  <!-- Formulário -->
+  <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+    <h2 class="text-base font-bold text-gray-900 mb-5">Dados para inscrição</h2>
+
+    <% if (erro) { %>
+    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+      <%= erro %>
+    </div>
+    <% } %>
+
+    <form action="/inscricao/<%= evento.token_inscricao %>" method="POST" class="space-y-4">
+
+      <!-- Campos padrão -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nome completo <span class="text-red-500">*</span></label>
+        <input type="text" name="nome" required placeholder="Seu nome completo"
+          class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">E-mail <span class="text-red-500">*</span></label>
+        <input type="email" name="email" required placeholder="seu@email.com"
+          class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+        <input type="tel" name="telefone" placeholder="(69) 99999-9999"
+          class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+      </div>
+
+      <!-- Campos extras do formulário -->
+      <% if (campos && campos.length > 0) { %>
+      <hr class="border-gray-100">
+      <% campos.forEach(function(campo) { %>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          <%= campo.label %>
+          <% if (campo.required) { %><span class="text-red-500">*</span><% } %>
+        </label>
+
+        <% if (campo.tipo === 'textarea') { %>
+          <textarea name="campo_<%= campo.id %>" <%= campo.required ? 'required' : '' %>
+            placeholder="<%= campo.placeholder || '' %>" rows="3"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none"></textarea>
+
+        <% } else if (campo.tipo === 'select') { %>
+          <select name="campo_<%= campo.id %>" <%= campo.required ? 'required' : '' %>
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <option value="">Selecione...</option>
+            <% (campo.opcoes || []).forEach(function(opt) { %>
+            <option value="<%= opt %>"><%= opt %></option>
+            <% }) %>
+          </select>
+
+        <% } else if (campo.tipo === 'radio') { %>
+          <div class="space-y-2 mt-1">
+            <% (campo.opcoes || []).forEach(function(opt, i) { %>
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="radio" name="campo_<%= campo.id %>" value="<%= opt %>" <%= campo.required && i === 0 ? 'required' : '' %>
+                class="w-4 h-4 accent-blue-600">
+              <span class="text-sm text-gray-700"><%= opt %></span>
+            </label>
+            <% }) %>
+          </div>
+
+        <% } else if (campo.tipo === 'checkbox') { %>
+          <div class="space-y-2 mt-1">
+            <% (campo.opcoes || []).forEach(function(opt) { %>
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" name="campo_<%= campo.id %>" value="<%= opt %>"
+                class="w-4 h-4 accent-blue-600 rounded">
+              <span class="text-sm text-gray-700"><%= opt %></span>
+            </label>
+            <% }) %>
+          </div>
+
+        <% } else { %>
+          <input type="<%= campo.tipo === 'phone' ? 'tel' : campo.tipo %>"
+            name="campo_<%= campo.id %>"
+            <%= campo.required ? 'required' : '' %>
+            placeholder="<%= campo.placeholder || '' %>"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <% } %>
+      </div>
+      <% }) %>
+      <% } %>
+
+      <button type="submit"
+        class="w-full py-3.5 bg-blue-600 text-white font-semibold text-sm rounded-xl hover:bg-blue-700 active:bg-blue-800 transition shadow-sm">
+        Confirmar Inscrição
+      </button>
+
+      <p class="text-xs text-center text-gray-400">
+        Ao se inscrever, você receberá um comprovante de inscrição.<br>
+        Organização: <%= evento.secretaria ? evento.secretaria.nome : (config && config.titulo_site ? config.titulo_site : 'Prefeitura Municipal') %>
+      </p>
+    </form>
+  </div>
+</div>

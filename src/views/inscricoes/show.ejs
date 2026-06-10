@@ -1,0 +1,98 @@
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="/eventos/<%= evento.id %>/inscricoes" class="text-gray-500 hover:text-gray-700 transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-bold text-gray-900">Inscrição <%= inscricao.numero_inscricao %></h1>
+      <p class="text-sm text-gray-500"><%= evento.titulo %></p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <!-- Status bar -->
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+      <% const statusMap = { confirmado: 'bg-green-100 text-green-700', pendente: 'bg-yellow-100 text-yellow-700', cancelado: 'bg-red-100 text-red-600' }; %>
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= statusMap[inscricao.status] || 'bg-gray-100 text-gray-600' %>">
+        <%= inscricao.status %>
+      </span>
+      <div class="flex gap-2" x-data="{ updating: false }">
+        <select id="statusSelect" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="confirmado" <%= inscricao.status === 'confirmado' ? 'selected' : '' %>>Confirmado</option>
+          <option value="pendente" <%= inscricao.status === 'pendente' ? 'selected' : '' %>>Pendente</option>
+          <option value="cancelado" <%= inscricao.status === 'cancelado' ? 'selected' : '' %>>Cancelado</option>
+        </select>
+        <button onclick="salvarStatus()" :disabled="updating"
+          class="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-60">
+          Salvar
+        </button>
+      </div>
+    </div>
+
+    <!-- Dados principais -->
+    <div class="p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Nome</p>
+          <p class="text-gray-900 font-medium"><%= inscricao.nome %></p>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">E-mail</p>
+          <p class="text-gray-900"><%= inscricao.email %></p>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Telefone</p>
+          <p class="text-gray-900"><%= inscricao.telefone || '—' %></p>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Data de inscrição</p>
+          <p class="text-gray-900"><%= new Date(inscricao.createdAt).toLocaleString('pt-BR') %></p>
+        </div>
+      </div>
+
+      <!-- Campos extras do formulário -->
+      <% if (campos && campos.length > 0) { %>
+      <hr class="border-gray-100">
+      <div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Dados do Formulário</p>
+        <div class="space-y-3">
+          <% campos.forEach(function(campo) { %>
+          <div>
+            <p class="text-xs font-medium text-gray-500 mb-0.5"><%= campo.label %></p>
+            <% const val = dados[campo.id]; %>
+            <% if (Array.isArray(val)) { %>
+              <p class="text-gray-900 text-sm"><%= val.join(', ') %></p>
+            <% } else { %>
+              <p class="text-gray-900 text-sm"><%= val || '—' %></p>
+            <% } %>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+      <p class="text-xs text-gray-400">IP: <%= inscricao.ip || '—' %></p>
+      <a href="/inscricao/<%= evento.token_inscricao %>/comprovante/<%= inscricao.id %>" target="_blank"
+        class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        Ver comprovante
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+async function salvarStatus() {
+  const status = document.getElementById('statusSelect').value;
+  const r = await fetch('/eventos/<%= evento.id %>/inscricoes/<%= inscricao.id %>/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (r.ok) location.reload();
+  else alert('Erro ao atualizar status.');
+}
+</script>
