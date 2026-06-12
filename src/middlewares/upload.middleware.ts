@@ -103,3 +103,31 @@ export function uploadPrint(req: any, res: any, done: (err?: any) => void) {
     done();
   });
 }
+
+const multerCapa = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      cb(null, getUploadDir());
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `capa-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_MIME.has(file.mimetype) && ALLOWED_EXT.has(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas: JPEG, PNG, GIF ou WebP'));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+}).single('capa');
+
+export function uploadCapa(req: any, res: any, done: (err?: any) => void) {
+  multerCapa(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}

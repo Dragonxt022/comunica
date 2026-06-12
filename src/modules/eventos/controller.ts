@@ -1,8 +1,23 @@
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import EventoRepository from './repository.ts';
 import { Secretaria, Evento, User, EventoResponsavel } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
+
+function capaUrl(file: Express.Multer.File): string {
+  const rel = file.path.replace(/.*public[\\/]/, '').replace(/\\/g, '/');
+  return '/' + rel;
+}
+
+function deleteCapaFile(urlPath: string | null) {
+  if (!urlPath) return;
+  try {
+    const abs = path.join(process.cwd(), 'public', urlPath);
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  } catch { /* não crítico */ }
+}
 
 function parseIds(raw: any): number[] {
   if (!raw) return [];
@@ -53,9 +68,17 @@ export const update = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id } = req.body;
+    const file = (req as any).file as Express.Multer.File | undefined;
 
     const eventoAntes = await EventoRepository.findById(id);
-    await EventoRepository.update(id, { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id });
+
+    const updateData: any = { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id };
+    if (file) {
+      updateData.imagem_capa = capaUrl(file);
+      if (eventoAntes) deleteCapaFile((eventoAntes as any).imagem_capa);
+    }
+
+    await EventoRepository.update(id, updateData);
 
     const ids = parseIds(req.body.responsaveis);
     await EventoResponsavel.destroy({ where: { evento_id: id } });
@@ -147,6 +170,19 @@ export const updateStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const removeCapa = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const evento = await EventoRepository.findById(id);
+    if (!evento) return res.status(404).json({ ok: false });
+    deleteCapaFile((evento as any).imagem_capa);
+    await EventoRepository.update(id, { imagem_capa: null });
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ ok: false });
+  }
+};
+
 export const arquivar = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -172,10 +208,33 @@ export const historico = async (req: Request, res: Response) => {
   }
 };
 
+export const destroy = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!['admin', 'secom'].includes(user?.role)) {
+      return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    }
+    const id = Number(req.params.id);
+    const evento = await EventoRepository.findById(id);
+    if (!evento) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+    if ((evento as any).status !== 'cancelado') {
+      return res.status(400).json({ ok: false, error: 'Só é possível excluir eventos cancelados' });
+    }
+    deleteCapaFile((evento as any).imagem_capa);
+    await EventoResponsavel.destroy({ where: { evento_id: id } });
+    await Evento.destroy({ where: { id } });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting evento:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
 export const store = async (req: Request, res: Response) => {
   try {
     const { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id } = req.body;
     const user = (req as any).session.user;
+    const file = (req as any).file as Express.Multer.File | undefined;
 
     const evento = await EventoRepository.create({
       titulo,
@@ -187,6 +246,7 @@ export const store = async (req: Request, res: Response) => {
       secretaria_id: user.role === 'admin' || user.role === 'secom' ? secretaria_id : user.secretaria_id,
       criado_por: user.id,
       status: 'em_planejamento',
+      imagem_capa: file ? capaUrl(file) : null,
     });
 
     const ids = parseIds(req.body.responsaveis);

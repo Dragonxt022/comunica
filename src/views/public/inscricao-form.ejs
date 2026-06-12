@@ -1,6 +1,14 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <div class="max-w-xl mx-auto">
 
+  <!-- Imagem de Capa -->
+  <% if (evento.imagem_capa) { %>
+  <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-6">
+    <img src="<%= evento.imagem_capa %>" alt="Capa do evento <%= evento.titulo %>"
+      class="w-full object-cover" style="max-height: 260px;">
+  </div>
+  <% } %>
+
   <!-- Cabeçalho do evento -->
   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
     <div class="flex items-start gap-4">

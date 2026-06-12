@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import SolicitacaoRepository from './repository.ts';
-import { Secretaria, SolicitacaoComentario, User, Evento, EventoResponsavel } from '../../database/models/index.ts';
+import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoResponsavel } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 
@@ -212,6 +214,49 @@ export const store = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error storing solicitacao:', error);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+export const pendentesCount = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!['admin', 'secom'].includes(user?.role)) {
+      return res.json({ count: 0 });
+    }
+    const count = await Solicitacao.count({ where: { status: 'pendente' } });
+    return res.json({ count });
+  } catch {
+    return res.json({ count: 0 });
+  }
+};
+
+export const destroy = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!['admin', 'secom'].includes(user?.role)) {
+      return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    }
+    const id = Number(req.params.id);
+    const sol = await SolicitacaoRepository.findById(id);
+    if (!sol) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+    if (sol.status !== 'cancelado') {
+      return res.status(400).json({ ok: false, error: 'Só é possível excluir solicitações canceladas' });
+    }
+    // Remove arquivos anexados
+    const deleteFile = (urlPath: string | null) => {
+      if (!urlPath) return;
+      try {
+        const abs = path.join(process.cwd(), 'public', urlPath);
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch {}
+    };
+    deleteFile(sol.arte_final_url ?? null);
+    await SolicitacaoComentario.destroy({ where: { solicitacao_id: id } });
+    await Solicitacao.destroy({ where: { id } });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting solicitacao:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
   }
 };
 

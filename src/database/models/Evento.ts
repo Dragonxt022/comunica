@@ -20,6 +20,7 @@ class Evento extends Model {
   public max_inscricoes!: number | null;
   public inscricoes_abertas!: boolean;
   public token_inscricao!: string;
+  public imagem_capa!: string | null;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -91,6 +92,10 @@ Evento.init(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
+    },
+    imagem_capa: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
     },
   },
   {

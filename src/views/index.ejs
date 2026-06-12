@@ -4,10 +4,13 @@
             <h2 class="text-xl font-semibold text-gray-900">Bem-vindo, <%= user.nome.split(' ')[0] %></h2>
             <p class="text-sm text-gray-400 mt-0.5">Acompanhe as atividades de comunicação hoje.</p>
         </div>
-        <a href="/solicitacoes/nova" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition inline-flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Nova Solicitação
-        </a>
+        <span class="relative inline-flex">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-lg bg-blue-400 opacity-20"></span>
+            <a href="/solicitacoes/nova" class="relative px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Nova Solicitação
+            </a>
+        </span>
     </div>
 
     <!-- Stat cards -->

@@ -4,15 +4,10 @@ import FormularioTemplateRepository from './repository.ts';
 export const list = async (req: Request, res: Response) => {
   try {
     const templates = await FormularioTemplateRepository.findAll();
-    res.render('formularios/index', { title: 'Templates de Formulário', templates }, (err: any, html: string) => {
-      if (err) {
-        res.status(500).send('<pre style="white-space:pre-wrap;word-break:break-all">RENDER ERROR:\n' + (err?.stack || String(err)) + '</pre>');
-        return;
-      }
-      res.send(html);
-    });
-  } catch (error: any) {
-    res.status(500).send('<pre style="white-space:pre-wrap;word-break:break-all">CATCH ERROR:\n' + (error?.stack || String(error)) + '</pre>');
+    res.render('formularios/index', { title: 'Templates de Formulário', templates });
+  } catch (error) {
+    console.error('Error listing formulario templates:', error);
+    res.status(500).send('Internal Server Error');
   }
 };
 

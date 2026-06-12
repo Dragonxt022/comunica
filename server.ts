@@ -25,6 +25,7 @@ import bibliotecaRoutes from './src/modules/biblioteca/routes.ts';
 import apiRoutes from './src/modules/api/routes.ts';
 import formulariosRoutes from './src/modules/formularios/routes.ts';
 import inscricoesRoutes from './src/modules/inscricoes/routes.ts';
+import inscricoesHubRoutes from './src/modules/inscricoes/hub.routes.ts';
 import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
@@ -385,6 +386,7 @@ async function startServer() {
     app.use('/biblioteca', isAuthenticated, bibliotecaRoutes);
     app.use('/api/v1', apiRoutes);
     app.use('/formularios', isAuthenticated, formulariosRoutes);
+    app.use('/inscricoes', isAuthenticated, inscricoesHubRoutes);
     app.use('/eventos/:eventoId/inscricoes', isAuthenticated, inscricoesRoutes);
     app.use('/inscricao', inscricaoPublicaRoutes);
 

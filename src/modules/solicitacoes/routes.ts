@@ -25,6 +25,7 @@ const upload = multer({
 
 const router = Router();
 
+router.get('/pendentes-count', isAuthenticated, SolicitacaoController.pendentesCount);
 router.get('/', isAuthenticated, SolicitacaoController.list);
 router.get('/nova', isAuthenticated, SolicitacaoController.createView);
 router.post('/', isAuthenticated, SolicitacaoController.store);
@@ -38,5 +39,6 @@ router.post('/:id/aprovar', isAuthenticated, SolicitacaoController.aprovar);
 router.post('/:id/revisao', isAuthenticated, SolicitacaoController.pedirRevisao);
 router.get('/:id/editar', isAuthenticated, SolicitacaoController.editView);
 router.post('/:id/editar', isAuthenticated, SolicitacaoController.updateSolicitacao);
+router.post('/:id/excluir', isAuthenticated, SolicitacaoController.destroy);
 
 export default router;
