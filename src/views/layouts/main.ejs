@@ -555,96 +555,109 @@
     <% if(user) { %>
     <style>
     @keyframes tourPulse {
-        0%,100% { box-shadow: 0 0 0 9999px rgba(15,23,42,0.72), 0 0 0 0 rgba(59,130,246,0.5); }
-        50%      { box-shadow: 0 0 0 9999px rgba(15,23,42,0.72), 0 0 0 8px rgba(59,130,246,0.12); }
+        0%,100% { box-shadow: 0 0 0 9999px rgba(15,23,42,0.75), 0 0 0 0   rgba(59,130,246,0); }
+        50%      { box-shadow: 0 0 0 9999px rgba(15,23,42,0.75), 0 0 0 8px rgba(59,130,246,0.25); }
     }
+    #tour-spotlight { transition: top .35s ease, left .35s ease, width .35s ease, height .35s ease; }
     #tour-spotlight.pulsing { animation: tourPulse 2s ease-in-out infinite; }
-    #tour-card { transition: top 0.3s ease, left 0.3s ease, opacity 0.2s; }
     </style>
 
-    <!-- Backdrop (bloqueia cliques) -->
-    <div id="tour-backdrop" class="fixed inset-0 z-[9990] transition-all duration-300" style="display:none;pointer-events:all"></div>
+    <!-- Backdrop semitransparente (bloqueia cliques fora do card) -->
+    <div id="tour-backdrop" class="fixed inset-0 z-[9990]" style="display:none;background:rgba(15,23,42,0.72)"></div>
 
-    <!-- Spotlight (cria o recorte luminoso sobre o elemento-alvo) -->
-    <div id="tour-spotlight" class="fixed z-[9991] rounded-xl pointer-events-none border-2 border-blue-400/70" style="display:none"></div>
+    <!-- Spotlight recortado sobre o elemento-alvo -->
+    <div id="tour-spotlight" class="fixed z-[9991] rounded-xl pointer-events-none border-2 border-blue-400" style="display:none"></div>
 
     <!-- Card do tour -->
-    <div id="tour-card" class="fixed z-[9995] w-[320px] bg-white rounded-2xl shadow-2xl overflow-hidden" style="display:none">
-        <!-- Barra de progresso -->
+    <div id="tour-card" class="fixed z-[9995] w-[320px] bg-white rounded-2xl shadow-2xl overflow-hidden"
+         style="display:none;transition:top .35s ease,left .35s ease,opacity .25s">
         <div class="h-1.5 bg-gray-100">
             <div id="tour-progress" class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width:0%"></div>
         </div>
         <div class="p-5">
             <div class="flex items-center justify-between mb-3">
                 <span id="tour-counter" class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full"></span>
-                <button id="tour-x" class="w-6 h-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition text-xs font-bold leading-none flex items-center justify-center">✕</button>
+                <button id="tour-x" class="w-6 h-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition text-xs font-bold flex items-center justify-center">✕</button>
             </div>
             <div id="tour-icon" class="text-3xl mb-2.5 leading-none select-none"></div>
             <h3 id="tour-title" class="text-[15px] font-bold text-gray-900 mb-1.5 leading-snug"></h3>
             <p id="tour-desc" class="text-[13px] text-gray-500 leading-relaxed mb-5"></p>
             <div class="flex gap-2">
-                <button id="tour-cancel"
-                    class="px-4 py-2 text-[13px] text-gray-500 font-medium hover:bg-gray-100 rounded-lg transition">
-                    Cancelar
-                </button>
-                <button id="tour-next"
-                    class="flex-1 px-4 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-1.5">
-                </button>
+                <button id="tour-cancel" class="px-4 py-2 text-[13px] text-gray-500 font-medium hover:bg-gray-100 rounded-lg transition">Cancelar</button>
+                <button id="tour-next" class="flex-1 px-4 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-blue-700 transition"></button>
             </div>
         </div>
     </div>
 
     <script>
     (function() {
-        var TOUR_KEY = 'tour_v1_<%= user.id %>';
-        if (localStorage.getItem(TOUR_KEY)) return;
+        var DONE_KEY = 'tour_done_<%= user.id %>';
+        var STEP_KEY = 'tour_step_<%= user.id %>';
+        if (localStorage.getItem(DONE_KEY)) return;
 
+        /* Cada step: page = pathname esperado (null = qualquer) */
         var steps = [
             {
-                title: 'Bem-vindo ao Comunica!',
-                desc:  'Vamos mostrar como abrir e acompanhar uma solicitação de produção de material em 5 passos rápidos.',
-                icon:  '👋',
+                page:   null,
                 target: null,
-                next:  'Começar →',
+                icon:   '👋',
+                title:  'Bem-vindo ao Comunica!',
+                desc:   'Em 5 passos vamos mostrar como abrir e acompanhar uma solicitação de produção de material. Clique em Começar!',
+                next:   'Começar →',
             },
             {
-                title: 'Botão "Abrir Chamado"',
-                desc:  'Este botão azul fica visível em todas as páginas. Clique nele quando precisar solicitar qualquer material à equipe de comunicação.',
-                icon:  '📋',
-                target: 'tour-btn-chamado',
-                next:  'Próximo →',
+                page:   '/solicitacoes/nova',
+                target: 'tour-titulo',
+                icon:   '✏️',
+                title:  'Título da Solicitação',
+                desc:   'Escreva um título claro e objetivo — por exemplo: "Post para lançamento do programa X". Isso ajuda a equipe a identificar o pedido rapidamente.',
+                next:   'Próximo →',
             },
             {
-                title: 'Título e Briefing',
-                desc:  'Informe um título objetivo e descreva com detalhes o que precisa ser produzido. Contexto e referências ajudam a equipe a entregar exatamente o que você precisa.',
-                icon:  '✍️',
-                target: null,
-                next:  'Próximo →',
+                page:   '/solicitacoes/nova',
+                target: 'tour-descricao',
+                icon:   '📝',
+                title:  'Briefing / Descrição',
+                desc:   'Descreva com detalhes o que precisa ser produzido: contexto, público-alvo, referências visuais, informações importantes e qualquer prazo relevante.',
+                next:   'Próximo →',
             },
             {
-                title: 'Tipo de Mídia',
-                desc:  'Escolha o material: Nota, Release, Post para Redes Sociais, Arte Gráfica, Vídeo, Foto ou Outros. Cada tipo selecionado vira uma demanda separada com acompanhamento individual.',
-                icon:  '🎨',
-                target: null,
-                next:  'Próximo →',
+                page:   '/solicitacoes/nova',
+                target: 'tour-tipos',
+                icon:   '🎨',
+                title:  'Tipo de Mídia',
+                desc:   'Selecione o(s) tipo(s) de material: Nota, Release, Post, Arte Gráfica, Vídeo, Foto ou Outros. Cada tipo selecionado vira uma demanda separada com acompanhamento próprio.',
+                next:   'Próximo →',
             },
             {
-                title: 'Prioridade e Prazo',
-                desc:  'Defina a urgência (Baixa, Média ou Alta — urgente) e informe um prazo de entrega se houver. Depois clique em "Enviar Solicitação" e pronto!',
-                icon:  '⏰',
-                target: null,
-                next:  'Próximo →',
+                page:   '/solicitacoes/nova',
+                target: 'tour-finalizar',
+                icon:   '⏰',
+                title:  'Prioridade e Prazo',
+                desc:   'Informe a urgência (Baixa, Média ou Alta) e, se houver, a data de entrega. Depois é só clicar em "Enviar Solicitação" — a equipe SECOM receberá o pedido imediatamente.',
+                next:   'Ver acompanhamento →',
             },
             {
-                title: 'Acompanhe em Tempo Real',
-                desc:  'Suas solicitações ficam aqui. Você vê o status de cada uma — pendente, em produção, concluído — e recebe notificações automáticas a cada atualização.',
-                icon:  '📊',
-                target: 'tour-nav-sol',
-                next:  'Concluir ✓',
+                page:   '/solicitacoes',
+                target: 'tour-sol-board',
+                icon:   '📊',
+                title:  'Acompanhe em Tempo Real',
+                desc:   'Aqui você monitora todas as suas solicitações e os contadores por status. Ao clicar em um item você vê detalhes, comentários e histórico. Você também recebe notificações a cada atualização.',
+                next:   'Concluir ✓',
             },
         ];
 
-        var cur = 0;
+        var cur     = parseInt(localStorage.getItem(STEP_KEY) || '0', 10);
+        var path    = window.location.pathname;
+        var step    = steps[cur];
+
+        /* Se o passo exige outra página, redireciona preservando o step */
+        if (step.page && path !== step.page) {
+            localStorage.setItem(STEP_KEY, String(cur));
+            window.location.href = step.page;
+            return;
+        }
+
         var backdrop  = document.getElementById('tour-backdrop');
         var spotlight = document.getElementById('tour-spotlight');
         var card      = document.getElementById('tour-card');
@@ -656,98 +669,115 @@
         var btnNext   = document.getElementById('tour-next');
 
         function finish() {
-            localStorage.setItem(TOUR_KEY, '1');
-            [backdrop, spotlight, card].forEach(function(el) {
-                el.style.opacity = '0';
-                el.style.transition = 'opacity 0.3s';
-            });
+            localStorage.setItem(DONE_KEY, '1');
+            localStorage.removeItem(STEP_KEY);
+            backdrop.style.opacity  = '0';
+            card.style.opacity      = '0';
+            spotlight.style.opacity = '0';
             setTimeout(function() {
-                backdrop.style.display = 'none';
+                backdrop.style.display  = 'none';
+                card.style.display      = 'none';
                 spotlight.style.display = 'none';
-                card.style.display = 'none';
-            }, 320);
+            }, 300);
         }
 
-        function positionCard(targetEl) {
+        function placeCard(targetEl) {
             var vw = window.innerWidth, vh = window.innerHeight;
-            var cw = 320, ch = card.offsetHeight || 300;
-            var pad = 12;
+            var cw = 320, ch = card.offsetHeight || 300, pad = 14;
 
             if (!targetEl) {
-                spotlight.style.display = 'none';
+                spotlight.style.display  = 'none';
                 spotlight.classList.remove('pulsing');
-                backdrop.style.background = 'rgba(15,23,42,0.68)';
-                card.style.top       = Math.round((vh - ch) / 2) + 'px';
-                card.style.left      = Math.round((vw - cw) / 2) + 'px';
-                card.style.transform = '';
+                backdrop.style.background = 'rgba(15,23,42,0.72)';
+                card.style.top    = Math.round((vh - ch) / 2) + 'px';
+                card.style.left   = Math.round((vw - cw) / 2) + 'px';
                 return;
             }
 
-            backdrop.style.background = 'transparent';
-            var rect = targetEl.getBoundingClientRect();
+            /* Scroll suave para o elemento ficar visível */
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            /* spotlight */
-            spotlight.style.display  = 'block';
-            spotlight.style.top      = (rect.top    - pad) + 'px';
-            spotlight.style.left     = (rect.left   - pad) + 'px';
-            spotlight.style.width    = (rect.width  + pad * 2) + 'px';
-            spotlight.style.height   = (rect.height + pad * 2) + 'px';
-            spotlight.classList.add('pulsing');
+            /* Pequeno delay para o scroll terminar antes de ler getBoundingClientRect */
+            setTimeout(function() {
+                var r = targetEl.getBoundingClientRect();
 
-            /* card — prefer right, else left, else below */
-            var cx, cy;
-            if (rect.right + cw + 20 <= vw) {
-                cx = rect.right + 18;
-                cy = Math.max(16, Math.min(rect.top, vh - ch - 16));
-            } else if (rect.left - cw - 20 >= 0) {
-                cx = rect.left - cw - 18;
-                cy = Math.max(16, Math.min(rect.top, vh - ch - 16));
-            } else {
-                cx = Math.max(16, Math.min(rect.left + rect.width / 2 - cw / 2, vw - cw - 16));
-                cy = rect.bottom + 18;
-            }
-            card.style.transform = '';
-            card.style.left = cx + 'px';
-            card.style.top  = cy + 'px';
+                backdrop.style.background = 'transparent';
+                spotlight.style.display   = 'block';
+                spotlight.style.top       = (r.top    - pad) + 'px';
+                spotlight.style.left      = (r.left   - pad) + 'px';
+                spotlight.style.width     = (r.width  + pad * 2) + 'px';
+                spotlight.style.height    = (r.height + pad * 2) + 'px';
+                spotlight.classList.add('pulsing');
+
+                /* Posição do card: direita → esquerda → abaixo */
+                var cx, cy;
+                if (r.right + cw + 20 <= vw) {
+                    cx = r.right + 18;
+                    cy = Math.max(16, Math.min(r.top, vh - ch - 16));
+                } else if (r.left - cw - 20 >= 0) {
+                    cx = r.left - cw - 18;
+                    cy = Math.max(16, Math.min(r.top, vh - ch - 16));
+                } else {
+                    cx = Math.max(16, Math.min(r.left + r.width / 2 - cw / 2, vw - cw - 16));
+                    cy = Math.min(r.bottom + 18, vh - ch - 16);
+                }
+                card.style.left = cx + 'px';
+                card.style.top  = cy + 'px';
+            }, 350);
         }
 
         function render() {
             var s   = steps[cur];
             var pct = Math.round((cur / (steps.length - 1)) * 100);
-            progress.style.width     = pct + '%';
-            counter.textContent      = 'Passo ' + (cur + 1) + ' de ' + steps.length;
-            elIcon.textContent        = s.icon;
-            elTitle.textContent       = s.title;
-            elDesc.textContent        = s.desc;
-            btnNext.textContent       = s.next;
+            progress.style.width  = pct + '%';
+            counter.textContent   = 'Passo ' + (cur + 1) + ' de ' + steps.length;
+            elIcon.textContent    = s.icon;
+            elTitle.textContent   = s.title;
+            elDesc.textContent    = s.desc;
+            btnNext.textContent   = s.next;
+            localStorage.setItem(STEP_KEY, String(cur));
 
             var targetEl = s.target ? document.getElementById(s.target) : null;
-            positionCard(targetEl);
+            placeCard(targetEl);
         }
 
-        document.getElementById('tour-next').addEventListener('click', function() {
-            if (cur < steps.length - 1) { cur++; render(); }
-            else finish();
+        btnNext.addEventListener('click', function() {
+            var next = cur + 1;
+            if (next >= steps.length) { finish(); return; }
+
+            var nextPage = steps[next].page;
+            if (nextPage && window.location.pathname !== nextPage) {
+                /* Salva passo e navega */
+                localStorage.setItem(STEP_KEY, String(next));
+                window.location.href = nextPage;
+            } else {
+                cur = next;
+                render();
+            }
         });
+
         document.getElementById('tour-cancel').addEventListener('click', finish);
         document.getElementById('tour-x').addEventListener('click', finish);
 
-        /* Inicia após pequeno delay para a página carregar */
+        /* Exibe o tour após a página estabilizar */
         setTimeout(function() {
+            backdrop.style.transition  = 'opacity .3s, background .3s';
+            card.style.transition      = 'opacity .3s, top .35s ease, left .35s ease';
+            spotlight.style.transition = 'opacity .3s';
             backdrop.style.display  = 'block';
-            backdrop.style.opacity  = '0';
             card.style.display      = 'block';
+            backdrop.style.opacity  = '0';
             card.style.opacity      = '0';
-            render();
+            spotlight.style.opacity = '0';
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    backdrop.style.transition = 'opacity 0.35s, background 0.3s';
-                    card.style.transition     = 'opacity 0.35s, top 0.3s, left 0.3s';
-                    backdrop.style.opacity    = '1';
-                    card.style.opacity        = '1';
+                    backdrop.style.opacity = '1';
+                    card.style.opacity     = '1';
+                    spotlight.style.opacity = '1';
+                    render();
                 });
             });
-        }, 900);
+        }, 750);
     }());
     </script>
     <% } %>
