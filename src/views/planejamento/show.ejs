@@ -27,7 +27,8 @@ const statusAcaoLabels = {
 };
 %>
 
-<div class="space-y-6" x-data="planShow()">
+<div x-data="planShow()">
+<div class="space-y-6">
 
     <!-- Header do Plano -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -59,7 +60,14 @@ const statusAcaoLabels = {
                     <% } %>
                 </div>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                <a href="/planejamento/<%= plano.id %>/imprimir" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    Exportar PDF
+                </a>
                 <a href="/planejamento/<%= plano.id %>/editar"
                    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,10 +164,21 @@ const statusAcaoLabels = {
         <% } %>
     </div>
 
-    <!-- Ações -->
+    <!-- Ações — Tabs Lista / Timeline -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-bold text-gray-900">Ações Planejadas</h2>
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <button @click="tab = 'lista'"
+                    :class="tab === 'lista' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-xs rounded-md transition">
+                    Lista
+                </button>
+                <button @click="tab = 'gantt'"
+                    :class="tab === 'gantt' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-xs rounded-md transition">
+                    Timeline
+                </button>
+            </div>
             <button @click="abrirModalAcao(null)"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,6 +188,8 @@ const statusAcaoLabels = {
             </button>
         </div>
 
+        <!-- Tab: Lista -->
+        <div x-show="tab === 'lista'" x-cloak>
         <% if (acoes.length === 0) { %>
         <div class="text-center py-10">
             <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,8 +305,98 @@ const statusAcaoLabels = {
             <% }); %>
         </div>
         <% } %>
+        </div><!-- fim tab lista -->
+
+        <!-- Tab: Timeline / Gantt -->
+        <div x-show="tab === 'gantt'" x-cloak>
+        <%
+        const planStart = new Date(plano.periodo_inicio + 'T00:00:00').getTime();
+        const planEnd   = new Date(plano.periodo_fim   + 'T00:00:00').getTime();
+        const planSpan  = planEnd - planStart || 1;
+        const acoesComPrazo = acoes.filter(function(a){ return a.prazo; });
+        %>
+        <% if (acoesComPrazo.length === 0) { %>
+        <div class="text-center py-10 text-sm text-gray-400">
+            Nenhuma ação com prazo definido. Adicione prazos às ações para visualizar a timeline.
+        </div>
+        <% } else { %>
+        <!-- Cabeçalho com meses -->
+        <%
+        const meses = [];
+        const cur = new Date(planStart);
+        cur.setDate(1);
+        while (cur.getTime() <= planEnd) {
+            const left = Math.max(0, Math.min(100, ((cur.getTime() - planStart) / planSpan) * 100));
+            meses.push({ label: cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), left: left.toFixed(1) });
+            cur.setMonth(cur.getMonth() + 1);
+        }
+        %>
+        <div class="overflow-x-auto">
+        <div style="min-width:600px">
+            <!-- Régua de meses -->
+            <div class="relative h-7 mb-2 border-b border-gray-200">
+                <% meses.forEach(function(m){ %>
+                <span class="absolute text-[10px] text-gray-400 font-medium -translate-x-1/2" style="left:<%= m.left %>%"><%= m.label %></span>
+                <% }); %>
+                <!-- Linha hoje -->
+                <%
+                const hoje2 = new Date(); hoje2.setHours(0,0,0,0);
+                const hojePct = Math.max(0, Math.min(100, ((hoje2.getTime() - planStart) / planSpan) * 100)).toFixed(1);
+                %>
+                <div class="absolute top-0 bottom-0 w-px bg-red-400 z-10" style="left:<%= hojePct %>%" title="Hoje">
+                    <span class="absolute -top-4 -translate-x-1/2 text-[9px] text-red-500 font-bold">HOJE</span>
+                </div>
+            </div>
+
+            <!-- Barras das ações -->
+            <div class="space-y-2 pb-2">
+            <% acoesComPrazo.forEach(function(acao) {
+                const prazoTs = new Date(acao.prazo + 'T00:00:00').getTime();
+                const barEnd  = Math.max(0, Math.min(100, ((prazoTs - planStart) / planSpan) * 100));
+                const barStart = 0;
+                const barW    = Math.max(1, barEnd - barStart);
+                const ganttColors = {
+                    concluido:    '#10b981',
+                    em_andamento: '#3b82f6',
+                    nao_iniciado: '#94a3b8',
+                    cancelado:    '#f87171',
+                };
+                const barColor = ganttColors[acao.status] || '#94a3b8';
+                const vencidaG = prazoTs < hoje2.getTime() && acao.status !== 'concluido' && acao.status !== 'cancelado';
+            %>
+            <div class="flex items-center gap-3">
+                <div class="w-36 shrink-0 text-xs text-gray-700 truncate font-medium text-right pr-2" title="<%= acao.titulo %>">
+                    <%= acao.titulo %>
+                </div>
+                <div class="flex-1 relative h-7 bg-gray-100 rounded-md overflow-hidden">
+                    <div class="absolute top-1 bottom-1 rounded-md flex items-center px-2 overflow-hidden"
+                         style="left:<%= barStart %>%;width:<%= barW %>%;background:<%= barColor %><%= vencidaG ? '' : '' %>;opacity:<%= acao.status === 'cancelado' ? '0.5' : '1' %>">
+                        <span class="text-white text-[10px] font-semibold truncate whitespace-nowrap">
+                            <%= new Date(acao.prazo + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) %>
+                            <%= vencidaG ? ' ⚠' : '' %>
+                        </span>
+                    </div>
+                    <!-- Linha vertical no prazo -->
+                    <div class="absolute top-0 bottom-0 w-0.5 opacity-60" style="left:<%= barEnd %>%;background:<%= barColor %>"></div>
+                </div>
+            </div>
+            <% }); %>
+            </div>
+
+            <!-- Legenda -->
+            <div class="flex gap-4 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+                <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>Concluído</span>
+                <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-blue-500 inline-block"></span>Em andamento</span>
+                <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-slate-400 inline-block"></span>Não iniciado</span>
+                <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-red-400 inline-block"></span>Cancelado</span>
+                <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-px h-3 bg-red-400 inline-block"></span>Hoje</span>
+            </div>
+        </div>
+        </div>
+        <% } %>
+        </div><!-- fim tab gantt -->
     </div>
-</div>
+</div><!-- fim space-y-6 -->
 
 
 <!-- ─── Modal: Nova / Editar Ação ─────────────────────────────────────────── -->
@@ -418,6 +529,7 @@ const statusAcaoLabels = {
 <script>
 function planShow() {
     return {
+        tab: 'lista',
         modalAcao: false,
         acaoEditando: null,
         modalIndicador: false,
@@ -463,3 +575,4 @@ function planShow() {
     };
 }
 </script>
+</div><!-- fim x-data planShow -->

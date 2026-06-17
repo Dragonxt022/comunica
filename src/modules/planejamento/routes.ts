@@ -8,6 +8,7 @@ router.get('/', isAuthenticated, C.list);
 router.get('/novo', isAuthenticated, C.createView);
 router.post('/', isAuthenticated, C.store);
 router.get('/:id', isAuthenticated, C.show);
+router.get('/:id/imprimir', isAuthenticated, C.imprimir);
 router.get('/:id/editar', isAuthenticated, C.editView);
 router.post('/:id/editar', isAuthenticated, C.update);
 router.post('/:id/excluir', isAuthenticated, C.destroy);

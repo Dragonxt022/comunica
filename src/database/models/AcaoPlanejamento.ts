@@ -14,6 +14,7 @@ class AcaoPlanejamento extends Model {
   public status!: string;
   public plano_id!: number;
   public evento_id!: number | null;
+  public notificado_prazo!: boolean;
   public plano?: PlanoAcao;
 }
 
@@ -29,6 +30,7 @@ AcaoPlanejamento.init(
     status: { type: DataTypes.STRING, defaultValue: 'nao_iniciado' },
     plano_id: { type: DataTypes.INTEGER, allowNull: false },
     evento_id: { type: DataTypes.INTEGER, allowNull: true },
+    notificado_prazo: { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   { sequelize, modelName: 'AcaoPlanejamento', tableName: 'acoes_planejamento' }
 );

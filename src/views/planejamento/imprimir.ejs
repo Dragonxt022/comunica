@@ -1,0 +1,194 @@
+<%
+const acoes = plano.acoes || [];
+const indicadores = plano.indicadores || [];
+const totalAcoes = acoes.length;
+const concluidas = acoes.filter(function(a){ return a.status === 'concluido'; }).length;
+const emAndamento = acoes.filter(function(a){ return a.status === 'em_andamento'; }).length;
+const naoIniciadas = acoes.filter(function(a){ return a.status === 'nao_iniciado'; }).length;
+const pct = totalAcoes > 0 ? Math.round((concluidas / totalAcoes) * 100) : 0;
+const dtInicio = new Date(plano.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+const dtFim = new Date(plano.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+const priorLabels = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
+const statusLabels = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído', cancelado: 'Cancelado' };
+const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório — <%= plano.titulo %></title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; background: #fff; padding: 32px 40px; }
+  h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 700; color: #334155; margin: 24px 0 10px; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+  .meta { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+  .badge-ativo { background: #d1fae5; color: #065f46; }
+  .badge-concluido { background: #dbeafe; color: #1e40af; }
+  .badge-suspenso { background: #fef3c7; color: #92400e; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 6px; }
+  .kpi { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; }
+  .kpi-valor { font-size: 22px; font-weight: 700; color: #4f46e5; }
+  .kpi-label { font-size: 10px; color: #64748b; margin-top: 2px; }
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin: 8px 0 2px; }
+  .progress-fill { height: 100%; background: #4f46e5; border-radius: 999px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { text-align: left; background: #f8fafc; padding: 7px 10px; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .badge-alta { background: #fee2e2; color: #991b1b; }
+  .badge-media { background: #fef3c7; color: #92400e; }
+  .badge-baixa { background: #d1fae5; color: #065f46; }
+  .badge-nao_iniciado { background: #f1f5f9; color: #475569; }
+  .badge-em_andamento { background: #dbeafe; color: #1e40af; }
+  .badge-concluido2 { background: #d1fae5; color: #065f46; }
+  .badge-cancelado { background: #fee2e2; color: #991b1b; }
+  .ind-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+  .ind-fill { height: 100%; border-radius: 999px; }
+  .vencida { color: #ef4444; font-weight: 600; }
+  footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 10px; display: flex; justify-content: space-between; }
+  @media print {
+    body { padding: 20px 28px; }
+    @page { margin: 1.5cm; size: A4; }
+    button { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Botão imprimir (some no PDF) -->
+<div style="margin-bottom:20px;display:flex;justify-content:flex-end;gap:10px" class="no-print">
+  <button onclick="window.print()" style="padding:8px 18px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Imprimir / Salvar PDF</button>
+  <button onclick="window.close()" style="padding:8px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Fechar</button>
+</div>
+
+<!-- Cabeçalho -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+  <div>
+    <h1><%= plano.titulo %></h1>
+    <div class="meta">
+      <% if(plano.secretaria){ %><strong><%= plano.secretaria.nome %></strong> · <% } %>
+      Período: <%= dtInicio %> a <%= dtFim %>
+      <% if(plano.autor){ %> · Responsável: <%= plano.autor.nome %><% } %>
+    </div>
+    <% if(plano.descricao){ %>
+    <p style="color:#475569;font-size:11px;max-width:600px;line-height:1.5"><%= plano.descricao %></p>
+    <% } %>
+  </div>
+  <span class="badge badge-<%= plano.status %>">
+    <%= plano.status === 'ativo' ? 'Ativo' : plano.status === 'concluido' ? 'Concluído' : 'Suspenso' %>
+  </span>
+</div>
+
+<!-- KPIs resumo -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-valor"><%= totalAcoes %></div>
+    <div class="kpi-label">Total de ações</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-valor" style="color:#10b981"><%= concluidas %></div>
+    <div class="kpi-label">Concluídas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-valor" style="color:#3b82f6"><%= emAndamento %></div>
+    <div class="kpi-label">Em andamento</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-valor" style="color:#6366f1"><%= pct %>%</div>
+    <div class="kpi-label">Progresso geral</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:<%= pct %>%"></div></div>
+  </div>
+</div>
+
+<!-- Indicadores / Metas -->
+<% if(indicadores.length > 0){ %>
+<h2>Indicadores e Metas</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Indicador</th>
+      <th style="width:120px">Meta</th>
+      <th style="width:120px">Realizado</th>
+      <th style="width:80px">Atingimento</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% indicadores.forEach(function(ind){
+       const pctInd = ind.valor_meta > 0 ? Math.min(Math.round((ind.valor_atual / ind.valor_meta) * 100), 100) : 0;
+       const fillColor = pctInd >= 100 ? '#10b981' : pctInd >= 60 ? '#3b82f6' : pctInd >= 30 ? '#f59e0b' : '#ef4444';
+    %>
+    <tr>
+      <td>
+        <strong><%= ind.indicador %></strong>
+        <% if(ind.descricao){ %><br><span style="color:#94a3b8"><%= ind.descricao %></span><% } %>
+      </td>
+      <td><%= ind.valor_meta %> <%= ind.unidade %></td>
+      <td><%= ind.valor_atual %> <%= ind.unidade %></td>
+      <td>
+        <strong style="color:<%= fillColor %>"><%= pctInd %>%</strong>
+        <div class="ind-bar"><div class="ind-fill" style="width:<%= pctInd %>%;background:<%= fillColor %>"></div></div>
+      </td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+<% } %>
+
+<!-- Ações -->
+<h2>Ações Planejadas (<%= totalAcoes %>)</h2>
+<% if(acoes.length === 0){ %>
+<p style="color:#94a3b8;padding:12px 0">Nenhuma ação cadastrada.</p>
+<% } else { %>
+<table>
+  <thead>
+    <tr>
+      <th style="width:32px">#</th>
+      <th>Ação</th>
+      <th style="width:90px">Responsável</th>
+      <th style="width:80px">Prazo</th>
+      <th style="width:60px">Prioridade</th>
+      <th style="width:90px">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% acoes.forEach(function(acao, idx){
+       const hoje2 = new Date(); hoje2.setHours(0,0,0,0);
+       const prazoDate = acao.prazo ? new Date(acao.prazo + 'T00:00:00') : null;
+       const vencida = prazoDate && prazoDate < hoje2 && acao.status !== 'concluido' && acao.status !== 'cancelado';
+       const prazoFmt = prazoDate ? prazoDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+       const badgeStatus = acao.status === 'concluido' ? 'badge-concluido2' : 'badge-' + acao.status;
+    %>
+    <tr>
+      <td style="color:#94a3b8;font-weight:600"><%= idx + 1 %></td>
+      <td>
+        <strong style="<%= acao.status === 'concluido' ? 'text-decoration:line-through;color:#94a3b8' : '' %>"><%= acao.titulo %></strong>
+        <% if(acao.objetivo){ %><br><span style="color:#64748b"><%= acao.objetivo %></span><% } %>
+        <% if(acao.evento_id && eventosMap && eventosMap[acao.evento_id]){ %>
+        <br><span style="color:#3b82f6;font-size:10px">📅 Evento: <%= eventosMap[acao.evento_id].titulo %></span>
+        <% } %>
+      </td>
+      <td style="color:#475569"><%= acao.responsavel_nome || '—' %></td>
+      <td class="<%= vencida ? 'vencida' : '' %>"><%= prazoFmt %><%= vencida ? ' ⚠' : '' %></td>
+      <td><span class="badge badge-<%= acao.prioridade %>"><%= priorLabels[acao.prioridade] || acao.prioridade %></span></td>
+      <td><span class="badge <%= badgeStatus %>"><%= statusLabels[acao.status] || acao.status %></span></td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+<% } %>
+
+<footer>
+  <span>Relatório gerado em <%= hoje %></span>
+  <span>Comunica — Sistema de Gestão da Comunicação Municipal</span>
+</footer>
+
+<script>
+  // Abre o diálogo de impressão automaticamente
+  window.addEventListener('load', function() {
+    window.print();
+  });
+</script>
+</body>
+</html>

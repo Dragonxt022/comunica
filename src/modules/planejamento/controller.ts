@@ -171,6 +171,31 @@ export const desvincularEvento = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Impressão ───────────────────────────────────────────────────────────────
+
+export const imprimir = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const plano = await Repo.findPlanoById(Number(req.params.id));
+    if (!plano) return res.redirect('/planejamento');
+    if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) {
+      return res.redirect('/planejamento');
+    }
+    const acoes = (plano as any).acoes || [];
+    const eventoIds = acoes.filter((a: any) => a.evento_id).map((a: any) => a.evento_id);
+    const eventosMap: Record<number, any> = {};
+    if (eventoIds.length) {
+      const { Evento } = await import('../../database/models/index.ts');
+      const evs = await Evento.findAll({ where: { id: eventoIds }, attributes: ['id', 'titulo', 'status'] });
+      evs.forEach((e: any) => { eventosMap[e.id] = e; });
+    }
+    res.render('planejamento/imprimir', { layout: false, title: plano.titulo, plano, eventosMap });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro interno');
+  }
+};
+
 // ─── Indicadores ─────────────────────────────────────────────────────────────
 
 export const storeIndicador = async (req: Request, res: Response) => {

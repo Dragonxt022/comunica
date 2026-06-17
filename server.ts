@@ -184,6 +184,7 @@ async function seed() {
   await PlanoAcao.sync({ force: false });
   await AcaoPlanejamento.sync({ force: false });
   await IndicadorMeta.sync({ force: false });
+  await addCol('acoes_planejamento', 'notificado_prazo', 'BOOLEAN NOT NULL DEFAULT 0');
 
 
   // Migrate old event statuses to new values (idempotent)
@@ -417,6 +418,41 @@ async function startServer() {
         }
       } catch (e) { /* silencioso */ }
     }, 60 * 60 * 1000);
+
+    // Notificações de ações com prazo vencido (verificação diária)
+    const verificarPrazosVencidos = async () => {
+      try {
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        const acoes = await AcaoPlanejamento.findAll({
+          where: {
+            prazo: { [Op.lt]: hoje },
+            status: { [Op.notIn]: ['concluido', 'cancelado'] },
+            notificado_prazo: false,
+          } as any,
+          include: [{ model: PlanoAcao, as: 'plano' }],
+        });
+        for (const acao of acoes as any[]) {
+          const plano = acao.plano;
+          if (!plano) continue;
+          const prazoFmt = new Date(acao.prazo + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+          const payload = {
+            titulo: '⚠️ Ação com prazo vencido',
+            corpo: `"${acao.titulo}" — prazo era ${prazoFmt}`,
+            url: `/planejamento/${plano.id}`,
+            tipo: 'acao_prazo_vencido',
+          };
+          // Notifica criador do plano
+          await import('./src/lib/notificacao.ts').then(({ notificar, notificarRole }) => {
+            notificar(plano.criado_por, payload).catch(() => {});
+            notificarRole(['admin', 'secom'], payload).catch(() => {});
+          });
+          await AcaoPlanejamento.update({ notificado_prazo: true } as any, { where: { id: acao.id } });
+        }
+      } catch (e) { /* silencioso */ }
+    };
+    // Roda imediatamente e depois a cada 24h
+    verificarPrazosVencidos();
+    setInterval(verificarPrazosVencidos, 24 * 60 * 60 * 1000);
 
     // Audit helper available in req
     app.use((req, res, next) => {
