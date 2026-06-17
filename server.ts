@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao } from './src/database/models/index.ts';
+import { User, Secretaria, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -27,6 +27,7 @@ import formulariosRoutes from './src/modules/formularios/routes.ts';
 import inscricoesRoutes from './src/modules/inscricoes/routes.ts';
 import inscricoesHubRoutes from './src/modules/inscricoes/hub.routes.ts';
 import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
+import planejamentoRoutes from './src/modules/planejamento/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -180,6 +181,9 @@ async function seed() {
   // Garante criação das novas tabelas mesmo se sync() não as pegou
   await FormularioTemplate.sync({ force: false });
   await Inscricao.sync({ force: false });
+  await PlanoAcao.sync({ force: false });
+  await AcaoPlanejamento.sync({ force: false });
+  await IndicadorMeta.sync({ force: false });
 
 
   // Migrate old event statuses to new values (idempotent)
@@ -390,6 +394,7 @@ async function startServer() {
     app.use('/inscricoes', isAuthenticated, inscricoesHubRoutes);
     app.use('/eventos/:eventoId/inscricoes', isAuthenticated, inscricoesRoutes);
     app.use('/inscricao', inscricaoPublicaRoutes);
+    app.use('/planejamento', isAuthenticated, planejamentoRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {

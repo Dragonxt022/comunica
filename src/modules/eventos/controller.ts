@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import EventoRepository from './repository.ts';
-import { Secretaria, Evento, User, EventoResponsavel } from '../../database/models/index.ts';
+import { Secretaria, Evento, User, EventoResponsavel, AcaoPlanejamento } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 
@@ -44,7 +44,14 @@ export const createView = async (req: Request, res: Response) => {
     const secretarias = await Secretaria.findAll({ where: { ativo: true } });
     const users = await User.findAll({ where: { ativo: true }, include: [{ model: Secretaria, as: 'secretaria' }] });
     const prefillDate = (req.query.data as string) || '';
-    res.render('eventos/create', { title: 'Novo Evento', secretarias, users, prefillDate });
+    const prefill = {
+      titulo: (req.query.titulo as string) || '',
+      descricao: (req.query.descricao as string) || '',
+      secretaria_id: (req.query.secretaria_id as string) || '',
+      acao_id: (req.query.acao_id as string) || '',
+      plano_id: (req.query.plano_id as string) || '',
+    };
+    res.render('eventos/create', { title: 'Novo Evento', secretarias, users, prefillDate, prefill });
   } catch (error) {
     console.error('Error creating evento view:', error);
     res.status(500).send('Internal Server Error');
@@ -261,6 +268,14 @@ export const store = async (req: Request, res: Response) => {
       url: `/eventos`,
       tipo: 'evento_novo',
     }).catch(() => {});
+
+    // Vincula ao planejamento se veio de uma ação
+    const acaoId = req.body.acao_id ? Number(req.body.acao_id) : null;
+    const planoId = req.body.plano_id ? Number(req.body.plano_id) : null;
+    if (acaoId && planoId) {
+      await AcaoPlanejamento.update({ evento_id: (evento as any).id }, { where: { id: acaoId } }).catch(() => {});
+      return res.redirect(`/planejamento/${planoId}`);
+    }
 
     res.redirect('/eventos');
   } catch (error) {

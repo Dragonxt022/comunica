@@ -24,7 +24,7 @@ export const agendaPublica = async (req: Request, res: Response) => {
     ]);
     res.render('public/agenda', {
       title: 'Agenda Oficial',
-      eventos,
+      eventos: eventos.map((e: any) => e.toJSON()),
       releases,
       layout: 'layouts/public'
     });

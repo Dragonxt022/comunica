@@ -1,0 +1,85 @@
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900">Planejamento</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Planos de ação e metas das secretarias.</p>
+        </div>
+        <a href="/planejamento/novo"
+           class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            Novo Plano
+        </a>
+    </div>
+
+    <!-- Lista de Planos -->
+    <% if (planos.length === 0) { %>
+    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+        </div>
+        <h3 class="text-base font-semibold text-gray-900 mb-1">Nenhum plano cadastrado</h3>
+        <p class="text-sm text-gray-500 mb-5">Crie o primeiro plano de ação para a sua secretaria.</p>
+        <a href="/planejamento/novo" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+            Criar Plano
+        </a>
+    </div>
+    <% } else { %>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <% planos.forEach(function(plano) {
+            const acoes = plano.acoes || [];
+            const total = acoes.length;
+            const concluidas = acoes.filter(function(a) { return a.status === 'concluido'; }).length;
+            const pct = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+            const indicadores = plano.indicadores || [];
+            const statusCores = { ativo: 'bg-emerald-100 text-emerald-700', concluido: 'bg-blue-100 text-blue-700', suspenso: 'bg-amber-100 text-amber-700' };
+            const statusLabels = { ativo: 'Ativo', concluido: 'Concluído', suspenso: 'Suspenso' };
+            const corStatus = statusCores[plano.status] || 'bg-gray-100 text-gray-600';
+            const labelStatus = statusLabels[plano.status] || plano.status;
+            const dtInicio = new Date(plano.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            const dtFim = new Date(plano.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+        %>
+        <a href="/planejamento/<%= plano.id %>"
+           class="bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition p-5 flex flex-col gap-3 group">
+            <div class="flex items-start justify-between gap-3">
+                <h3 class="font-semibold text-gray-900 text-sm leading-snug group-hover:text-indigo-700 transition flex-1"><%= plano.titulo %></h3>
+                <span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full <%= corStatus %>"><%= labelStatus %></span>
+            </div>
+
+            <% if (plano.secretaria) { %>
+            <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:<%= plano.secretaria.cor || '#6366f1' %>"></span>
+                <span class="text-xs text-gray-500 truncate"><%= plano.secretaria.nome %></span>
+            </div>
+            <% } %>
+
+            <div class="text-xs text-gray-400"><%= dtInicio %> → <%= dtFim %></div>
+
+            <!-- Progresso de ações -->
+            <div>
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Ações concluídas</span>
+                    <span class="font-semibold text-gray-700"><%= concluidas %>/<%= total %></span>
+                </div>
+                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-indigo-500 rounded-full transition-all" style="width:<%= pct %>%"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex items-center justify-between pt-1 border-t border-gray-100">
+                <span class="text-xs text-gray-400"><%= total %> ação<%= total !== 1 ? 'ões' : '' %> · <%= indicadores.length %> indicador<%= indicadores.length !== 1 ? 'es' : '' %></span>
+                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        <% }); %>
+    </div>
+    <% } %>
+</div>
