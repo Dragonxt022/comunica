@@ -21,6 +21,7 @@ class Evento extends Model {
   public inscricoes_abertas!: boolean;
   public token_inscricao!: string;
   public imagem_capa!: string | null;
+  public pdf_regulamento!: string | null;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -94,6 +95,10 @@ Evento.init(
       unique: true,
     },
     imagem_capa: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    pdf_regulamento: {
       type: DataTypes.STRING(500),
       allowNull: true,
     },

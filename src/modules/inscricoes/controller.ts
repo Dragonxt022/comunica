@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
+import fs from 'fs';
+import path from 'path';
 import { Evento, Secretaria, FormularioTemplate } from '../../database/models/index.ts';
 import InscricaoRepository from './repository.ts';
 
@@ -172,6 +174,29 @@ export const exportarCSV = async (req: Request, res: Response) => {
   }
 };
 
+export const removePdfRegulamento = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const eventoId = Number(req.params.eventoId);
+
+    const evento = await Evento.findOne({ where: { id: eventoId } }) as any;
+    if (!evento) return res.redirect('/eventos');
+    if (user.role === 'secretaria' && evento.secretaria_id !== user.secretaria_id) {
+      return res.status(403).redirect('/eventos');
+    }
+
+    if (evento.pdf_regulamento) {
+      try { fs.unlinkSync(path.join(process.cwd(), 'public', evento.pdf_regulamento)); } catch {}
+      await Evento.update({ pdf_regulamento: null }, { where: { id: eventoId } });
+    }
+
+    res.redirect(`/eventos/${eventoId}/inscricoes/config`);
+  } catch (error) {
+    console.error('Error removing pdf regulamento:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
 export const configView = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
@@ -223,6 +248,15 @@ export const saveConfig = async (req: Request, res: Response) => {
       max_inscricoes: max_inscricoes && max_inscricoes !== '' ? Number(max_inscricoes) : null,
       inscricoes_abertas: inscricoes_abertas === 'on' || inscricoes_abertas === '1' || inscricoes_abertas === 'true',
     };
+
+    // Handle PDF upload
+    const file = (req as any).file;
+    if (file) {
+      if (evento.pdf_regulamento) {
+        try { fs.unlinkSync(path.join(process.cwd(), 'public', evento.pdf_regulamento)); } catch {}
+      }
+      updates.pdf_regulamento = '/uploads/regulamentos/' + file.filename;
+    }
 
     // gera token único se ainda não existir e inscrições forem ativadas
     if (updates.aceita_inscricoes && !evento.token_inscricao) {

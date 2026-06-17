@@ -9,7 +9,7 @@
     </div>
   </div>
 
-  <form action="/eventos/<%= evento.id %>/inscricoes/config" method="POST" x-data="{ aceita: <%= evento.aceita_inscricoes ? 'true' : 'false' %>, abertas: <%= evento.inscricoes_abertas !== false ? 'true' : 'false' %> }">
+  <form action="/eventos/<%= evento.id %>/inscricoes/config" method="POST" enctype="multipart/form-data" x-data="{ aceita: <%= evento.aceita_inscricoes ? 'true' : 'false' %>, abertas: <%= evento.inscricoes_abertas !== false ? 'true' : 'false' %> }">
     <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
 
       <!-- Ativar inscrições -->
@@ -67,6 +67,29 @@
             <input type="checkbox" name="inscricoes_abertas" value="on" x-model="abertas" class="sr-only peer">
             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
           </label>
+        </div>
+
+        <!-- PDF do Regulamento -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">PDF do regulamento</label>
+          <% if (evento.pdf_regulamento) { %>
+          <div class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <svg class="w-8 h-8 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">Regulamento anexado</p>
+              <a href="<%= evento.pdf_regulamento %>" target="_blank" class="text-xs text-blue-600 hover:underline">Visualizar PDF →</a>
+            </div>
+            <form action="/eventos/<%= evento.id %>/inscricoes/config/remover-pdf" method="POST" onsubmit="return confirm('Remover o PDF do regulamento?')">
+              <button type="submit" class="px-3 py-1.5 text-xs text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 transition shrink-0">
+                Remover
+              </button>
+            </form>
+          </div>
+          <p class="text-xs text-gray-400 mt-1.5">Para substituir, faça upload de um novo PDF abaixo.</p>
+          <% } %>
+          <input type="file" name="pdf_regulamento" accept=".pdf,application/pdf"
+            class="mt-2 block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+          <p class="text-xs text-gray-400 mt-1">Máximo 20 MB. O PDF ficará disponível para download no formulário público.</p>
         </div>
 
         <!-- Link de inscrição -->

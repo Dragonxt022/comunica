@@ -42,6 +42,15 @@
     <% if (evento.descricao) { %>
     <p class="text-sm text-gray-600 mt-4 leading-relaxed border-t border-gray-100 pt-4"><%= evento.descricao %></p>
     <% } %>
+    <% if (evento.pdf_regulamento) { %>
+    <div class="mt-4 border-t border-gray-100 pt-4">
+      <a href="<%= evento.pdf_regulamento %>" target="_blank" download
+        class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl hover:bg-red-100 transition">
+        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+        Baixar regulamento (PDF)
+      </a>
+    </div>
+    <% } %>
   </div>
 
   <!-- Formulário -->

@@ -131,3 +131,32 @@ export function uploadCapa(req: any, res: any, done: (err?: any) => void) {
     done();
   });
 }
+
+const multerPdf = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      const dir = path.join(process.cwd(), 'public', 'uploads', 'regulamentos');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `reg-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos PDF são permitidos'));
+    }
+  },
+  limits: { fileSize: 20 * 1024 * 1024 },
+}).single('pdf_regulamento');
+
+export function uploadPdfRegulamento(req: any, res: any, done: (err?: any) => void) {
+  multerPdf(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}
