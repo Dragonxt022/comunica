@@ -1,16 +1,15 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../../config/database.ts';
 
-class Secretaria extends Model {
+class Municipio extends Model {
   public id!: number;
   public nome!: string;
   public slug!: string;
-  public cor!: string;
+  public estado!: string;
   public ativo!: boolean;
-  public municipio_id!: number | null;
 }
 
-Secretaria.init(
+Municipio.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -26,28 +25,21 @@ Secretaria.init(
       allowNull: false,
       unique: true,
     },
-    cor: {
-      type: DataTypes.STRING,
-      defaultValue: '#3b82f6',
+    estado: {
+      type: DataTypes.STRING(2),
+      allowNull: false,
+      defaultValue: 'RO',
     },
     ativo: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    municipio_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'municipios',
-        key: 'id',
-      },
-    },
   },
   {
     sequelize,
-    modelName: 'Secretaria',
-    tableName: 'secretarias',
+    modelName: 'Municipio',
+    tableName: 'municipios',
   }
 );
 
-export default Secretaria;
+export default Municipio;

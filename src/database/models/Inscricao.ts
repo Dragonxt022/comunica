@@ -12,6 +12,7 @@ class Inscricao extends Model {
   public dados!: string; // JSON with all form answers
   public status!: string; // confirmado | pendente | cancelado
   public ip!: string;
+  public municipio_id!: number | null;
   public evento?: Evento;
 }
 
@@ -54,6 +55,10 @@ Inscricao.init(
     },
     ip: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    municipio_id: {
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
   },

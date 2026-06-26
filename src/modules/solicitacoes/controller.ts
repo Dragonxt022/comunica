@@ -5,6 +5,7 @@ import SolicitacaoRepository from './repository.ts';
 import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoResponsavel } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
+import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 
 function parseIds(raw: any): number[] {
   if (!raw) return [];
@@ -14,24 +15,23 @@ function parseIds(raw: any): number[] {
 export const list = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    const { q, status: filtroStatus, prioridade: filtroPrioridade } = req.query as Record<string, string>;
+    const { q, status: filtroStatus, prioridade: filtroPrioridade, tipo: filtroTipo } = req.query as Record<string, string>;
     const page = Math.max(1, Number(req.query.page) || 1);
     const perPage = 20;
 
     const { Op } = await import('sequelize');
 
-    let where: any = {};
-    if (user.role === 'secretaria') {
-      where.secretaria_id = user.secretaria_id;
-    }
+    const mid = getActiveMid(req);
+    let where: any = secretariaWhere(user, {}, mid);
     if (q) where.titulo = { [Op.like]: `%${q}%` };
     if (filtroStatus) where.status = filtroStatus;
     if (filtroPrioridade) where.prioridade = filtroPrioridade;
+    if (filtroTipo) where.tipo_midia = filtroTipo;
 
     const { count, rows: solicitacoes } = await SolicitacaoRepository.findAndCountAll(where, perPage, (page - 1) * perPage);
 
     // summary counts (all, ignoring pagination)
-    const allSolics = await SolicitacaoRepository.findAll(user.role === 'secretaria' ? { secretaria_id: user.secretaria_id } : {});
+    const allSolics = await SolicitacaoRepository.findAll(secretariaWhere(user, {}, mid));
     const counts: Record<string, number> = {};
     ['pendente','aprovado','produção','concluído','cancelado','finalizado'].forEach(s => {
       counts[s] = allSolics.filter((x: any) => x.status === s).length;
@@ -45,6 +45,7 @@ export const list = async (req: Request, res: Response) => {
       q: q || '',
       filtroStatus: filtroStatus || '',
       filtroPrioridade: filtroPrioridade || '',
+      filtroTipo: filtroTipo || '',
       currentPage: page,
       totalPages: Math.ceil(count / perPage),
       total: count,
@@ -57,8 +58,15 @@ export const list = async (req: Request, res: Response) => {
 
 export const createView = async (req: Request, res: Response) => {
   try {
-    const secretarias = await Secretaria.findAll({ where: { ativo: true } });
-    const users = await User.findAll({ where: { ativo: true }, include: [{ model: Secretaria, as: 'secretaria' }] });
+    const user = (req as any).session.user;
+    const secWhere: any = { ativo: true };
+    const usrWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') {
+      secWhere.municipio_id = user.municipio_id;
+      usrWhere.municipio_id = user.municipio_id;
+    }
+    const secretarias = await Secretaria.findAll({ where: secWhere });
+    const users = await User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] });
     res.render('solicitacoes/create', { title: 'Nova Solicitação', secretarias, users });
   } catch (error) {
     console.error('Error creating solicitacao view:', error);
@@ -72,6 +80,9 @@ export const show = async (req: Request, res: Response) => {
     const sol = await SolicitacaoRepository.findById(Number(req.params.id));
     if (!sol) return res.status(404).redirect('/solicitacoes');
 
+    if (user.role !== 'super_admin' && sol.municipio_id && sol.municipio_id !== user.municipio_id) {
+      return res.status(403).redirect('/solicitacoes');
+    }
     if (user.role === 'secretaria' && sol.secretaria_id !== user.secretaria_id) {
       return res.status(403).redirect('/solicitacoes');
     }
@@ -92,7 +103,7 @@ export const show = async (req: Request, res: Response) => {
 export const updateStatus = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    if (!['admin', 'secom', 'super_admin'].includes(user.role)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
     const allowed = ['pendente', 'aprovado', 'produção', 'concluído', 'finalizado', 'cancelado'];
     const { status } = req.body;
@@ -152,7 +163,7 @@ export const store = async (req: Request, res: Response) => {
       : req.body.tipos_midia ? [req.body.tipos_midia] : [];
     if (tipos.length === 0) tipos = ['Outros'];
 
-    const secId = user.role === 'admin' || user.role === 'secom' ? secretaria_id : user.secretaria_id;
+    const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
 
     const { prazo } = req.body;
 
@@ -165,6 +176,7 @@ export const store = async (req: Request, res: Response) => {
         prazo: prazo || null,
         secretaria_id: secId,
         criado_por: user.id,
+        municipio_id: user.municipio_id,
         status: 'pendente',
       });
 
@@ -193,6 +205,7 @@ export const store = async (req: Request, res: Response) => {
         tipo: tipo_evento || 'Outros',
         secretaria_id: secId,
         criado_por: user.id,
+        municipio_id: user.municipio_id,
         status: 'em_planejamento',
       } as any);
 
@@ -220,10 +233,12 @@ export const store = async (req: Request, res: Response) => {
 export const pendentesCount = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (!['admin', 'secom'].includes(user?.role)) {
+    if (!['admin', 'secom', 'super_admin'].includes(user?.role)) {
       return res.json({ count: 0 });
     }
-    const count = await Solicitacao.count({ where: { status: 'pendente' } });
+    const where: any = { status: 'pendente' };
+    if (user.role !== 'super_admin') where.municipio_id = user.municipio_id;
+    const count = await Solicitacao.count({ where });
     return res.json({ count });
   } catch {
     return res.json({ count: 0 });
@@ -233,12 +248,15 @@ export const pendentesCount = async (req: Request, res: Response) => {
 export const destroy = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (!['admin', 'secom'].includes(user?.role)) {
+    if (!['admin', 'secom', 'super_admin'].includes(user?.role)) {
       return res.status(403).json({ ok: false, error: 'Sem permissão' });
     }
     const id = Number(req.params.id);
     const sol = await SolicitacaoRepository.findById(id);
     if (!sol) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+    if (user.role !== 'super_admin' && sol.municipio_id && sol.municipio_id !== user.municipio_id) {
+      return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    }
     if (sol.status !== 'cancelado') {
       return res.status(400).json({ ok: false, error: 'Só é possível excluir solicitações canceladas' });
     }
@@ -455,7 +473,7 @@ export const updateSolicitacao = async (req: Request, res: Response) => {
 export const updateMaterial = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    if (!['admin', 'secom', 'super_admin'].includes(user.role)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
     const id = Number(req.params.id);
     const { link_publicacao, link_arquivo_matriz } = req.body;
@@ -497,7 +515,7 @@ export const updateMaterial = async (req: Request, res: Response) => {
 export const concluir = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (user.role === 'secretaria') return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    if (!['admin', 'secom', 'super_admin'].includes(user.role)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
     const id = Number(req.params.id);
     const { link_publicacao, link_arquivo_matriz } = req.body;

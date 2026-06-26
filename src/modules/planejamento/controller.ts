@@ -2,13 +2,14 @@ import { Request, Response } from 'express';
 import * as Repo from './repository.ts';
 import { Secretaria, Evento } from '../../database/models/index.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
+import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 
 // ─── Planos ───────────────────────────────────────────────────────────────────
 
 export const list = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    const where: any = {};
+    const where: any = municipioWhere(user, {}, getActiveMid(req));
     if (user.role === 'secretaria') where.secretaria_id = user.secretaria_id;
     const planos = await Repo.findAllPlanos(where);
     res.render('planejamento/index', { title: 'Planejamento', planos });
@@ -20,7 +21,10 @@ export const list = async (req: Request, res: Response) => {
 
 export const createView = async (req: Request, res: Response) => {
   try {
-    const secretarias = await Secretaria.findAll({ where: { ativo: true } });
+    const user = (req as any).session.user;
+    const secWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') secWhere.municipio_id = user.municipio_id;
+    const secretarias = await Secretaria.findAll({ where: secWhere });
     res.render('planejamento/create', { title: 'Novo Plano de Ação', secretarias });
   } catch (err) {
     console.error(err);
@@ -32,8 +36,8 @@ export const store = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
     const { titulo, descricao, periodo_inicio, periodo_fim, secretaria_id } = req.body;
-    const secId = (user.role === 'admin' || user.role === 'secom') ? secretaria_id : user.secretaria_id;
-    const plano = await Repo.createPlano({ titulo, descricao, periodo_inicio, periodo_fim, secretaria_id: secId, criado_por: user.id });
+    const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
+    const plano = await Repo.createPlano({ titulo, descricao, periodo_inicio, periodo_fim, secretaria_id: secId, municipio_id: user.municipio_id, criado_por: user.id });
     res.redirect(`/planejamento/${(plano as any).id}`);
   } catch (err) {
     console.error(err);
@@ -46,6 +50,9 @@ export const show = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const plano = await Repo.findPlanoById(Number(req.params.id));
     if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) {
+      return res.redirect('/planejamento');
+    }
     if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) {
       return res.redirect('/planejamento');
     }
@@ -71,10 +78,15 @@ export const editView = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const plano = await Repo.findPlanoById(Number(req.params.id));
     if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) {
+      return res.redirect('/planejamento');
+    }
     if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) {
       return res.redirect('/planejamento');
     }
-    const secretarias = await Secretaria.findAll({ where: { ativo: true } });
+    const secWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') secWhere.municipio_id = user.municipio_id;
+    const secretarias = await Secretaria.findAll({ where: secWhere });
     res.render('planejamento/edit', { title: 'Editar Plano', plano, secretarias });
   } catch (err) {
     console.error(err);
@@ -88,7 +100,7 @@ export const update = async (req: Request, res: Response) => {
     const { titulo, descricao, periodo_inicio, periodo_fim, secretaria_id, status } = req.body;
     const user = (req as any).session.user;
     const updateData: any = { titulo, descricao, periodo_inicio, periodo_fim, status };
-    if (user.role === 'admin' || user.role === 'secom') updateData.secretaria_id = secretaria_id;
+    if (['admin', 'secom', 'super_admin'].includes(user.role)) updateData.secretaria_id = secretaria_id;
     await Repo.updatePlano(id, updateData);
     res.redirect(`/planejamento/${id}`);
   } catch (err) {
@@ -100,7 +112,7 @@ export const update = async (req: Request, res: Response) => {
 export const destroy = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (!['admin', 'secom'].includes(user.role)) {
+    if (!['admin', 'secom', 'super_admin'].includes(user.role)) {
       return res.status(403).json({ ok: false, error: 'Sem permissão' });
     }
     await Repo.destroyPlano(Number(req.params.id));
@@ -178,6 +190,9 @@ export const imprimir = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const plano = await Repo.findPlanoById(Number(req.params.id));
     if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) {
+      return res.redirect('/planejamento');
+    }
     if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) {
       return res.redirect('/planejamento');
     }

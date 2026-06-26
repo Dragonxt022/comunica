@@ -2,17 +2,20 @@ import { DataTypes, Model } from 'sequelize';
 import sequelize from '../../config/database.ts';
 import bcrypt from 'bcryptjs';
 import Secretaria from './Secretaria.ts';
+import Municipio from './Municipio.ts';
 
 class User extends Model {
   public id!: number;
   public nome!: string;
   public email!: string;
   public senha_hash!: string;
-  public role!: 'admin' | 'secom' | 'secretaria' | 'imprensa';
+  public role!: 'super_admin' | 'admin' | 'secom' | 'secretaria' | 'imprensa';
   public ativo!: boolean;
   public ultimo_login!: Date | null;
   public secretaria_id!: number | null;
   public secretaria?: Secretaria;
+  public municipio_id!: number | null;
+  public municipio?: Municipio;
   public avatar!: string | null;
   public celular!: string | null;
 
@@ -45,7 +48,7 @@ User.init(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('admin', 'secom', 'secretaria', 'imprensa'),
+      type: DataTypes.ENUM('super_admin', 'admin', 'secom', 'secretaria', 'imprensa'),
       allowNull: false,
       defaultValue: 'secretaria',
     },
@@ -62,6 +65,14 @@ User.init(
       allowNull: true,
       references: {
         model: 'secretarias',
+        key: 'id',
+      },
+    },
+    municipio_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'municipios',
         key: 'id',
       },
     },

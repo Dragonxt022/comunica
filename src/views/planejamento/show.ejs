@@ -27,6 +27,41 @@ const statusAcaoLabels = {
 };
 %>
 
+<!-- Quill CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<style>
+/* Quill toolbar integrado ao visual da app */
+.ql-toolbar.ql-snow {
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: #f9fafb;
+    padding: 5px 8px;
+    flex-wrap: wrap;
+}
+.ql-container.ql-snow {
+    border: 1px solid #d1d5db;
+    border-radius: 0 0 0.5rem 0.5rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+}
+.ql-editor { min-height: 110px; padding: 10px 12px; }
+.ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+.ql-expanded .ql-editor { min-height: 260px; }
+.ql-toolbar.ql-snow .ql-formats { margin-right: 6px; }
+/* Conteúdo formatado exibido fora do editor */
+.rich-content h1, .rich-content h2, .rich-content h3 { font-weight: 700; margin-bottom: 4px; }
+.rich-content h2 { font-size: 1em; }
+.rich-content h3 { font-size: 0.9em; }
+.rich-content p + p { margin-top: 4px; }
+.rich-content strong { font-weight: 600; }
+.rich-content ul, .rich-content ol { padding-left: 1.25rem; margin: 4px 0; }
+.rich-content li { margin: 2px 0; }
+.rich-content .ql-align-center { text-align: center; }
+.rich-content .ql-align-right { text-align: right; }
+.rich-content .ql-align-justify { text-align: justify; }
+</style>
+
 <div x-data="planShow()">
 <div class="space-y-6">
 
@@ -148,7 +183,7 @@ const statusAcaoLabels = {
                     </div>
                 </div>
                 <% if (ind.descricao) { %>
-                <p class="text-xs text-gray-400 leading-snug"><%= ind.descricao %></p>
+                <div class="text-xs text-gray-400 leading-snug rich-content"><%- ind.descricao %></div>
                 <% } %>
                 <div class="flex items-end gap-1">
                     <span class="text-2xl font-bold text-gray-900"><%= ind.valor_atual %></span>
@@ -264,11 +299,11 @@ const statusAcaoLabels = {
 
                     <!-- Expandido: descrição + objetivo + botões -->
                     <div x-show="expanded" x-cloak class="mt-3 space-y-2 pt-3 border-t border-gray-100">
-                        <% if (acao.descricao) { %>
-                        <p class="text-xs text-gray-600 leading-relaxed"><%= acao.descricao %></p>
-                        <% } %>
                         <% if (acao.objetivo) { %>
                         <p class="text-xs text-gray-500"><span class="font-semibold text-gray-700">Objetivo:</span> <%= acao.objetivo %></p>
+                        <% } %>
+                        <% if (acao.descricao) { %>
+                        <div class="text-xs text-gray-600 leading-relaxed rich-content"><%- acao.descricao %></div>
                         <% } %>
                         <div class="flex gap-2 pt-1 flex-wrap">
                             <button @click="abrirModalAcao(<%= JSON.stringify(acao).replace(/</g, '\\u003c') %>)"
@@ -277,7 +312,7 @@ const statusAcaoLabels = {
                                 Editar
                             </button>
                             <% if (!acao.evento_id) { %>
-                            <a href="<%= '/eventos/novo?titulo=' + encodeURIComponent(acao.titulo) + '&descricao=' + encodeURIComponent(acao.objetivo || acao.descricao || '') + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id %>"
+                            <a href="<%= '/eventos/novo?titulo=' + encodeURIComponent(acao.titulo) + '&descricao=' + encodeURIComponent(acao.objetivo || '') + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id %>"
                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 Gerar Evento
@@ -320,7 +355,6 @@ const statusAcaoLabels = {
             Nenhuma ação com prazo definido. Adicione prazos às ações para visualizar a timeline.
         </div>
         <% } else { %>
-        <!-- Cabeçalho com meses -->
         <%
         const meses = [];
         const cur = new Date(planStart);
@@ -333,12 +367,10 @@ const statusAcaoLabels = {
         %>
         <div class="overflow-x-auto">
         <div style="min-width:600px">
-            <!-- Régua de meses -->
             <div class="relative h-7 mb-2 border-b border-gray-200">
                 <% meses.forEach(function(m){ %>
                 <span class="absolute text-[10px] text-gray-400 font-medium -translate-x-1/2" style="left:<%= m.left %>%"><%= m.label %></span>
                 <% }); %>
-                <!-- Linha hoje -->
                 <%
                 const hoje2 = new Date(); hoje2.setHours(0,0,0,0);
                 const hojePct = Math.max(0, Math.min(100, ((hoje2.getTime() - planStart) / planSpan) * 100)).toFixed(1);
@@ -347,20 +379,12 @@ const statusAcaoLabels = {
                     <span class="absolute -top-4 -translate-x-1/2 text-[9px] text-red-500 font-bold">HOJE</span>
                 </div>
             </div>
-
-            <!-- Barras das ações -->
             <div class="space-y-2 pb-2">
             <% acoesComPrazo.forEach(function(acao) {
                 const prazoTs = new Date(acao.prazo + 'T00:00:00').getTime();
                 const barEnd  = Math.max(0, Math.min(100, ((prazoTs - planStart) / planSpan) * 100));
-                const barStart = 0;
-                const barW    = Math.max(1, barEnd - barStart);
-                const ganttColors = {
-                    concluido:    '#10b981',
-                    em_andamento: '#3b82f6',
-                    nao_iniciado: '#94a3b8',
-                    cancelado:    '#f87171',
-                };
+                const barW    = Math.max(1, barEnd);
+                const ganttColors = { concluido: '#10b981', em_andamento: '#3b82f6', nao_iniciado: '#94a3b8', cancelado: '#f87171' };
                 const barColor = ganttColors[acao.status] || '#94a3b8';
                 const vencidaG = prazoTs < hoje2.getTime() && acao.status !== 'concluido' && acao.status !== 'cancelado';
             %>
@@ -370,20 +394,17 @@ const statusAcaoLabels = {
                 </div>
                 <div class="flex-1 relative h-7 bg-gray-100 rounded-md overflow-hidden">
                     <div class="absolute top-1 bottom-1 rounded-md flex items-center px-2 overflow-hidden"
-                         style="left:<%= barStart %>%;width:<%= barW %>%;background:<%= barColor %><%= vencidaG ? '' : '' %>;opacity:<%= acao.status === 'cancelado' ? '0.5' : '1' %>">
+                         style="left:0%;width:<%= barW %>%;background:<%= barColor %>;opacity:<%= acao.status === 'cancelado' ? '0.5' : '1' %>">
                         <span class="text-white text-[10px] font-semibold truncate whitespace-nowrap">
                             <%= new Date(acao.prazo + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) %>
                             <%= vencidaG ? ' ⚠' : '' %>
                         </span>
                     </div>
-                    <!-- Linha vertical no prazo -->
                     <div class="absolute top-0 bottom-0 w-0.5 opacity-60" style="left:<%= barEnd %>%;background:<%= barColor %>"></div>
                 </div>
             </div>
             <% }); %>
             </div>
-
-            <!-- Legenda -->
             <div class="flex gap-4 mt-3 pt-3 border-t border-gray-100 flex-wrap">
                 <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>Concluído</span>
                 <span class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-3 h-3 rounded-sm bg-blue-500 inline-block"></span>Em andamento</span>
@@ -401,68 +422,102 @@ const statusAcaoLabels = {
 
 <!-- ─── Modal: Nova / Editar Ação ─────────────────────────────────────────── -->
 <div x-show="modalAcao" x-cloak
-     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     class="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-4 px-4 overflow-y-auto"
      style="background:rgba(15,23,42,0.6);backdrop-filter:blur(4px)"
-     @click.self="modalAcao = false">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" @click.stop>
+     @click.self="fecharModalAcao()">
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full transition-all duration-200 my-auto"
+         :class="modalExpandido ? 'max-w-4xl' : 'max-w-lg'"
+         @click.stop>
+
+        <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 class="text-base font-bold text-gray-900" x-text="acaoEditando ? 'Editar Ação' : 'Nova Ação'"></h3>
-            <button @click="modalAcao = false" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <div class="flex items-center gap-1">
+                <!-- Botão expandir/recolher -->
+                <button type="button" @click="modalExpandido = !modalExpandido"
+                    class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                    :title="modalExpandido ? 'Reduzir modal' : 'Expandir modal'">
+                    <svg x-show="!modalExpandido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 0l-5 5"/>
+                    </svg>
+                    <svg x-show="modalExpandido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"/>
+                    </svg>
+                </button>
+                <button @click="fecharModalAcao()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
         </div>
+
         <form :action="acaoEditando ? '/planejamento/<%= plano.id %>/acoes/' + acaoEditando.id + '/editar' : '/planejamento/<%= plano.id %>/acoes'"
-              method="POST" class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Título <span class="text-red-500">*</span></label>
-                <input type="text" name="titulo" required :value="acaoEditando ? acaoEditando.titulo : ''"
-                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Objetivo</label>
-                <textarea name="objetivo" rows="2" :value="acaoEditando ? (acaoEditando.objetivo || '') : ''"
-                    placeholder="O que se pretende alcançar com esta ação?"
-                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm resize-none"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Descrição / Detalhes</label>
-                <textarea name="descricao" rows="2" :value="acaoEditando ? (acaoEditando.descricao || '') : ''"
-                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm resize-none"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
-                    <input type="text" name="responsavel_nome" :value="acaoEditando ? (acaoEditando.responsavel_nome || '') : ''"
-                        placeholder="Nome do responsável"
-                        class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+              method="POST" @submit="syncAcaoForm"
+              class="p-6 space-y-4">
+
+            <!-- Grid de campos: 1 col normal / 2 col expandido -->
+            <div :class="modalExpandido ? 'grid grid-cols-2 gap-6' : 'space-y-4'">
+
+                <!-- Coluna esquerda -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Título <span class="text-red-500">*</span></label>
+                        <input type="text" name="titulo" required :value="acaoEditando ? acaoEditando.titulo : ''"
+                            class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Objetivo</label>
+                        <textarea name="objetivo" rows="2" :value="acaoEditando ? (acaoEditando.objetivo || '') : ''"
+                            placeholder="O que se pretende alcançar com esta ação?"
+                            class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm resize-none"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
+                            <input type="text" name="responsavel_nome" :value="acaoEditando ? (acaoEditando.responsavel_nome || '') : ''"
+                                placeholder="Nome do responsável"
+                                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prazo</label>
+                            <input type="date" name="prazo" :value="acaoEditando ? (acaoEditando.prazo ? String(acaoEditando.prazo).slice(0,10) : '') : ''"
+                                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
+                            <select name="prioridade" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                                <option value="baixa" :selected="acaoEditando && acaoEditando.prioridade === 'baixa'">Baixa</option>
+                                <option value="media" :selected="!acaoEditando || acaoEditando.prioridade === 'media'">Média</option>
+                                <option value="alta" :selected="acaoEditando && acaoEditando.prioridade === 'alta'">Alta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select name="status" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                                <option value="nao_iniciado" :selected="!acaoEditando || acaoEditando.status === 'nao_iniciado'">Não iniciado</option>
+                                <option value="em_andamento" :selected="acaoEditando && acaoEditando.status === 'em_andamento'">Em andamento</option>
+                                <option value="concluido" :selected="acaoEditando && acaoEditando.status === 'concluido'">Concluído</option>
+                                <option value="cancelado" :selected="acaoEditando && acaoEditando.status === 'cancelado'">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Coluna direita (ou abaixo no modo compacto): Descrição com Quill -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Prazo</label>
-                    <input type="date" name="prazo" :value="acaoEditando ? (acaoEditando.prazo || '') : ''"
-                        class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-gray-700">Descrição / Detalhes</label>
+                        <span class="text-[10px] text-gray-400">Suporta formatação</span>
+                    </div>
+                    <div id="quill-acao-wrapper" :class="modalExpandido ? 'ql-expanded' : ''"><div></div></div>
+                    <input type="hidden" name="descricao" id="input-acao-descricao">
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
-                    <select name="prioridade" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
-                        <option value="baixa" :selected="acaoEditando && acaoEditando.prioridade === 'baixa'">Baixa</option>
-                        <option value="media" :selected="!acaoEditando || acaoEditando.prioridade === 'media'">Média</option>
-                        <option value="alta" :selected="acaoEditando && acaoEditando.prioridade === 'alta'">Alta</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select name="status" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
-                        <option value="nao_iniciado" :selected="!acaoEditando || acaoEditando.status === 'nao_iniciado'">Não iniciado</option>
-                        <option value="em_andamento" :selected="acaoEditando && acaoEditando.status === 'em_andamento'">Em andamento</option>
-                        <option value="concluido" :selected="acaoEditando && acaoEditando.status === 'concluido'">Concluído</option>
-                        <option value="cancelado" :selected="acaoEditando && acaoEditando.status === 'cancelado'">Cancelado</option>
-                    </select>
-                </div>
-            </div>
+
             <div class="flex justify-end gap-3 pt-2">
-                <button type="button" @click="modalAcao = false"
+                <button type="button" @click="fecharModalAcao()"
                     class="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancelar</button>
                 <button type="submit"
                     class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-sm">Salvar</button>
@@ -474,18 +529,37 @@ const statusAcaoLabels = {
 
 <!-- ─── Modal: Nova / Editar Indicador ────────────────────────────────────── -->
 <div x-show="modalIndicador" x-cloak
-     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     class="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-4 px-4 overflow-y-auto"
      style="background:rgba(15,23,42,0.6);backdrop-filter:blur(4px)"
-     @click.self="modalIndicador = false">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" @click.stop>
+     @click.self="fecharModalIndicador()">
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full transition-all duration-200 my-auto"
+         :class="modalExpandido ? 'max-w-3xl' : 'max-w-md'"
+         @click.stop>
+
+        <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 class="text-base font-bold text-gray-900" x-text="indEditando ? 'Editar Indicador' : 'Nova Meta / Indicador'"></h3>
-            <button @click="modalIndicador = false" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <div class="flex items-center gap-1">
+                <button type="button" @click="modalExpandido = !modalExpandido"
+                    class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                    :title="modalExpandido ? 'Reduzir modal' : 'Expandir modal'">
+                    <svg x-show="!modalExpandido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 0l-5 5"/>
+                    </svg>
+                    <svg x-show="modalExpandido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"/>
+                    </svg>
+                </button>
+                <button @click="fecharModalIndicador()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
         </div>
+
         <form :action="indEditando ? '/planejamento/<%= plano.id %>/indicadores/' + indEditando.id + '/editar' : '/planejamento/<%= plano.id %>/indicadores'"
-              method="POST" class="p-6 space-y-4">
+              method="POST" @submit="syncIndForm"
+              class="p-6 space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Indicador <span class="text-red-500">*</span></label>
                 <input type="text" name="indicador" required :value="indEditando ? indEditando.indicador : ''"
@@ -493,9 +567,12 @@ const statusAcaoLabels = {
                     class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-gray-400 font-normal">(opcional)</span></label>
-                <textarea name="descricao" rows="2" :value="indEditando ? (indEditando.descricao || '') : ''"
-                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm resize-none"></textarea>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-700">Descrição <span class="text-gray-400 font-normal text-xs">(opcional)</span></label>
+                    <span class="text-[10px] text-gray-400">Suporta formatação</span>
+                </div>
+                <div id="quill-ind-wrapper" :class="modalExpandido ? 'ql-expanded' : ''"><div></div></div>
+                <input type="hidden" name="descricao" id="input-ind-descricao">
             </div>
             <div class="grid grid-cols-3 gap-3">
                 <div>
@@ -516,7 +593,7 @@ const statusAcaoLabels = {
                 </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
-                <button type="button" @click="modalIndicador = false"
+                <button type="button" @click="fecharModalIndicador()"
                     class="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancelar</button>
                 <button type="submit"
                     class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-sm">Salvar</button>
@@ -526,7 +603,20 @@ const statusAcaoLabels = {
 </div>
 
 
+<!-- Quill JS -->
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
 <script>
+var QUILL_TOOLBAR = [
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ color: [] }],
+    [{ align: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ indent: '-1' }, { indent: '+1' }],
+    ['clean']
+];
+
 function planShow() {
     return {
         tab: 'lista',
@@ -534,15 +624,72 @@ function planShow() {
         acaoEditando: null,
         modalIndicador: false,
         indEditando: null,
+        modalExpandido: false,
+        _quillAcao: null,
+        _quillInd: null,
 
-        abrirModalAcao(acao) {
+        abrirModalAcao: function(acao) {
             this.acaoEditando = acao;
             this.modalAcao = true;
+            this.modalExpandido = false;
+            var self = this;
+            setTimeout(function() {
+                var wrapper = document.getElementById('quill-acao-wrapper');
+                if (!wrapper || typeof Quill === 'undefined') return;
+                wrapper.innerHTML = '<div></div>';
+                self._quillAcao = new Quill(wrapper.firstChild, {
+                    theme: 'snow',
+                    placeholder: 'Detalhe os procedimentos, recursos necessários, contexto…',
+                    modules: { toolbar: QUILL_TOOLBAR }
+                });
+                self._quillAcao.root.innerHTML = (acao && acao.descricao) ? acao.descricao : '';
+            }, 60);
         },
 
-        abrirModalIndicador(ind) {
+        fecharModalAcao: function() {
+            this.modalAcao = false;
+            this.modalExpandido = false;
+            this._quillAcao = null;
+        },
+
+        abrirModalIndicador: function(ind) {
             this.indEditando = ind;
             this.modalIndicador = true;
+            this.modalExpandido = false;
+            var self = this;
+            setTimeout(function() {
+                var wrapper = document.getElementById('quill-ind-wrapper');
+                if (!wrapper || typeof Quill === 'undefined') return;
+                wrapper.innerHTML = '<div></div>';
+                self._quillInd = new Quill(wrapper.firstChild, {
+                    theme: 'snow',
+                    placeholder: 'Contexto, método de medição, fonte dos dados…',
+                    modules: { toolbar: QUILL_TOOLBAR }
+                });
+                self._quillInd.root.innerHTML = (ind && ind.descricao) ? ind.descricao : '';
+            }, 60);
+        },
+
+        fecharModalIndicador: function() {
+            this.modalIndicador = false;
+            this.modalExpandido = false;
+            this._quillInd = null;
+        },
+
+        syncAcaoForm: function() {
+            var input = document.getElementById('input-acao-descricao');
+            if (input && this._quillAcao) {
+                var html = this._quillAcao.root.innerHTML;
+                input.value = html === '<p><br></p>' ? '' : html;
+            }
+        },
+
+        syncIndForm: function() {
+            var input = document.getElementById('input-ind-descricao');
+            if (input && this._quillInd) {
+                var html = this._quillInd.root.innerHTML;
+                input.value = html === '<p><br></p>' ? '' : html;
+            }
         },
 
         async toggleStatusAcao(id, statusAtual) {

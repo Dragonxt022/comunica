@@ -5,7 +5,17 @@ import { hasRole } from '../../middlewares/auth.middleware.ts';
 const router = Router();
 
 const onlyAdmin = hasRole(['admin']);
+const onlySuperAdmin = hasRole(['super_admin']);
 
+router.post('/municipio-ativo', onlySuperAdmin, AdminController.setMunicipioAtivo);
+router.get('/municipios', onlySuperAdmin, AdminController.listMunicipios);
+router.get('/municipios/novo', onlySuperAdmin, AdminController.novoMunicipioView);
+router.post('/municipios', onlySuperAdmin, AdminController.storeMunicipio);
+router.get('/municipios/:id/editar', onlySuperAdmin, AdminController.editMunicipioView);
+router.post('/municipios/:id', onlySuperAdmin, AdminController.updateMunicipio);
+router.post('/municipios/:id/excluir', onlySuperAdmin, AdminController.destroyMunicipio);
+
+router.get('/secretarias/por-municipio', onlySuperAdmin, AdminController.secretariasPorMunicipio);
 router.get('/secretarias', onlyAdmin, AdminController.listSecretarias);
 router.get('/secretarias/nova', onlyAdmin, AdminController.novaSecretariaView);
 router.post('/secretarias', onlyAdmin, AdminController.storeSecretaria);

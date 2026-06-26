@@ -18,6 +18,8 @@ document.addEventListener('alpine:init', function() {
             view: localStorage.getItem('sol_view') || 'lista',
             filtroTexto: '',
             filtroPrioridade: '',
+            filtroTipo: '',
+            filtrosAbertos: <%= (filtroStatus || filtroPrioridade || filtroTipo) ? 'true' : 'false' %>,
             dragging: null,
             dragOver: null,
             toast: '',
@@ -36,9 +38,11 @@ document.addEventListener('alpine:init', function() {
             get solicitacoesFiltradas() {
                 var txt = this.filtroTexto.toLowerCase().trim();
                 var pri = this.filtroPrioridade;
+                var tipo = this.filtroTipo;
                 return this.solicitacoes.filter(function(s) {
                     if (txt && s.titulo.toLowerCase().indexOf(txt) < 0) return false;
                     if (pri && s.prioridade !== pri) return false;
+                    if (tipo && s.tipo_midia !== tipo) return false;
                     return true;
                 });
             },
@@ -181,42 +185,71 @@ document.addEventListener('alpine:init', function() {
         </a>
     </div>
 
-    <!-- Resumo por status -->
-    <div id="tour-sol-board" class="grid grid-cols-3 sm:grid-cols-6 gap-3">
-        <% [
-            { key: 'pendente',   label: 'Pendente',   cls: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-            { key: 'aprovado',   label: 'Aprovado',   cls: 'text-blue-700   bg-blue-50   border-blue-200'   },
-            { key: 'produção',   label: 'Produção',   cls: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
-            { key: 'concluído',  label: 'Concluído',  cls: 'text-teal-700   bg-teal-50   border-teal-200'   },
-            { key: 'finalizado', label: 'Finalizado', cls: 'text-green-700  bg-green-50  border-green-200'  },
-            { key: 'cancelado',  label: 'Cancelado',  cls: 'text-red-700    bg-red-50    border-red-200'    },
-        ].forEach(function(st) { %>
-        <a href="?status=<%= st.key %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"
-           class="rounded-xl border p-3 text-center transition hover:shadow-sm <%= st.cls %>
-                  <%= filtroStatus === st.key ? 'ring-2 ring-offset-1 ring-current shadow-sm' : '' %>">
-            <p class="text-[10px] font-bold uppercase tracking-widest opacity-70"><%= st.label %></p>
-            <p class="text-xl font-bold mt-0.5"><%= counts[st.key] || 0 %></p>
-        </a>
-        <% }) %>
-    </div>
+    <!-- Barra de controles -->
+    <div class="bg-white px-3 py-2.5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
 
-    <!-- Barra de controles unificada -->
-    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center">
-
-        <!-- Busca (Alpine para kanban + name para form lista) -->
-        <div class="relative flex-1 min-w-[160px]">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <!-- Busca -->
+        <div class="relative flex-1 min-w-[140px]">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input type="text" name="q" x-model="filtroTexto"
-                value="<%= q %>" placeholder="Buscar pelo título…"
+                value="<%= q %>" placeholder="Buscar…"
                 form="form-filtros"
-                class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm bg-gray-50 focus:bg-white transition">
         </div>
 
-        <!-- Status (só para lista) -->
-        <div x-show="view === 'lista'">
+        <!-- Botão funil -->
+        <button type="button" @click="filtrosAbertos = !filtrosAbertos"
+            class="relative p-2 rounded-lg border transition shrink-0"
+            :class="filtrosAbertos || filtroPrioridade || filtroTipo || '<%= filtroStatus %>'
+                ? 'border-blue-400 bg-blue-50 text-blue-600'
+                : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50'"
+            title="Filtros">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+            <!-- Badge filtros ativos -->
+            <% if(filtroStatus || filtroPrioridade || filtroTipo) { %>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>
+            <% } else { %>
+            <span x-show="filtroPrioridade || filtroTipo" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>
+            <% } %>
+        </button>
+
+        <!-- Separador -->
+        <div class="w-px h-6 bg-gray-200 shrink-0"></div>
+
+        <!-- Toggle Lista / Kanban -->
+        <div class="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+            <button type="button" @click="view = 'lista'"
+                class="px-3 py-2 text-sm font-medium transition flex items-center gap-1.5"
+                :class="view === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                <span class="hidden sm:inline">Lista</span>
+            </button>
+            <button type="button" @click="view = 'kanban'"
+                class="px-3 py-2 text-sm font-medium transition border-l border-gray-200 flex items-center gap-1.5"
+                :class="view === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                <span class="hidden sm:inline">Kanban</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Painel de filtros (expansível) -->
+    <div x-show="filtrosAbertos"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         x-cloak
+         class="bg-white px-4 py-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-end gap-3">
+
+        <!-- Status (só lista) -->
+        <div x-show="view === 'lista'" class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Status</label>
             <select name="status" form="form-filtros"
-                class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <option value="">Todos os status</option>
+                class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition focus:bg-white">
+                <option value="">Todos</option>
                 <% [
                     ['pendente','Pendente'],['aprovado','Aprovado'],['produção','Produção'],
                     ['concluído','Concluído'],['finalizado','Finalizado'],['cancelado','Cancelado']
@@ -226,44 +259,59 @@ document.addEventListener('alpine:init', function() {
             </select>
         </div>
 
-        <!-- Prioridade -->
-        <select name="prioridade" x-model="filtroPrioridade" form="form-filtros"
-            class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-            <option value="">Todas prioridades</option>
-            <option value="alta"  <%= filtroPrioridade === 'alta'  ? 'selected' : '' %>>Alta</option>
-            <option value="media" <%= filtroPrioridade === 'media' ? 'selected' : '' %>>Média</option>
-            <option value="baixa" <%= filtroPrioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
-        </select>
-
-        <!-- Submit / Limpar só na lista -->
-        <div x-show="view === 'lista'" class="flex gap-2">
-            <button type="submit" form="form-filtros"
-                class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition">Filtrar</button>
-            <a href="/solicitacoes" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Limpar</a>
+        <!-- Tipo de mídia -->
+        <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Tipo de Mídia</label>
+            <select name="tipo" x-model="filtroTipo" form="form-filtros"
+                class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition focus:bg-white">
+                <option value="">Todos</option>
+                <% ['Nota','Release','Post para Redes Sociais','Arte Gráfica','Vídeo','Foto','Outros'].forEach(function(t) { %>
+                <option value="<%= t %>" <%= filtroTipo === t ? 'selected' : '' %>><%= t %></option>
+                <% }) %>
+            </select>
         </div>
 
-        <!-- Limpar filtros kanban -->
-        <button x-show="view === 'kanban' && (filtroTexto || filtroPrioridade)"
-            @click="filtroTexto = ''; filtroPrioridade = ''"
-            type="button"
-            class="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition">
-            Limpar ✕
-        </button>
+        <!-- Prioridade -->
+        <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Prioridade</label>
+            <select name="prioridade" x-model="filtroPrioridade" form="form-filtros"
+                class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition focus:bg-white">
+                <option value="">Todas</option>
+                <option value="alta"  <%= filtroPrioridade === 'alta'  ? 'selected' : '' %>>Alta</option>
+                <option value="media" <%= filtroPrioridade === 'media' ? 'selected' : '' %>>Média</option>
+                <option value="baixa" <%= filtroPrioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
+            </select>
+        </div>
 
-        <!-- Toggle Lista / Kanban (ml-auto) -->
-        <div class="ml-auto flex rounded-lg border border-gray-200 overflow-hidden">
-            <button type="button" @click="view = 'lista'"
-                class="px-4 py-2 text-sm font-medium transition flex items-center gap-1.5"
-                :class="view === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                Lista
+        <!-- Ações -->
+        <div class="flex items-center gap-2 pb-0.5">
+            <!-- Aplicar (lista) -->
+            <button x-show="view === 'lista'" type="submit" form="form-filtros"
+                class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
+                Aplicar
             </button>
-            <button type="button" @click="view = 'kanban'"
-                class="px-4 py-2 text-sm font-medium transition border-l border-gray-200 flex items-center gap-1.5"
-                :class="view === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
-                Kanban
+            <!-- Limpar kanban -->
+            <button x-show="view === 'kanban' && (filtroTexto || filtroPrioridade || filtroTipo)"
+                @click="filtroTexto = ''; filtroPrioridade = ''; filtroTipo = ''"
+                type="button"
+                class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
+                Aplicar
             </button>
+            <!-- Limpar tudo -->
+            <% if(filtroStatus || q || filtroPrioridade || filtroTipo) { %>
+            <a href="/solicitacoes"
+               class="px-3 py-2 border border-gray-200 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Limpar filtros
+            </a>
+            <% } else { %>
+            <button type="button" x-show="filtroTexto || filtroPrioridade || filtroTipo"
+                @click="filtroTexto = ''; filtroPrioridade = ''; filtroTipo = ''"
+                class="px-3 py-2 border border-gray-200 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Limpar
+            </button>
+            <% } %>
         </div>
     </div>
 

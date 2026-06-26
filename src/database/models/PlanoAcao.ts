@@ -11,6 +11,7 @@ class PlanoAcao extends Model {
   public periodo_fim!: string;
   public status!: string;
   public secretaria_id!: number;
+  public municipio_id!: number | null;
   public criado_por!: number;
   public secretaria?: Secretaria;
   public autor?: User;
@@ -25,6 +26,7 @@ PlanoAcao.init(
     periodo_fim: { type: DataTypes.DATEONLY, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'ativo' },
     secretaria_id: { type: DataTypes.INTEGER, allowNull: false },
+    municipio_id: { type: DataTypes.INTEGER, allowNull: true },
     criado_por: { type: DataTypes.INTEGER, allowNull: false },
   },
   { sequelize, modelName: 'PlanoAcao', tableName: 'planos_acao' }

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User, Secretaria } from '../../database/models/index.ts';
+import { User, Secretaria, Municipio } from '../../database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
@@ -78,9 +78,12 @@ export const login = async (req: Request, res: Response) => {
   const { email, senha } = req.body;
 
   try {
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       where: { email, ativo: true },
-      include: [{ model: Secretaria, as: 'secretaria' }]
+      include: [
+        { model: Secretaria, as: 'secretaria' },
+        { model: Municipio, as: 'municipio' },
+      ],
     });
 
     if (!user || !(await user.checkPassword(senha))) {
@@ -101,6 +104,8 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
       secretaria_id: user.secretaria_id,
       secretaria_nome: user.secretaria?.nome || null,
+      municipio_id: user.municipio_id,
+      municipio_nome: (user as any).municipio?.nome || null,
       avatar: user.avatar || null,
       celular: user.celular || null,
     };

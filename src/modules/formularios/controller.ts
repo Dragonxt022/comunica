@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import FormularioTemplateRepository from './repository.ts';
+import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 
 export const list = async (req: Request, res: Response) => {
   try {
-    const templates = await FormularioTemplateRepository.findAll();
+    const user = (req as any).session.user;
+    const templates = await FormularioTemplateRepository.findAll(municipioWhere(user, {}, getActiveMid(req)));
     res.render('formularios/index', { title: 'Templates de Formulário', templates });
   } catch (error) {
     console.error('Error listing formulario templates:', error);
@@ -27,6 +29,7 @@ export const store = async (req: Request, res: Response) => {
       nome,
       descricao: descricao || '',
       campos: JSON.stringify(camposArray),
+      municipio_id: user.municipio_id,
       criado_por: user.id,
     });
 

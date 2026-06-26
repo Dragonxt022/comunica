@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -112,6 +112,24 @@ app.use(async (req, res, next) => {
   res.locals.user = (req as any).session.user || null;
   res.locals.path = req.path;
 
+  // Seletor de município para super_admin
+  const sessionUser = (req as any).session.user;
+  const rawMid = (req as any).session.activeMunicipioId;
+  res.locals.activeMunicipioId = rawMid ? parseInt(String(rawMid), 10) : null;
+  if (sessionUser && sessionUser.role === 'super_admin') {
+    try {
+      res.locals.municipiosNav = await Municipio.findAll({
+        where: { ativo: true },
+        order: [['nome', 'ASC']],
+        attributes: ['id', 'nome'],
+      });
+    } catch {
+      res.locals.municipiosNav = [];
+    }
+  } else {
+    res.locals.municipiosNav = [];
+  }
+
   const cached = getConfigCache();
   if (cached) {
     res.locals.config = cached.cfg;
@@ -150,6 +168,34 @@ async function seed() {
       // coluna já existe — sem ação necessária
     }
   };
+
+  // ─── Multi-município: criar tabela e colunas ──────────────────────────────
+  await Municipio.sync({ force: false });
+  await addCol('secretarias',         'municipio_id', 'INTEGER NULL');
+  await addCol('users',               'municipio_id', 'INTEGER NULL');
+  await addCol('eventos',             'municipio_id', 'INTEGER NULL');
+  await addCol('solicitacoes',        'municipio_id', 'INTEGER NULL');
+  await addCol('releases',            'municipio_id', 'INTEGER NULL');
+  await addCol('planos_acao',         'municipio_id', 'INTEGER NULL');
+  await addCol('formulario_templates','municipio_id', 'INTEGER NULL');
+  await addCol('inscricoes',          'municipio_id', 'INTEGER NULL');
+
+  // ─── Seed Cujubim e marcação de todos os dados existentes ────────────────
+  let cujubim = await Municipio.findOne({ where: { slug: 'cujubim' } });
+  if (!cujubim) {
+    cujubim = await Municipio.create({ nome: 'Cujubim', slug: 'cujubim', estado: 'RO', ativo: true });
+    console.log('Seed: Município Cujubim criado.');
+  }
+  const mid = cujubim.id;
+  await sequelize.query(`UPDATE secretarias SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE users SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE eventos SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE solicitacoes SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE releases SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE planos_acao SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE formulario_templates SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+  await sequelize.query(`UPDATE inscricoes SET municipio_id = ${mid} WHERE municipio_id IS NULL`);
+
   await addCol('releases', 'imagem_capa', 'VARCHAR(255) NULL');
   await addCol('releases', 'agendado_para', 'DATETIME NULL');
   await addCol('releases', 'secretaria_id', 'INTEGER NULL');
@@ -193,11 +239,14 @@ async function seed() {
   
   const secretariaCount = await Secretaria.count();
   if (secretariaCount === 0) {
+    // Garantir que temos o município Cujubim (já criado acima, mas referência local pode ser nova)
+    const mun = await Municipio.findOne({ where: { slug: 'cujubim' } }) || cujubim;
     const secAdmin = await Secretaria.create({
       nome: 'Comunicação (SECOM)',
       slug: 'secom',
       cor: '#ef4444',
       ativo: true,
+      municipio_id: mun.id,
     });
 
     const hash = await bcrypt.hash('admin123', 12);
@@ -205,12 +254,13 @@ async function seed() {
       nome: 'Administrador Master',
       email: 'admin@comunica.gov.br',
       senha_hash: hash,
-      role: 'admin',
+      role: 'super_admin',
       ativo: true,
       secretaria_id: secAdmin.id,
+      municipio_id: mun.id,
     });
-    
-    console.log('Seed: Initial data created (Admin: admin@comunica.gov.br / admin123)');
+
+    console.log('Seed: Initial data created (SuperAdmin: admin@comunica.gov.br / admin123)');
   }
 }
 
@@ -243,9 +293,11 @@ async function startServer() {
         const calStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const calEnd   = new Date(now.getFullYear(), now.getMonth() + 5, 1);
 
-        const whereRole = sessionUser.role === 'secretaria'
-          ? { secretaria_id: sessionUser.secretaria_id }
-          : {};
+        const activeMid = (req as any).session.activeMunicipioId ? parseInt(String((req as any).session.activeMunicipioId), 10) : null;
+        const whereRole: any = {};
+        if (sessionUser.role !== 'super_admin') whereRole.municipio_id = sessionUser.municipio_id;
+        else if (activeMid) whereRole.municipio_id = activeMid;
+        if (sessionUser.role === 'secretaria') whereRole.secretaria_id = sessionUser.secretaria_id;
 
         const startOf8Weeks = new Date(now);
         startOf8Weeks.setDate(startOf8Weeks.getDate() - 56);
@@ -262,6 +314,7 @@ async function startServer() {
           finalizadasMes,
           solsOitoSemanas,
           solsParaRanking,
+          acoesVencidasCount,
         ] = await Promise.all([
           Solicitacao.count({ where: { status: 'pendente', ...whereRole } }),
           Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] } } }),
@@ -297,6 +350,16 @@ async function startServer() {
                 include: [{ model: Secretaria, as: 'secretaria', attributes: ['id', 'nome', 'cor'] }],
               })
             : Promise.resolve([]),
+          AcaoPlanejamento.count({
+            where: {
+              prazo: { [Op.lt]: today },
+              status: { [Op.notIn]: ['concluido', 'cancelado'] },
+            } as any,
+            include: [{
+              model: PlanoAcao, as: 'plano', required: true,
+              where: sessionUser.role === 'secretaria' ? { secretaria_id: sessionUser.secretaria_id } : {},
+            }],
+          }).catch(() => 0),
         ]);
 
         // Agrega volume semanal (8 semanas, mais antiga → mais recente)
@@ -369,6 +432,7 @@ async function startServer() {
           volumeSemanal,
           semanaLabels,
           topSecretarias,
+          acoesVencidasCount,
         });
       } catch (error) {
         console.error('Dashboard error:', error);

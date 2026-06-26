@@ -10,7 +10,8 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
 export const hasRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).session.user;
-    if (user && roles.includes(user.role)) {
+    // super_admin tem acesso a tudo — bypassa qualquer restrição de role
+    if (user && (user.role === 'super_admin' || roles.includes(user.role))) {
       return next();
     }
     res.status(403).render('errors/403', { title: 'Acesso Negado', layout: 'layouts/main' });

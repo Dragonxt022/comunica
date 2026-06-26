@@ -12,6 +12,7 @@ class Release extends Model {
   public publicado_em!: Date | null;
   public agendado_para!: Date | null;
   public secretaria_id!: number | null;
+  public municipio_id!: number | null;
   public secretaria?: Secretaria;
   public link_publicacao!: string | null;
   public print_publicacao_url!: string | null;
@@ -29,6 +30,7 @@ Release.init(
     publicado_em: { type: DataTypes.DATE, allowNull: true },
     agendado_para: { type: DataTypes.DATE, allowNull: true },
     secretaria_id: { type: DataTypes.INTEGER, allowNull: true },
+    municipio_id: { type: DataTypes.INTEGER, allowNull: true },
     link_publicacao: { type: DataTypes.STRING(500), allowNull: true },
     print_publicacao_url: { type: DataTypes.STRING(500), allowNull: true },
     print_publicacao_nome: { type: DataTypes.STRING, allowNull: true },

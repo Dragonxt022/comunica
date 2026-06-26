@@ -17,7 +17,10 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
 <head>
 <meta charset="UTF-8">
 <title>Relatório — <%= plano.titulo %></title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
 <style>
+.ql-editor { padding: 0 !important; }
+.ql-snow.ql-toolbar, .ql-snow .ql-toolbar, .ql-container.ql-snow { border: none !important; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; background: #fff; padding: 32px 40px; }
   h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
@@ -122,7 +125,7 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
     <tr>
       <td>
         <strong><%= ind.indicador %></strong>
-        <% if(ind.descricao){ %><br><span style="color:#94a3b8"><%= ind.descricao %></span><% } %>
+        <% if(ind.descricao){ %><br><span style="color:#94a3b8"><%- ind.descricao %></span><% } %>
       </td>
       <td><%= ind.valor_meta %> <%= ind.unidade %></td>
       <td><%= ind.valor_atual %> <%= ind.unidade %></td>

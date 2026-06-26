@@ -2,12 +2,12 @@
 
     <!-- Cabeçalho -->
     <div class="flex items-center gap-3">
-        <a href="/admin/secretarias" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <a href="/admin/municipios" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
-            <h2 class="text-2xl font-bold text-gray-900"><%= secretaria ? 'Editar Secretaria' : 'Nova Secretaria' %></h2>
-            <p class="text-sm text-gray-500"><%= secretaria ? 'Atualize os dados da secretaria.' : 'Cadastre uma nova secretaria ou órgão municipal.' %></p>
+            <h2 class="text-2xl font-bold text-gray-900"><%= municipio ? 'Editar Município' : 'Novo Município' %></h2>
+            <p class="text-sm text-gray-500"><%= municipio ? 'Atualize os dados do município.' : 'Preencha os dados para cadastrar um novo município.' %></p>
         </div>
     </div>
 
@@ -18,53 +18,38 @@
         </div>
     <% } %>
 
-    <form action="<%= secretaria ? '/admin/secretarias/' + secretaria.id : '/admin/secretarias' %>" method="POST"
-        class="space-y-5">
+    <form action="<%= municipio ? '/admin/municipios/' + municipio.id : '/admin/municipios' %>" method="POST" class="space-y-5">
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Dados do Município</h3>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Nome <span class="text-red-500">*</span></label>
                 <input type="text" name="nome" required
-                    value="<%= secretaria ? secretaria.nome : '' %>"
-                    placeholder="Ex: Secretaria Municipal de Saúde"
+                    value="<%= municipio ? municipio.nome : '' %>"
+                    placeholder="Ex: Cujubim"
                     class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Cor de identificação</label>
-                <div class="flex items-center gap-4">
-                    <input type="color" name="cor"
-                        value="<%= secretaria ? secretaria.cor : '#3b82f6' %>"
-                        class="w-14 h-11 rounded-lg border border-gray-300 cursor-pointer p-1">
-                    <div>
-                        <p class="text-sm text-gray-600">Cor usada para identificar a secretaria nos filtros e na agenda.</p>
-                        <p class="text-xs text-gray-400 mt-0.5">Escolha uma cor que contraste bem com fundo branco.</p>
-                    </div>
-                </div>
-            </div>
-
-            <% if (user && user.role === 'super_admin' && municipios && municipios.length > 0) { %>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Município <span class="text-red-500">*</span></label>
-                <select name="municipio_id"
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Estado (UF) <span class="text-red-500">*</span></label>
+                <select name="estado" required
                     class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                    <option value="">Selecione um município</option>
-                    <% municipios.forEach(m => { %>
-                        <option value="<%= m.id %>" <%= secretaria && secretaria.municipio_id == m.id ? 'selected' : '' %>><%= m.nome %> — <%= m.estado %></option>
+                    <% const ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']; %>
+                    <% ufs.forEach(uf => { %>
+                    <option value="<%= uf %>" <%= municipio && municipio.estado === uf ? 'selected' : (uf === 'RO' && !municipio ? 'selected' : '') %>><%= uf %></option>
                     <% }) %>
                 </select>
             </div>
-            <% } %>
 
-            <% if(secretaria) { %>
+            <% if (municipio) { %>
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
-                    <p class="text-sm font-medium text-gray-700">Secretaria ativa</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Secretarias inativas não aparecem nos formulários</p>
+                    <p class="text-sm font-medium text-gray-700">Município ativo</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Municípios inativos não aparecem nas seleções</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" name="ativo" class="sr-only peer" <%= secretaria.ativo ? 'checked' : '' %>>
+                    <input type="checkbox" name="ativo" class="sr-only peer" <%= municipio.ativo ? 'checked' : '' %>>
                     <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-blue-600
                         after:content-[''] after:absolute after:top-[2px] after:left-[2px]
                         after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
@@ -74,16 +59,18 @@
             <% } %>
         </div>
 
+        <!-- Ações -->
         <div class="flex justify-end gap-3">
-            <a href="/admin/secretarias"
+            <a href="/admin/municipios"
                 class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition font-medium">
                 Cancelar
             </a>
             <button type="submit"
                 class="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition font-semibold shadow-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <%= secretaria ? 'Salvar Alterações' : 'Criar Secretaria' %>
+                <%= municipio ? 'Salvar Alterações' : 'Criar Município' %>
             </button>
         </div>
+
     </form>
 </div>

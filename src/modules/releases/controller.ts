@@ -2,9 +2,11 @@ import { Request, Response } from 'express';
 import path from 'path';
 import { Op } from 'sequelize';
 import { Release, Secretaria } from '../../database/models/index.ts';
+import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 
 export const list = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).session.user;
     const { q, secretaria, status } = req.query as Record<string, string>;
     const page = Math.max(1, Number(req.query.page) || 1);
     const perPage = 15;
@@ -15,12 +17,15 @@ export const list = async (req: Request, res: Response) => {
       { where: { publicado: false, agendado_para: { [Op.lte]: new Date() } } }
     );
 
-    const where: any = {};
+    const where: any = municipioWhere(user, {}, getActiveMid(req));
     if (q) where.titulo = { [Op.like]: `%${q}%` };
     if (secretaria) where.secretaria_id = secretaria;
     if (status === 'publicado') where.publicado = true;
     if (status === 'rascunho') { where.publicado = false; where.agendado_para = null; }
     if (status === 'agendado') { where.publicado = false; where.agendado_para = { [Op.ne]: null }; }
+
+    const secWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') secWhere.municipio_id = user.municipio_id;
 
     const [{ count, rows: releases }, secretarias] = await Promise.all([
       Release.findAndCountAll({
@@ -30,7 +35,7 @@ export const list = async (req: Request, res: Response) => {
         limit: perPage,
         offset: (page - 1) * perPage,
       }),
-      Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] }),
+      Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] }),
     ]);
 
     const totalPages = Math.ceil(count / perPage);
@@ -51,9 +56,12 @@ export const list = async (req: Request, res: Response) => {
   }
 };
 
-export const createView = async (_req: Request, res: Response) => {
+export const createView = async (req: Request, res: Response) => {
   try {
-    const secretarias = await Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] });
+    const user = (req as any).session.user;
+    const secWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') secWhere.municipio_id = user.municipio_id;
+    const secretarias = await Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] });
     res.render('releases/create', { title: 'Novo Release', errors: [], useQuill: true, secretarias });
   } catch (error) {
     console.error(error);
@@ -63,6 +71,7 @@ export const createView = async (_req: Request, res: Response) => {
 
 export const store = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).session.user;
     const { titulo, subtitulo, conteudo, imagem_capa, secretaria_id, publicacao_tipo, agendado_para } = req.body;
     const isPublicado = publicacao_tipo === 'publicar';
     const agendadoPara = publicacao_tipo === 'agendar' && agendado_para ? new Date(agendado_para) : null;
@@ -73,6 +82,7 @@ export const store = async (req: Request, res: Response) => {
       conteudo,
       imagem_capa:   imagem_capa  || null,
       secretaria_id: secretaria_id || null,
+      municipio_id:  user.municipio_id,
       publicado:     isPublicado,
       publicado_em:  isPublicado ? new Date() : (agendadoPara || null),
       agendado_para: agendadoPara,
@@ -86,11 +96,17 @@ export const store = async (req: Request, res: Response) => {
 
 export const editView = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).session.user;
     const release = await Release.findByPk(req.params.id, {
       include: [{ model: Secretaria, as: 'secretaria' }],
     });
     if (!release) return res.redirect('/releases');
-    const secretarias = await Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] });
+    if (user.role !== 'super_admin' && release.municipio_id && release.municipio_id !== user.municipio_id) {
+      return res.status(403).redirect('/releases');
+    }
+    const secWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') secWhere.municipio_id = user.municipio_id;
+    const secretarias = await Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] });
     res.render('releases/edit', { title: 'Editar Release', release, useQuill: true, secretarias });
   } catch (error) {
     console.error(error);

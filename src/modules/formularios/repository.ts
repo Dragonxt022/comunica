@@ -2,8 +2,9 @@ import { FormularioTemplate } from '../../database/models/index.ts';
 import User from '../../database/models/User.ts';
 
 class FormularioTemplateRepository {
-  async findAll() {
+  async findAll(where: Record<string, any> = {}) {
     return FormularioTemplate.findAll({
+      where,
       include: [{ model: User, as: 'autor', attributes: ['id', 'nome'] }],
       order: [['createdAt', 'DESC']],
     });
@@ -16,7 +17,7 @@ class FormularioTemplateRepository {
     });
   }
 
-  async create(data: { nome: string; descricao: string; campos: string; criado_por: number }) {
+  async create(data: { nome: string; descricao: string; campos: string; municipio_id?: number | null; criado_por: number }) {
     return FormularioTemplate.create(data as any);
   }
 

@@ -6,6 +6,9 @@ import { Evento, Secretaria, FormularioTemplate } from '../../database/models/in
 import InscricaoRepository from './repository.ts';
 
 function canViewInscricoes(user: any, evento: any): boolean {
+  if (user.role === 'super_admin') return true;
+  // Bloqueia acesso cross-município
+  if (evento.municipio_id && evento.municipio_id !== user.municipio_id) return false;
   if (user.role === 'admin' || user.role === 'secom') return true;
   if (user.role === 'secretaria' && evento.secretaria_id === user.secretaria_id) return true;
   return false;

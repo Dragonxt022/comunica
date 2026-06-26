@@ -5,6 +5,7 @@ import EventoRepository from './repository.ts';
 import { Secretaria, Evento, User, EventoResponsavel, AcaoPlanejamento } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
+import { secretariaWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 
 function capaUrl(file: Express.Multer.File): string {
   const rel = file.path.replace(/.*public[\\/]/, '').replace(/\\/g, '/');
@@ -27,10 +28,7 @@ function parseIds(raw: any): number[] {
 export const list = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    const where: any = {};
-    if (user?.role === 'secretaria' && user?.secretaria_id) {
-      where.secretaria_id = user.secretaria_id;
-    }
+    const where: any = secretariaWhere(user, {}, getActiveMid(req));
     const eventos = await EventoRepository.findAll(where);
     res.render('eventos/index', { title: 'Calendário Institucional', eventos });
   } catch (error) {
@@ -41,8 +39,15 @@ export const list = async (req: Request, res: Response) => {
 
 export const createView = async (req: Request, res: Response) => {
   try {
-    const secretarias = await Secretaria.findAll({ where: { ativo: true } });
-    const users = await User.findAll({ where: { ativo: true }, include: [{ model: Secretaria, as: 'secretaria' }] });
+    const user = (req as any).session.user;
+    const secWhere: any = { ativo: true };
+    const usrWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') {
+      secWhere.municipio_id = user.municipio_id;
+      usrWhere.municipio_id = user.municipio_id;
+    }
+    const secretarias = await Secretaria.findAll({ where: secWhere });
+    const users = await User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] });
     const prefillDate = (req.query.data as string) || '';
     const prefill = {
       titulo: (req.query.titulo as string) || '',
@@ -60,10 +65,20 @@ export const createView = async (req: Request, res: Response) => {
 
 export const editView = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).session.user;
     const evento = await EventoRepository.findById(Number(req.params.id));
     if (!evento) return res.redirect('/eventos');
-    const secretarias = await Secretaria.findAll({ where: { ativo: true } });
-    const users = await User.findAll({ where: { ativo: true }, include: [{ model: Secretaria, as: 'secretaria' }] });
+    if (user.role !== 'super_admin' && (evento as any).municipio_id && (evento as any).municipio_id !== user.municipio_id) {
+      return res.status(403).redirect('/eventos');
+    }
+    const secWhere: any = { ativo: true };
+    const usrWhere: any = { ativo: true };
+    if (user.role !== 'super_admin') {
+      secWhere.municipio_id = user.municipio_id;
+      usrWhere.municipio_id = user.municipio_id;
+    }
+    const secretarias = await Secretaria.findAll({ where: secWhere });
+    const users = await User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] });
     res.render('eventos/edit', { title: 'Editar Evento', evento, secretarias, users });
   } catch (error) {
     console.error('Error editing evento view:', error);
@@ -203,8 +218,11 @@ export const arquivar = async (req: Request, res: Response) => {
 
 export const historico = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).session.user;
+    const whereHist: any = { arquivado: true };
+    if (user.role !== 'super_admin') whereHist.municipio_id = user.municipio_id;
     const eventos = await Evento.findAll({
-      where: { arquivado: true } as any,
+      where: whereHist,
       include: [{ model: Secretaria, as: 'secretaria' }],
       order: [['data_inicio', 'DESC']],
     });
@@ -218,7 +236,7 @@ export const historico = async (req: Request, res: Response) => {
 export const destroy = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    if (!['admin', 'secom'].includes(user?.role)) {
+    if (!['admin', 'secom', 'super_admin'].includes(user?.role)) {
       return res.status(403).json({ ok: false, error: 'Sem permissão' });
     }
     const id = Number(req.params.id);
@@ -250,8 +268,9 @@ export const store = async (req: Request, res: Response) => {
       data_inicio,
       data_fim,
       tipo,
-      secretaria_id: user.role === 'admin' || user.role === 'secom' ? secretaria_id : user.secretaria_id,
+      secretaria_id: ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id,
       criado_por: user.id,
+      municipio_id: user.municipio_id,
       status: 'em_planejamento',
       imagem_capa: file ? capaUrl(file) : null,
     });

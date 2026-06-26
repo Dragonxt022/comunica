@@ -7,6 +7,7 @@ class FormularioTemplate extends Model {
   public nome!: string;
   public descricao!: string;
   public campos!: string; // JSON array of field definitions
+  public municipio_id!: number | null;
   public criado_por!: number;
   public autor?: User;
 }
@@ -30,6 +31,10 @@ FormularioTemplate.init(
       type: DataTypes.TEXT,
       allowNull: false,
       defaultValue: '[]',
+    },
+    municipio_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     criado_por: {
       type: DataTypes.INTEGER,
