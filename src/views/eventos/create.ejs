@@ -20,7 +20,7 @@ document.addEventListener('alpine:init', function() {
 });
 </script>
 
-<div class="space-y-5" x-data="eventoCreateForm">
+<div class="max-w-6xl mx-auto space-y-5" x-data="eventoCreateForm">
     <div class="flex items-center gap-3">
         <a href="/eventos" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -31,157 +31,179 @@ document.addEventListener('alpine:init', function() {
         </div>
     </div>
 
-    <form action="/eventos" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+    <form action="/eventos" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+
         <% if (typeof prefill !== 'undefined' && prefill.acao_id) { %>
         <input type="hidden" name="acao_id" value="<%= prefill.acao_id %>">
         <input type="hidden" name="plano_id" value="<%= prefill.plano_id %>">
-        <div class="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-700 font-medium">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            Este evento será vinculado a uma ação do Planejamento. Após salvar, você voltará ao plano automaticamente.
+        <div class="px-6 pt-5">
+            <div class="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-700 font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Este evento será vinculado a uma ação do Planejamento. Após salvar, você voltará ao plano automaticamente.
+            </div>
         </div>
         <% } %>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Título do Evento <span class="text-red-500">*</span></label>
-            <input type="text" name="titulo" required
-                value="<%= typeof prefill !== 'undefined' ? prefill.titulo : '' %>"
-                placeholder="Ex: Abertura do ano letivo 2025"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-        </div>
+        <!-- 2-column grid -->
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-8 gap-y-5">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
-            <textarea name="descricao" required rows="3" placeholder="Descreva o evento..."
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"><%= typeof prefill !== 'undefined' ? prefill.descricao : '' %></textarea>
-        </div>
+            <!-- ─── Coluna esquerda: dados principais ─── -->
+            <div class="space-y-5">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Local <span class="text-red-500">*</span></label>
-            <input type="text" name="local" required placeholder="Ex: Teatro Municipal, Rua XV, n° 120"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Início <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_inicio" required
-                    value="<%= prefillDate ? prefillDate + 'T08:00' : '' %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Fim <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_fim" required
-                    value="<%= prefillDate ? prefillDate + 'T09:00' : '' %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Evento <span class="text-red-500">*</span></label>
-            <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                <option value="">Selecione...</option>
-                <option value="Coletiva de Imprensa">Coletiva de Imprensa</option>
-                <option value="Inauguração">Inauguração</option>
-                <option value="Cerimônia">Cerimônia</option>
-                <option value="Reunião">Reunião</option>
-                <option value="Evento Cultural">Evento Cultural</option>
-                <option value="Ação Social">Ação Social</option>
-                <option value="Outros">Outros</option>
-            </select>
-        </div>
-
-        <% if(user.role === 'admin' || user.role === 'secom') { %>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
-            <select name="secretaria_id" required
-                @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                <option value="">Selecione...</option>
-                <% secretarias.forEach(function(s) { %>
-                    <option value="<%= s.id %>" <%= (typeof prefill !== 'undefined' && prefill.secretaria_id == s.id) ? 'selected' : '' %>><%= s.nome %></option>
-                <% }) %>
-            </select>
-        </div>
-        <% } %>
-
-        <!-- Responsáveis -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Responsáveis pelo Evento</label>
-
-            <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
-                <template x-for="u in filteredUsers" :key="u.id">
-                    <button type="button" @click="toggle(u.id)"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
-                        :class="isSelected(u.id)
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
-                            :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'"
-                            x-text="u.nome.charAt(0)"></span>
-                        <span x-text="u.nome"></span>
-                    </button>
-                </template>
-            </div>
-
-            <p x-show="!selectedSec" class="text-sm text-gray-400 italic">
-                Selecione uma secretaria para ver os responsáveis disponíveis.
-            </p>
-            <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-gray-400 italic">
-                Nenhum usuário cadastrado para esta secretaria.
-            </p>
-
-            <template x-for="id in responsaveis" :key="id">
-                <input type="hidden" name="responsaveis[]" :value="id">
-            </template>
-        </div>
-
-        <!-- Imagem de Capa -->
-        <div x-data="{
-            preview: null,
-            fileName: '',
-            onChange(e) {
-                var f = e.target.files[0];
-                if (!f) return;
-                this.fileName = f.name;
-                var reader = new FileReader();
-                reader.onload = (ev) => { this.preview = ev.target.result; };
-                reader.readAsDataURL(f);
-            },
-            clear() { this.preview = null; this.fileName = ''; this.$refs.input.value = ''; }
-        }">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
-
-            <div x-show="!preview"
-                class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
-                @click="$refs.input.click()"
-                @dragover.prevent
-                @drop.prevent="onChange({ target: { files: $event.dataTransfer.files } })">
-                <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <p class="text-sm text-gray-500">Clique ou arraste uma imagem aqui</p>
-                <p class="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
-            </div>
-
-            <div x-show="preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                <img :src="preview" class="w-full h-48 object-cover">
-                <div class="absolute inset-0 bg-black/30 flex items-end p-3">
-                    <span class="text-white text-xs font-medium truncate flex-1" x-text="fileName"></span>
-                    <button type="button" @click.stop="clear()"
-                        class="ml-2 w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition text-white shrink-0" title="Remover">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título do Evento <span class="text-red-500">*</span></label>
+                    <input type="text" name="titulo" required
+                        value="<%= typeof prefill !== 'undefined' ? prefill.titulo : '' %>"
+                        placeholder="Ex: Abertura do ano letivo 2025"
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
-                <button type="button" @click="$refs.input.click()"
-                    class="absolute top-2 right-10 bg-white/80 hover:bg-white text-gray-700 text-xs px-2 py-1 rounded-lg shadow transition">
-                    Trocar
-                </button>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Descrição <span class="text-red-500">*</span></label>
+                    <textarea name="descricao" required rows="8"
+                        placeholder="Descreva o evento com detalhes: objetivo, público, programação, informações relevantes..."
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-y min-h-[180px]"><%= typeof prefill !== 'undefined' ? prefill.descricao : '' %></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Local <span class="text-red-500">*</span></label>
+                    <input type="text" name="local" required placeholder="Ex: Teatro Municipal, Rua XV, n° 120"
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                </div>
+
+                <!-- Imagem de Capa -->
+                <div x-data="{
+                    preview: null,
+                    fileName: '',
+                    onChange(e) {
+                        var f = e.target.files[0];
+                        if (!f) return;
+                        this.fileName = f.name;
+                        var reader = new FileReader();
+                        reader.onload = (ev) => { this.preview = ev.target.result; };
+                        reader.readAsDataURL(f);
+                    },
+                    clear() { this.preview = null; this.fileName = ''; this.$refs.input.value = ''; }
+                }">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span>
+                    </label>
+
+                    <div x-show="!preview"
+                        class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
+                        @click="$refs.input.click()"
+                        @dragover.prevent
+                        @drop.prevent="onChange({ target: { files: $event.dataTransfer.files } })">
+                        <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-sm text-gray-500">Clique ou arraste uma imagem aqui</p>
+                        <p class="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
+                    </div>
+
+                    <div x-show="preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                        <img :src="preview" class="w-full h-48 object-cover">
+                        <div class="absolute inset-0 bg-black/30 flex items-end p-3">
+                            <span class="text-white text-xs font-medium truncate flex-1" x-text="fileName"></span>
+                            <button type="button" @click.stop="clear()"
+                                class="ml-2 w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition text-white shrink-0" title="Remover">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <button type="button" @click="$refs.input.click()"
+                            class="absolute top-2 right-10 bg-white/80 hover:bg-white text-gray-700 text-xs px-2 py-1 rounded-lg shadow transition">
+                            Trocar
+                        </button>
+                    </div>
+
+                    <input type="file" name="capa" accept="image/*" x-ref="input" @change="onChange($event)" class="hidden">
+                </div>
+
             </div>
 
-            <input type="file" name="capa" accept="image/*" x-ref="input" @change="onChange($event)" class="hidden">
+            <!-- ─── Coluna direita: metadados ─── -->
+            <div class="space-y-5">
+
+                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-5">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Dados do Evento</p>
+
+                    <!-- Datas -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Início <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" name="data_inicio" required
+                            value="<%= prefillDate ? prefillDate + 'T08:00' : '' %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Fim <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" name="data_fim" required
+                            value="<%= prefillDate ? prefillDate + 'T09:00' : '' %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                    </div>
+
+                    <!-- Tipo -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Evento <span class="text-red-500">*</span></label>
+                        <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <option value="">Selecione...</option>
+                            <option value="Coletiva de Imprensa">Coletiva de Imprensa</option>
+                            <option value="Inauguração">Inauguração</option>
+                            <option value="Cerimônia">Cerimônia</option>
+                            <option value="Reunião">Reunião</option>
+                            <option value="Evento Cultural">Evento Cultural</option>
+                            <option value="Ação Social">Ação Social</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+
+                    <% if(user.role === 'admin' || user.role === 'secom') { %>
+                    <!-- Secretaria -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
+                        <select name="secretaria_id" required
+                            @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <option value="">Selecione...</option>
+                            <% secretarias.forEach(function(s) { %>
+                                <option value="<%= s.id %>" <%= (typeof prefill !== 'undefined' && prefill.secretaria_id == s.id) ? 'selected' : '' %>><%= s.nome %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <% } %>
+
+                    <!-- Responsáveis -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Responsáveis pelo Evento</label>
+                        <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
+                            <template x-for="u in filteredUsers" :key="u.id">
+                                <button type="button" @click="toggle(u.id)"
+                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
+                                    :class="isSelected(u.id) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
+                                        :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'"
+                                        x-text="u.nome.charAt(0)"></span>
+                                    <span x-text="u.nome"></span>
+                                </button>
+                            </template>
+                        </div>
+                        <p x-show="!selectedSec" class="text-sm text-gray-400 italic">
+                            Selecione uma secretaria para ver os responsáveis.
+                        </p>
+                        <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-gray-400 italic">
+                            Nenhum usuário cadastrado para esta secretaria.
+                        </p>
+                        <template x-for="id in responsaveis" :key="id">
+                            <input type="hidden" name="responsaveis[]" :value="id">
+                        </template>
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="pt-2 flex justify-end gap-3">
-            <a href="/eventos" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition">Cancelar</a>
-            <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 rounded-b-xl">
+            <a href="/eventos" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
+            <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2 text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Salvar Evento
             </button>

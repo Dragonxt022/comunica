@@ -27,12 +27,34 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
-        /* Scrollbars invisíveis mas funcionais */
         aside nav, main { scrollbar-width: none; -ms-overflow-style: none; }
         aside nav::-webkit-scrollbar, main::-webkit-scrollbar { display: none; }
+
+        /* ── Sidebar collapsed ──────────────────────────────────────────── */
+        aside[data-collapsed="true"] .nav-label         { display: none; }
+        aside[data-collapsed="true"] .nav-section-label { display: none; }
+        aside[data-collapsed="true"] .nav-badge         { display: none !important; }
+        aside[data-collapsed="true"] .sidebar-user-info  { display: none; }
+        aside[data-collapsed="true"] .sidebar-logout-btn { display: none; }
+        aside[data-collapsed="true"] nav a.nav-link      { justify-content: center; gap: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
+        aside[data-collapsed="true"] a.nav-btn-chamado   { justify-content: center; gap: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
+        aside[data-collapsed="true"] .sidebar-footer     { justify-content: center; padding-left: 0.5rem; padding-right: 0.5rem; }
+
+        /* ── Quick access chips ─────────────────────────────────────────── */
+        .qa-chip {
+            display: inline-flex; align-items: center;
+            padding: 0.25rem 0.625rem;
+            font-size: 0.7rem; font-weight: 500; white-space: nowrap;
+            color: #4b5563; background: #f3f4f6;
+            border-radius: 9999px; border: 1px solid transparent;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            text-decoration: none;
+        }
+        .qa-chip:hover { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex overflow-hidden" x-data="{ sidebarOpen: false }">
+<body class="bg-gray-50 h-screen flex overflow-hidden"
+      x-data="{ sidebarOpen: false, sc: localStorage.getItem('sc') === '1' }">
 
     <!-- Mobile backdrop -->
     <div
@@ -44,107 +66,146 @@
 
     <!-- Sidebar -->
     <aside
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed inset-y-0 left-0 z-40 w-56 bg-slate-900 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:shrink-0">
+        :data-collapsed="sc ? 'true' : 'false'"
+        :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', sc ? 'w-14' : 'w-56']"
+        class="fixed inset-y-0 left-0 z-40 bg-slate-900 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:shrink-0">
 
-        <!-- Logo area -->
-        <div class="px-4 py-4 border-b border-slate-800/60 flex items-center gap-2.5 shrink-0">
-            <img src="/icon.svg" alt="Comunica" class="w-7 h-7 shrink-0">
-            <span class="text-white font-semibold text-sm truncate">
-                <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
-            </span>
+        <!-- Logo / Toggle -->
+        <div class="border-b border-slate-800/60 shrink-0">
+            <!-- Expandido: logo + título + botão recolher -->
+            <div x-show="!sc" class="px-4 py-4 flex items-center gap-2.5">
+                <img src="/icon.svg" alt="Comunica" class="w-7 h-7 shrink-0">
+                <span class="text-white font-semibold text-sm truncate flex-1">
+                    <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
+                </span>
+                <button @click="sc = true; localStorage.setItem('sc', '1')"
+                    title="Recolher menu"
+                    class="shrink-0 p-1 text-slate-500 hover:text-slate-200 hover:bg-white/10 rounded-md transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Recolhido: somente ícone para expandir -->
+            <button x-show="sc" x-cloak
+                @click="sc = false; localStorage.setItem('sc', '0')"
+                title="Expandir menu"
+                class="w-full py-[1.125rem] flex items-center justify-center text-slate-400 hover:text-white transition">
+                <img src="/icon.svg" alt="Comunica" class="w-7 h-7">
+            </button>
         </div>
 
         <!-- Nav -->
         <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
 
-            <!-- Quick action: Abrir Chamado -->
             <a id="tour-btn-chamado" href="/solicitacoes/nova"
-               class="flex items-center justify-center gap-2 mx-1 mb-3 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-semibold rounded-lg transition shadow-sm">
+               class="nav-btn-chamado flex items-center justify-center gap-2 mx-1 mb-3 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-semibold rounded-lg transition shadow-sm"
+               title="Abrir Chamado">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                Abrir Chamado
+                <span class="nav-label">Abrir Chamado</span>
             </a>
 
-            <a href="/" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/" title="Dashboard"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                Dashboard
+                <span class="nav-label">Dashboard</span>
             </a>
-            <a href="/eventos" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/eventos') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+
+            <a href="/eventos" title="Calendário"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/eventos') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Calendário
+                <span class="nav-label">Calendário</span>
             </a>
-            <a href="/planejamento" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/planejamento') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+
+            <a href="/planejamento" title="Planejamento"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/planejamento') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                Planejamento
+                <span class="nav-label">Planejamento</span>
             </a>
+
             <% if(user && (user.role === 'admin' || user.role === 'secom' || user.role === 'secretaria')) { %>
-            <a href="/inscricoes" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/inscricoes' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/inscricoes" title="Inscrições"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/inscricoes' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Inscrições
+                <span class="nav-label">Inscrições</span>
             </a>
             <% } %>
-            <a id="tour-nav-sol" href="/solicitacoes" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/solicitacoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+
+            <a id="tour-nav-sol" href="/solicitacoes" title="Solicitações"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/solicitacoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span class="flex-1">Solicitações</span>
-                <span id="nav-sol-badge" class="hidden min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none"></span>
+                <span class="nav-label flex-1">Solicitações</span>
+                <span id="nav-sol-badge" class="nav-badge hidden min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none"></span>
             </a>
+
             <% if(user && user.role !== 'secretaria') { %>
-            <a href="/releases" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/releases') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/releases" title="Releases"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/releases') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4"></path></svg>
-                Releases
+                <span class="nav-label">Releases</span>
             </a>
             <% } %>
-            <a href="/biblioteca" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/biblioteca') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+
+            <a href="/biblioteca" title="Biblioteca"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/biblioteca') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Biblioteca
+                <span class="nav-label">Biblioteca</span>
             </a>
+
             <% if(user && (user.role === 'admin' || user.role === 'secom')) { %>
-            <a href="/relatorios" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/relatorios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/relatorios" title="Relatórios"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/relatorios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Relatórios
+                <span class="nav-label">Relatórios</span>
             </a>
-            <a href="/formularios" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/formularios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/formularios" title="Form. Inscrição"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/formularios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                Form. Inscrição
+                <span class="nav-label">Form. Inscrição</span>
             </a>
             <% } %>
 
             <div class="pt-4 pb-1.5">
-                <p class="px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Público</p>
+                <p class="nav-section-label px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Público</p>
             </div>
-            <a href="/imprensa/agenda" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/imprensa') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/imprensa/agenda" title="Agenda Imprensa"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/imprensa') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                Agenda Imprensa
+                <span class="nav-label">Agenda Imprensa</span>
             </a>
 
             <% if(user && (user.role === 'admin' || user.role === 'super_admin')) { %>
             <div class="pt-4 pb-1.5">
-                <p class="px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Sistema</p>
+                <p class="nav-section-label px-3 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">Sistema</p>
             </div>
             <% if(user.role === 'super_admin') { %>
-            <a href="/admin/municipios" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/municipios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/admin/municipios" title="Municípios"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/municipios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Municípios
+                <span class="nav-label">Municípios</span>
             </a>
             <% } %>
-            <a href="/admin/secretarias" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/secretarias') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/admin/secretarias" title="Secretarias"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/secretarias') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                Secretarias
+                <span class="nav-label">Secretarias</span>
             </a>
-            <a href="/admin/usuarios" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/usuarios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/admin/usuarios" title="Usuários"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/usuarios') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                Usuários
+                <span class="nav-label">Usuários</span>
             </a>
-            <a href="/admin/configuracoes" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/configuracoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+            <a href="/admin/configuracoes" title="Configurações"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/admin/configuracoes') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Configurações
+                <span class="nav-label">Configurações</span>
             </a>
             <% } %>
         </nav>
 
-        <!-- User info footer -->
+        <!-- User footer -->
         <% if(user) { %>
-        <div class="px-3 py-3 border-t border-slate-800/60 flex items-center gap-2 shrink-0">
+        <div class="sidebar-footer px-3 py-3 border-t border-slate-800/60 flex items-center gap-2 shrink-0">
             <a href="/perfil" class="w-7 h-7 rounded-full overflow-hidden shrink-0 transition ring-1 ring-slate-700 hover:ring-slate-500" title="Meu perfil">
                 <% if(user.avatar) { %>
                 <img src="<%= user.avatar %>" alt="Avatar" class="w-full h-full object-cover">
@@ -152,12 +213,12 @@
                 <span class="w-full h-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-200 text-xs font-bold transition"><%= user.nome.charAt(0).toUpperCase() %></span>
                 <% } %>
             </a>
-            <div class="min-w-0 flex-1">
+            <div class="sidebar-user-info min-w-0 flex-1">
                 <a href="/perfil" class="text-[12px] text-slate-200 font-medium truncate leading-tight hover:text-white block transition"><%= user.nome %></a>
                 <p class="text-[10px] text-slate-500 leading-tight capitalize"><%= user.role %></p>
             </div>
             <a href="/logout" title="Sair"
-               class="p-1.5 text-slate-500 hover:text-slate-200 hover:bg-white/10 rounded-md transition shrink-0">
+               class="sidebar-logout-btn p-1.5 text-slate-500 hover:text-slate-200 hover:bg-white/10 rounded-md transition shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -170,8 +231,9 @@
     <!-- Wrapper direito -->
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
 
-        <!-- Topbar (universal — hamburger visível só mobile) -->
+        <!-- Topbar -->
         <header class="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-3 shrink-0 z-20">
+            <!-- Hamburger mobile -->
             <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-1.5 hover:bg-gray-100 rounded-md">
                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -179,6 +241,9 @@
             <span class="lg:hidden text-sm font-semibold text-gray-800 truncate">
                 <%= config && config.titulo_site ? config.titulo_site : 'Comunica' %>
             </span>
+
+            <!-- Quick Access (desktop only) -->
+            <div id="qa-links" class="hidden lg:flex items-center gap-1 ml-1 overflow-x-auto" style="max-width:420px;scrollbar-width:none"></div>
 
             <div class="flex-1"></div>
 
@@ -218,7 +283,7 @@
                     </span>
                 </button>
 
-                <!-- Dropdown -->
+                <!-- Dropdown notificações -->
                 <div x-show="open" x-cloak @click.outside="open = false"
                     x-transition:enter="transition ease-out duration-150"
                     x-transition:enter-start="opacity-0 scale-95 translate-y-1"
@@ -233,7 +298,6 @@
                         </button>
                     </div>
 
-                    <!-- Lista -->
                     <div class="divide-y divide-gray-50 max-h-80 overflow-y-auto">
                         <template x-if="items.length === 0">
                             <div class="py-10 text-center text-sm text-gray-400">Sem notificações</div>
@@ -242,9 +306,9 @@
                             <div class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
                                  :class="n.lida ? '' : 'bg-blue-50/40'"
                                  @click="abrirNotif(n)">
-                                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base"
+                                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
                                      :class="bgClass(n.tipo)">
-                                    <span x-text="icon(n.tipo)"></span>
+                                    <img :src="icon(n.tipo)" class="w-4 h-4" alt="" loading="lazy">
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-semibold text-gray-800 leading-tight" x-text="n.titulo"></p>
@@ -275,8 +339,7 @@
     <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-
-    <!-- Modal de Permissão Push (obrigatório na primeira vez) -->
+    <!-- Modal de Permissão Push -->
     <% if(user && !user.pushPermissionAsked) { %>
     <div id="push-permission-overlay"
          class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -347,18 +410,11 @@
         /* ── SSE ───────────────────────────────────────────────────── */
         function connect() {
             var es = new EventSource('/sse');
-
             es.addEventListener('update', function(e) {
                 try {
                     var data = JSON.parse(e.data);
-
-                    // Repassa ao handler da página atual
                     if (window.onSSEUpdate) window.onSSEUpdate(data);
-
-                    // Broadcast para componentes Alpine (sino de notificações)
                     document.dispatchEvent(new CustomEvent('comunica:sseData', { detail: data }));
-
-                    // Toast para eventos de outros usuários
                     if (data.updatedById !== _currentUserId) {
                         var msg = '';
                         if (data.type === 'solicitacao_status') {
@@ -372,10 +428,8 @@
                     }
                 } catch(err) {}
             });
-
-            es.onerror = function() { /* auto-reconnect nativo do EventSource */ };
+            es.onerror = function() {};
         }
-
         connect();
 
         /* ── Push Notifications ────────────────────────────────────── */
@@ -393,7 +447,7 @@
             try {
                 var reg = await navigator.serviceWorker.register('/sw.js');
                 var existing = await reg.pushManager.getSubscription();
-                if (existing) return; // já inscrito
+                if (existing) return;
                 var res = await fetch('/push/vapid-public-key');
                 var { key } = await res.json();
                 if (!key) return;
@@ -406,10 +460,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(sub.toJSON()),
                 });
-            } catch(e) { /* permissão negada ou SW não disponível */ }
+            } catch(e) {}
         }
 
-        // Modal de permissão push
         var overlay = document.getElementById('push-permission-overlay');
         var btnAtivar = document.getElementById('btn-push-ativar');
         var btnPular  = document.getElementById('btn-push-pular');
@@ -418,7 +471,6 @@
             await fetch('/push/mark-asked', { method: 'POST' }).catch(() => {});
         }
 
-        // Se o browser já concedeu permissão, dispensa o modal silenciosamente
         if (overlay && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             marcarAsked().then(() => registerPush());
             overlay.remove();
@@ -442,10 +494,57 @@
             });
         }
 
-        // Se já passou pela etapa, garante SW registrado silenciosamente
         <% if(user && user.pushPermissionAsked) { %>
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') registerPush();
         <% } %>
+
+        /* ── Quick Access ──────────────────────────────────────────── */
+        (function() {
+            var QA_LABELS = {
+                '/': 'Dashboard',
+                '/eventos': 'Calendário',
+                '/planejamento': 'Planejamento',
+                '/solicitacoes': 'Solicitações',
+                '/releases': 'Releases',
+                '/biblioteca': 'Biblioteca',
+                '/relatorios': 'Relatórios',
+                '/formularios': 'Formulários',
+                '/imprensa': 'Imprensa',
+                '/inscricoes': 'Inscrições',
+            };
+
+            function basePath(p) {
+                if (p === '/' || p === '') return '/';
+                var m = p.match(/^\/[^\/]*/);
+                return m ? m[0] : p;
+            }
+
+            var curPath = basePath(window.location.pathname);
+
+            try {
+                var raw = localStorage.getItem('qa_v');
+                var counts = raw ? JSON.parse(raw) : {};
+                if (QA_LABELS[curPath]) {
+                    counts[curPath] = (counts[curPath] || 0) + 1;
+                    localStorage.setItem('qa_v', JSON.stringify(counts));
+                }
+
+                var container = document.getElementById('qa-links');
+                if (!container) return;
+
+                var entries = Object.keys(counts)
+                    .filter(function(k) { return k !== curPath && QA_LABELS[k]; })
+                    .sort(function(a, b) { return counts[b] - counts[a]; })
+                    .slice(0, 4);
+
+                if (entries.length < 2) return;
+
+                var sep = '<span class="text-gray-300 text-xs select-none mx-0.5">·</span>';
+                container.innerHTML = sep + entries.map(function(p) {
+                    return '<a href="' + p + '" class="qa-chip">' + QA_LABELS[p] + '</a>';
+                }).join(sep);
+            } catch(e) {}
+        }());
 
     }());
     </script>
@@ -480,19 +579,19 @@
     <script>
     function notifBell() {
         var ICONS = {
-            solicitacao_nova:       '📋',
-            solicitacao_producao:   '⚙️',
-            solicitacao_concluida:  '🎨',
-            solicitacao_aprovada:   '✅',
-            solicitacao_revisao:    '🔄',
-            solicitacao_comentario: '💬',
-            solicitacao_cancelada:  '❌',
-            evento_novo:            '📅',
-            evento_atualizado:      '✏️',
-            evento_publicado:       '✅',
-            evento_cancelado:       '❌',
-            evento_lembrete:        '⏰',
-            acao_prazo_vencido:     '⚠️',
+            solicitacao_nova:       '/icons/notif/sol-nova.svg',
+            solicitacao_producao:   '/icons/notif/sol-producao.svg',
+            solicitacao_concluida:  '/icons/notif/sol-concluida.svg',
+            solicitacao_aprovada:   '/icons/notif/sol-aprovada.svg',
+            solicitacao_revisao:    '/icons/notif/sol-revisao.svg',
+            solicitacao_comentario: '/icons/notif/sol-comentario.svg',
+            solicitacao_cancelada:  '/icons/notif/sol-cancelada.svg',
+            evento_novo:            '/icons/notif/evento-novo.svg',
+            evento_atualizado:      '/icons/notif/evento-edit.svg',
+            evento_publicado:       '/icons/notif/evento-pub.svg',
+            evento_cancelado:       '/icons/notif/evento-x.svg',
+            evento_lembrete:        '/icons/notif/evento-alarm.svg',
+            acao_prazo_vencido:     '/icons/notif/prazo-alert.svg',
         };
         var BGS = {
             solicitacao_nova:       'bg-blue-100',
@@ -510,38 +609,24 @@
             acao_prazo_vencido:     'bg-orange-100',
         };
         return {
-            open: false,
-            unread: 0,
-            items: [],
-
+            open: false, unread: 0, items: [],
             init() {
                 this.carregar();
-                // Atualiza badge quando chega notificação via SSE
                 document.addEventListener('comunica:notif', function(e) {
                     this.unread++;
                     this.carregar();
                 }.bind(this));
             },
-
             async carregar() {
                 try {
                     var r = await fetch('/notificacoes/latest');
                     var data = await r.json();
-                    if (data.ok) {
-                        this.items = data.items;
-                        this.unread = data.unread;
-                    }
+                    if (data.ok) { this.items = data.items; this.unread = data.unread; }
                 } catch(e) {}
             },
-
-            toggle() {
-                this.open = !this.open;
-                if (this.open) this.carregar();
-            },
-
-            icon(tipo) { return ICONS[tipo] || '🔔'; },
+            toggle() { this.open = !this.open; if (this.open) this.carregar(); },
+            icon(tipo) { return ICONS[tipo] || '/icons/notif/bell-default.svg'; },
             bgClass(tipo) { return BGS[tipo] || 'bg-gray-100'; },
-
             timeAgo(dateStr) {
                 var d = new Date(dateStr), now = new Date();
                 var diff = Math.floor((now - d) / 1000);
@@ -550,7 +635,6 @@
                 if (diff < 86400) return Math.floor(diff / 3600) + 'h atrás';
                 return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             },
-
             async abrirNotif(n) {
                 if (!n.lida) {
                     await fetch('/notificacoes/' + n.id + '/lida', { method: 'POST' }).catch(function(){});
@@ -559,7 +643,6 @@
                 }
                 if (n.url) window.location.href = n.url;
             },
-
             async marcarTodas() {
                 await fetch('/notificacoes/all-lida', { method: 'POST' }).catch(function(){});
                 this.items.forEach(function(n) { n.lida = true; });
@@ -568,12 +651,10 @@
         };
     }
 
-    // SSE → dispara evento para o sino quando chega notif_nova para o usuário atual
     document.addEventListener('DOMContentLoaded', function() {
         var currentUserId = <%= user.id %>;
         if (!window._sseListenerAdded) {
             window._sseListenerAdded = true;
-            // O SSE já está conectado no bloco acima — apenas escutamos o evento
             document.addEventListener('comunica:sseData', function(e) {
                 var data = e.detail;
                 if (data && data.type === 'notificacao_nova' && data.userId === currentUserId) {
@@ -596,13 +677,9 @@
     #tour-spotlight.pulsing { animation: tourPulse 2s ease-in-out infinite; }
     </style>
 
-    <!-- Backdrop semitransparente (bloqueia cliques fora do card) -->
     <div id="tour-backdrop" class="fixed inset-0 z-[9990]" style="display:none;background:rgba(15,23,42,0.72)"></div>
-
-    <!-- Spotlight recortado sobre o elemento-alvo -->
     <div id="tour-spotlight" class="fixed z-[9991] rounded-xl pointer-events-none border-2 border-blue-400" style="display:none"></div>
 
-    <!-- Card do tour -->
     <div id="tour-card" class="fixed z-[9995] w-[320px] bg-white rounded-2xl shadow-2xl overflow-hidden"
          style="display:none;transition:top .35s ease,left .35s ease,opacity .25s">
         <div class="h-1.5 bg-gray-100">
@@ -629,63 +706,19 @@
         var STEP_KEY = 'tour_step_<%= user.id %>';
         if (localStorage.getItem(DONE_KEY)) return;
 
-        /* Cada step: page = pathname esperado (null = qualquer) */
         var steps = [
-            {
-                page:   null,
-                target: null,
-                icon:   '👋',
-                title:  'Bem-vindo ao Comunica!',
-                desc:   'Em 5 passos vamos mostrar como abrir e acompanhar uma solicitação de produção de material. Clique em Começar!',
-                next:   'Começar →',
-            },
-            {
-                page:   '/solicitacoes/nova',
-                target: 'tour-titulo',
-                icon:   '✏️',
-                title:  'Título da Solicitação',
-                desc:   'Escreva um título claro e objetivo — por exemplo: "Post para lançamento do programa X". Isso ajuda a equipe a identificar o pedido rapidamente.',
-                next:   'Próximo →',
-            },
-            {
-                page:   '/solicitacoes/nova',
-                target: 'tour-descricao',
-                icon:   '📝',
-                title:  'Briefing / Descrição',
-                desc:   'Descreva com detalhes o que precisa ser produzido: contexto, público-alvo, referências visuais, informações importantes e qualquer prazo relevante.',
-                next:   'Próximo →',
-            },
-            {
-                page:   '/solicitacoes/nova',
-                target: 'tour-tipos',
-                icon:   '🎨',
-                title:  'Tipo de Mídia',
-                desc:   'Selecione o(s) tipo(s) de material: Nota, Release, Post, Arte Gráfica, Vídeo, Foto ou Outros. Cada tipo selecionado vira uma demanda separada com acompanhamento próprio.',
-                next:   'Próximo →',
-            },
-            {
-                page:   '/solicitacoes/nova',
-                target: 'tour-finalizar',
-                icon:   '⏰',
-                title:  'Prioridade e Prazo',
-                desc:   'Informe a urgência (Baixa, Média ou Alta) e, se houver, a data de entrega. Depois é só clicar em "Enviar Solicitação" — a equipe SECOM receberá o pedido imediatamente.',
-                next:   'Ver acompanhamento →',
-            },
-            {
-                page:   '/solicitacoes',
-                target: 'tour-sol-board',
-                icon:   '📊',
-                title:  'Acompanhe em Tempo Real',
-                desc:   'Aqui você monitora todas as suas solicitações e os contadores por status. Ao clicar em um item você vê detalhes, comentários e histórico. Você também recebe notificações a cada atualização.',
-                next:   'Concluir ✓',
-            },
+            { page: null, target: null, icon: '👋', title: 'Bem-vindo ao Comunica!', desc: 'Em 5 passos vamos mostrar como abrir e acompanhar uma solicitação de produção de material. Clique em Começar!', next: 'Começar →' },
+            { page: '/solicitacoes/nova', target: 'tour-titulo', icon: '✏️', title: 'Título da Solicitação', desc: 'Escreva um título claro e objetivo — por exemplo: "Post para lançamento do programa X". Isso ajuda a equipe a identificar o pedido rapidamente.', next: 'Próximo →' },
+            { page: '/solicitacoes/nova', target: 'tour-descricao', icon: '📝', title: 'Briefing / Descrição', desc: 'Descreva com detalhes o que precisa ser produzido: contexto, público-alvo, referências visuais, informações importantes e qualquer prazo relevante.', next: 'Próximo →' },
+            { page: '/solicitacoes/nova', target: 'tour-tipos', icon: '🎨', title: 'Tipo de Mídia', desc: 'Selecione o(s) tipo(s) de material: Nota, Release, Post, Arte Gráfica, Vídeo, Foto ou Outros. Cada tipo selecionado vira uma demanda separada com acompanhamento próprio.', next: 'Próximo →' },
+            { page: '/solicitacoes/nova', target: 'tour-finalizar', icon: '⏰', title: 'Prioridade e Prazo', desc: 'Informe a urgência (Baixa, Média ou Alta) e, se houver, a data de entrega. Depois é só clicar em "Enviar Solicitação" — a equipe SECOM receberá o pedido imediatamente.', next: 'Ver acompanhamento →' },
+            { page: '/solicitacoes', target: 'tour-sol-board', icon: '📊', title: 'Acompanhe em Tempo Real', desc: 'Aqui você monitora todas as suas solicitações e os contadores por status. Ao clicar em um item você vê detalhes, comentários e histórico. Você também recebe notificações a cada atualização.', next: 'Concluir ✓' },
         ];
 
-        var cur     = parseInt(localStorage.getItem(STEP_KEY) || '0', 10);
-        var path    = window.location.pathname;
-        var step    = steps[cur];
+        var cur  = parseInt(localStorage.getItem(STEP_KEY) || '0', 10);
+        var path = window.location.pathname;
+        var step = steps[cur];
 
-        /* Se o passo exige outra página, redireciona preservando o step */
         if (step.page && path !== step.page) {
             localStorage.setItem(STEP_KEY, String(cur));
             window.location.href = step.page;
@@ -718,59 +751,43 @@
         function placeCard(targetEl) {
             var vw = window.innerWidth, vh = window.innerHeight;
             var cw = 320, ch = card.offsetHeight || 300, pad = 14;
-
             if (!targetEl) {
-                spotlight.style.display  = 'none';
+                spotlight.style.display = 'none';
                 spotlight.classList.remove('pulsing');
                 backdrop.style.background = 'rgba(15,23,42,0.72)';
-                card.style.top    = Math.round((vh - ch) / 2) + 'px';
-                card.style.left   = Math.round((vw - cw) / 2) + 'px';
+                card.style.top  = Math.round((vh - ch) / 2) + 'px';
+                card.style.left = Math.round((vw - cw) / 2) + 'px';
                 return;
             }
-
-            /* Scroll suave para o elemento ficar visível */
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            /* Pequeno delay para o scroll terminar antes de ler getBoundingClientRect */
             setTimeout(function() {
                 var r = targetEl.getBoundingClientRect();
-
                 backdrop.style.background = 'transparent';
                 spotlight.style.display   = 'block';
-                spotlight.style.top       = (r.top    - pad) + 'px';
-                spotlight.style.left      = (r.left   - pad) + 'px';
-                spotlight.style.width     = (r.width  + pad * 2) + 'px';
-                spotlight.style.height    = (r.height + pad * 2) + 'px';
+                spotlight.style.top    = (r.top    - pad) + 'px';
+                spotlight.style.left   = (r.left   - pad) + 'px';
+                spotlight.style.width  = (r.width  + pad * 2) + 'px';
+                spotlight.style.height = (r.height + pad * 2) + 'px';
                 spotlight.classList.add('pulsing');
-
-                /* Posição do card: direita → esquerda → abaixo */
                 var cx, cy;
-                if (r.right + cw + 20 <= vw) {
-                    cx = r.right + 18;
-                    cy = Math.max(16, Math.min(r.top, vh - ch - 16));
-                } else if (r.left - cw - 20 >= 0) {
-                    cx = r.left - cw - 18;
-                    cy = Math.max(16, Math.min(r.top, vh - ch - 16));
-                } else {
-                    cx = Math.max(16, Math.min(r.left + r.width / 2 - cw / 2, vw - cw - 16));
-                    cy = Math.min(r.bottom + 18, vh - ch - 16);
-                }
+                if (r.right + cw + 20 <= vw) { cx = r.right + 18; cy = Math.max(16, Math.min(r.top, vh - ch - 16)); }
+                else if (r.left - cw - 20 >= 0) { cx = r.left - cw - 18; cy = Math.max(16, Math.min(r.top, vh - ch - 16)); }
+                else { cx = Math.max(16, Math.min(r.left + r.width / 2 - cw / 2, vw - cw - 16)); cy = Math.min(r.bottom + 18, vh - ch - 16); }
                 card.style.left = cx + 'px';
                 card.style.top  = cy + 'px';
             }, 350);
         }
 
         function render() {
-            var s   = steps[cur];
+            var s = steps[cur];
             var pct = Math.round((cur / (steps.length - 1)) * 100);
-            progress.style.width  = pct + '%';
-            counter.textContent   = 'Passo ' + (cur + 1) + ' de ' + steps.length;
-            elIcon.textContent    = s.icon;
-            elTitle.textContent   = s.title;
-            elDesc.textContent    = s.desc;
-            btnNext.textContent   = s.next;
+            progress.style.width = pct + '%';
+            counter.textContent  = 'Passo ' + (cur + 1) + ' de ' + steps.length;
+            elIcon.textContent   = s.icon;
+            elTitle.textContent  = s.title;
+            elDesc.textContent   = s.desc;
+            btnNext.textContent  = s.next;
             localStorage.setItem(STEP_KEY, String(cur));
-
             var targetEl = s.target ? document.getElementById(s.target) : null;
             placeCard(targetEl);
         }
@@ -778,22 +795,16 @@
         btnNext.addEventListener('click', function() {
             var next = cur + 1;
             if (next >= steps.length) { finish(); return; }
-
             var nextPage = steps[next].page;
             if (nextPage && window.location.pathname !== nextPage) {
-                /* Salva passo e navega */
                 localStorage.setItem(STEP_KEY, String(next));
                 window.location.href = nextPage;
-            } else {
-                cur = next;
-                render();
-            }
+            } else { cur = next; render(); }
         });
 
         document.getElementById('tour-cancel').addEventListener('click', finish);
         document.getElementById('tour-x').addEventListener('click', finish);
 
-        /* Exibe o tour após a página estabilizar */
         setTimeout(function() {
             backdrop.style.transition  = 'opacity .3s, background .3s';
             card.style.transition      = 'opacity .3s, top .35s ease, left .35s ease';
@@ -805,8 +816,8 @@
             spotlight.style.opacity = '0';
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    backdrop.style.opacity = '1';
-                    card.style.opacity     = '1';
+                    backdrop.style.opacity  = '1';
+                    card.style.opacity      = '1';
                     spotlight.style.opacity = '1';
                     render();
                 });

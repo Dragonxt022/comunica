@@ -1,3 +1,14 @@
+<style>
+@keyframes imgShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.img-skel {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: imgShimmer 1.4s ease-in-out infinite;
+}
+</style>
 <div class="space-y-6" x-data="bibliotecaPage()">
 
     <!-- Cabeçalho -->
@@ -84,11 +95,13 @@
         <% artes.forEach(function(arte) { %>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
              @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')">
-            <div class="aspect-square bg-gray-50 overflow-hidden relative">
+            <div class="aspect-square overflow-hidden relative img-skel">
                 <img src="<%= arte.arte_final_url %>" alt="<%= arte.titulo %>"
-                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="absolute inset-0 hidden items-center justify-center text-gray-200">
+                     class="relative w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+                     style="opacity:0;transition:opacity .35s ease"
+                     onload="this.style.opacity='1';this.parentElement.classList.remove('img-skel')"
+                     onerror="this.style.display='none';this.parentElement.classList.remove('img-skel');this.nextElementSibling.style.display='flex'">
+                <div class="absolute inset-0 hidden items-center justify-center text-gray-300 bg-gray-50">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>

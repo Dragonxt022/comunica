@@ -125,6 +125,36 @@ export const destroy = async (req: Request, res: Response) => {
 
 // ─── Ações ────────────────────────────────────────────────────────────────────
 
+export const createAcaoView = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const plano = await Repo.findPlanoById(Number(req.params.id));
+    if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) return res.redirect('/planejamento');
+    if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) return res.redirect('/planejamento');
+    res.render('planejamento/acao-form', { title: 'Nova Ação', plano });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro interno');
+  }
+};
+
+export const editAcaoView = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const plano = await Repo.findPlanoById(Number(req.params.id));
+    if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) return res.redirect('/planejamento');
+    if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) return res.redirect('/planejamento');
+    const acao = await Repo.findAcaoById(Number(req.params.aId));
+    if (!acao) return res.redirect(`/planejamento/${req.params.id}`);
+    res.render('planejamento/acao-form', { title: 'Editar Ação', plano, acao });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro interno');
+  }
+};
+
 export const storeAcao = async (req: Request, res: Response) => {
   try {
     const plano_id = Number(req.params.id);
@@ -212,6 +242,36 @@ export const imprimir = async (req: Request, res: Response) => {
 };
 
 // ─── Indicadores ─────────────────────────────────────────────────────────────
+
+export const createIndicadorView = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const plano = await Repo.findPlanoById(Number(req.params.id));
+    if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) return res.redirect('/planejamento');
+    if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) return res.redirect('/planejamento');
+    res.render('planejamento/indicador-form', { title: 'Nova Meta', plano });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro interno');
+  }
+};
+
+export const editIndicadorView = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const plano = await Repo.findPlanoById(Number(req.params.id));
+    if (!plano) return res.redirect('/planejamento');
+    if (user.role !== 'super_admin' && (plano as any).municipio_id && (plano as any).municipio_id !== user.municipio_id) return res.redirect('/planejamento');
+    if (user.role === 'secretaria' && (plano as any).secretaria_id !== user.secretaria_id) return res.redirect('/planejamento');
+    const indicador = await Repo.findIndicadorById(Number(req.params.iId));
+    if (!indicador) return res.redirect(`/planejamento/${req.params.id}`);
+    res.render('planejamento/indicador-form', { title: 'Editar Indicador', plano, indicador });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro interno');
+  }
+};
 
 export const storeIndicador = async (req: Request, res: Response) => {
   try {

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Página não encontrada | Comunica</title>
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas#bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .overlay {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .glitch-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .num-404 {
+      font-size: clamp(6rem, 18vw, 14rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -4px;
+      color: #3b82f6;
+      text-shadow:
+        0 0 40px rgba(59,130,246,0.7),
+        0 0 80px rgba(59,130,246,0.4),
+        0 0 120px rgba(99,102,241,0.3);
+      animation: float 6s ease-in-out infinite;
+      position: relative;
+    }
+
+    .num-404::before {
+      content: '404';
+      position: absolute;
+      top: 0; left: 0;
+      color: #60a5fa;
+      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+      animation: glitch-top 5s infinite;
+    }
+
+    .num-404::after {
+      content: '404';
+      position: absolute;
+      top: 0; left: 0;
+      color: #818cf8;
+      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+      animation: glitch-bot 5s infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-18px); }
+    }
+
+    @keyframes glitch-top {
+      0%, 82%, 100% { transform: translate(0); opacity: 1; }
+      83%  { transform: translate(-6px, -2px); }
+      84%  { transform: translate(6px, 2px); }
+      85%  { transform: translate(-3px, 0); }
+      86%  { transform: translate(0); opacity: 0; }
+      87%  { transform: translate(0); opacity: 1; }
+    }
+
+    @keyframes glitch-bot {
+      0%, 86%, 100% { transform: translate(0); opacity: 1; }
+      87%  { transform: translate(6px, -2px); }
+      88%  { transform: translate(-6px, 2px); }
+      89%  { transform: translate(3px, 0); }
+      90%  { transform: translate(0); opacity: 0; }
+      91%  { transform: translate(0); opacity: 1; }
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.35);
+      color: #60a5fa;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      animation: pulseborder 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseborder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
+      50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+    }
+
+    .headline {
+      font-size: clamp(1.2rem, 3vw, 2rem);
+      font-weight: 700;
+      color: #e2e8f0;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+
+    .sub {
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      color: #94a3b8;
+      max-width: 420px;
+      line-height: 1.7;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(59,130,246,0.5);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #cbd5e1;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+
+    .scanline {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+    }
+
+    .vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg"></canvas>
+  <div class="scanline"></div>
+  <div class="vignette"></div>
+
+  <div class="overlay">
+    <div class="badge">Erro 404</div>
+    <div class="glitch-wrap">
+      <div class="num-404">404</div>
+    </div>
+    <h1 class="headline">Página não encontrada</h1>
+    <p class="sub">
+      O endereço que você tentou acessar não existe, foi movido ou talvez nunca tenha existido nesta dimensão.
+    </p>
+    <div class="actions">
+      <a href="/" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Voltar ao início
+      </a>
+      <button onclick="history.back()" class="btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Página anterior
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+  <script>
+  (function() {
+    var canvas = document.getElementById('bg');
+    var W = window.innerWidth, H = window.innerHeight;
+
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: false, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0f172a, 1);
+
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+    var camera = new THREE.PerspectiveCamera(65, W / H, 0.1, 200);
+    camera.position.set(0, 0, 22);
+
+    /* Lights */
+    scene.add(new THREE.AmbientLight(0x1e3a8a, 1.5));
+
+    var pl1 = new THREE.PointLight(0x3b82f6, 4, 60);
+    pl1.position.set(12, 10, 8);
+    scene.add(pl1);
+
+    var pl2 = new THREE.PointLight(0x6366f1, 3, 60);
+    pl2.position.set(-12, -8, -6);
+    scene.add(pl2);
+
+    var pl3 = new THREE.PointLight(0x0ea5e9, 2, 40);
+    pl3.position.set(0, 15, 0);
+    scene.add(pl3);
+
+    /* Wireframe meshes */
+    var palette = [0x3b82f6, 0x6366f1, 0x60a5fa, 0x818cf8, 0x38bdf8, 0xa5b4fc, 0x7dd3fc];
+
+    var shapes = [
+      { geo: new THREE.IcosahedronGeometry(2.2, 0), pos: [-8,  4, -4], spd: [0.008, 0.005, 0.003] },
+      { geo: new THREE.OctahedronGeometry(1.8, 0),  pos: [ 9,  3, -2], spd: [-0.006, 0.009, 0.004] },
+      { geo: new THREE.TetrahedronGeometry(2.0, 0), pos: [-6, -5, -3], spd: [0.004, -0.008, 0.007] },
+      { geo: new THREE.TorusGeometry(1.6, 0.45, 6, 12), pos: [ 7, -4, -5], spd: [0.007, 0.003, -0.006] },
+      { geo: new THREE.BoxGeometry(2.2, 2.2, 2.2), pos: [ 0,  7, -6], spd: [-0.005, 0.006, 0.008] },
+      { geo: new THREE.SphereGeometry(1.7, 7, 5),  pos: [ 0, -7, -4], spd: [0.006, -0.005, 0.004] },
+      { geo: new THREE.IcosahedronGeometry(1.4, 0), pos: [-11, 0, -3], spd: [-0.007, 0.004, -0.009] },
+      { geo: new THREE.OctahedronGeometry(1.2, 0),  pos: [ 11, -1, -2], spd: [0.009, -0.006, 0.003] },
+      { geo: new THREE.TorusGeometry(2.0, 0.3, 5, 10), pos: [-4, 9, -8], spd: [0.005, 0.007, -0.004] },
+    ];
+
+    var meshes = shapes.map(function(s, i) {
+      var mat = new THREE.MeshPhongMaterial({
+        color: palette[i % palette.length],
+        wireframe: true,
+        transparent: true,
+        opacity: 0.55,
+        emissive: palette[i % palette.length],
+        emissiveIntensity: 0.15,
+      });
+      var m = new THREE.Mesh(s.geo, mat);
+      m.position.set(s.pos[0], s.pos[1], s.pos[2]);
+      m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      scene.add(m);
+      return { mesh: m, spd: s.spd };
+    });
+
+    /* Particles */
+    var COUNT = 500;
+    var pos = new Float32Array(COUNT * 3);
+    var sizes = new Float32Array(COUNT);
+    for (var i = 0; i < COUNT; i++) {
+      pos[i*3]   = (Math.random() - 0.5) * 80;
+      pos[i*3+1] = (Math.random() - 0.5) * 60;
+      pos[i*3+2] = (Math.random() - 0.5) * 40;
+      sizes[i] = Math.random() * 0.15 + 0.05;
+    }
+    var pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    var pMat = new THREE.PointsMaterial({
+      color: 0x60a5fa,
+      size: 0.12,
+      transparent: true,
+      opacity: 0.5,
+      sizeAttenuation: true,
+    });
+    var particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    /* Second particle layer — tiny white dots */
+    var pos2 = new Float32Array(200 * 3);
+    for (var j = 0; j < 200; j++) {
+      pos2[j*3]   = (Math.random() - 0.5) * 80;
+      pos2[j*3+1] = (Math.random() - 0.5) * 60;
+      pos2[j*3+2] = (Math.random() - 0.5) * 30;
+    }
+    var pGeo2 = new THREE.BufferGeometry();
+    pGeo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+    var pMat2 = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.3 });
+    scene.add(new THREE.Points(pGeo2, pMat2));
+
+    /* Animation */
+    var t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.008;
+
+      meshes.forEach(function(m) {
+        m.mesh.rotation.x += m.spd[0];
+        m.mesh.rotation.y += m.spd[1];
+        m.mesh.rotation.z += m.spd[2];
+      });
+
+      particles.rotation.y = t * 0.05;
+      particles.rotation.x = Math.sin(t * 0.08) * 0.08;
+
+      camera.position.x = Math.sin(t * 0.12) * 2.5;
+      camera.position.y = Math.cos(t * 0.1)  * 1.2;
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', function() {
+      W = window.innerWidth; H = window.innerHeight;
+      camera.aspect = W / H;
+      camera.updateProjectionMatrix();
+      renderer.setSize(W, H);
+    });
+  })();
+  </script>
+</body>
+</html>

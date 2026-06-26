@@ -534,6 +534,11 @@ async function startServer() {
       next();
     });
 
+    // 404 — catch-all (must be last)
+    app.use((req: any, res: any) => {
+      res.status(404).render('errors/404', { layout: false });
+    });
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });
