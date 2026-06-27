@@ -1,8 +1,137 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import slugify from 'slugify';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 import { User, Secretaria, Configuracao, Municipio } from '../../database/models/index.ts';
 import { bustConfigCache } from '../../lib/config-cache.ts';
+
+const __filename_ctrl = fileURLToPath(import.meta.url);
+const __dirname_ctrl  = path.dirname(__filename_ctrl);
+const UPLOADS_ROOT    = path.resolve(__dirname_ctrl, '../../../public/uploads');
+
+function fmtBytes(b: number): string {
+  if (b === 0) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1_048_576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1_073_741_824) return (b / 1_048_576).toFixed(1) + ' MB';
+  return (b / 1_073_741_824).toFixed(2) + ' GB';
+}
+
+function fileType(ext: string): string {
+  if (['jpg','jpeg','png','webp','gif','avif','svg','bmp'].includes(ext)) return 'Imagens';
+  if (['mp4','webm','avi','mov','mkv','m4v'].includes(ext)) return 'Vídeos';
+  if (['pdf','doc','docx','xlsx','xls','ppt','pptx'].includes(ext)) return 'Documentos';
+  return 'Outros';
+}
+
+interface FileEntry { name: string; relPath: string; size: number; ext: string; ftype: string; mtime: Date; }
+interface DirResult { size: number; count: number; files: FileEntry[]; }
+
+async function scanDir(dir: string, base: string = dir): Promise<DirResult> {
+  const r: DirResult = { size: 0, count: 0, files: [] };
+  try {
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        const sub = await scanDir(full, base);
+        r.size += sub.size; r.count += sub.count; r.files.push(...sub.files);
+      } else if (e.isFile()) {
+        const stat = await fs.promises.stat(full);
+        const ext = path.extname(e.name).toLowerCase().replace('.', '');
+        r.size += stat.size; r.count++;
+        r.files.push({ name: e.name, relPath: path.relative(base, full).replace(/\\/g, '/'), size: stat.size, ext, ftype: fileType(ext), mtime: stat.mtime });
+      }
+    }
+  } catch { /* dir may not exist */ }
+  return r;
+}
+
+export const storageView = async (req: Request, res: Response) => {
+  try {
+    // Disk info via df
+    let diskTotal = 0, diskFree = 0;
+    try {
+      const dfOut = execSync(`df -B1 "${UPLOADS_ROOT}" 2>/dev/null | tail -1`).toString().trim().split(/\s+/);
+      diskTotal = parseInt(dfOut[1] || '0', 10);
+      diskFree  = parseInt(dfOut[3] || '0', 10);
+    } catch { /* ignore */ }
+
+    // Scan all uploads
+    const total = await scanDir(UPLOADS_ROOT);
+
+    // Category breakdown
+    const cats = [
+      { key: 'solicitacoes', label: 'Solicitações',   color: 'blue',   icon: 'clipboard' },
+      { key: 'avatars',      label: 'Avatares',        color: 'purple', icon: 'users' },
+      { key: 'regulamentos', label: 'Regulamentos',    color: 'orange', icon: 'file-text' },
+    ];
+    const catStats = await Promise.all(cats.map(async c => {
+      const s = await scanDir(path.join(UPLOADS_ROOT, c.key));
+      return { ...c, size: s.size, count: s.count, fmt: fmtBytes(s.size) };
+    }));
+
+    // Date-based folders (capas de eventos)
+    const knownKeys = cats.map(c => c.key);
+    let eventosSize = 0, eventosCount = 0;
+    try {
+      const dirs = await fs.promises.readdir(UPLOADS_ROOT, { withFileTypes: true });
+      for (const d of dirs) {
+        if (d.isDirectory() && !knownKeys.includes(d.name) && /^\d{4}$/.test(d.name)) {
+          const s = await scanDir(path.join(UPLOADS_ROOT, d.name));
+          eventosSize += s.size; eventosCount += s.count;
+        }
+      }
+    } catch { /* ignore */ }
+    catStats.push({ key: 'eventos', label: 'Capas de Eventos', color: 'teal', icon: 'calendar', size: eventosSize, count: eventosCount, fmt: fmtBytes(eventosSize) });
+
+    // File type breakdown
+    const typeMap: Record<string, number> = {};
+    for (const f of total.files) {
+      typeMap[f.ftype] = (typeMap[f.ftype] || 0) + f.size;
+    }
+    const typeBreakdown = Object.entries(typeMap)
+      .map(([type, size]) => ({ type, size, fmt: fmtBytes(size), pct: total.size > 0 ? Math.round(size / total.size * 100) : 0 }))
+      .sort((a, b) => b.size - a.size);
+
+    // Top 20 largest files
+    const topFiles = total.files.slice().sort((a, b) => b.size - a.size).slice(0, 20);
+
+    res.render('admin/armazenamento', {
+      title: 'Armazenamento',
+      total: { ...total, fmt: fmtBytes(total.size) },
+      diskTotal, diskFree,
+      diskUsedPct: diskTotal > 0 ? Math.min(Math.round((diskTotal - diskFree) / diskTotal * 100), 100) : 0,
+      diskFmtTotal: fmtBytes(diskTotal),
+      diskFmtFree:  fmtBytes(diskFree),
+      uploadsPct: diskTotal > 0 ? Math.min(Math.round(total.size / diskTotal * 100), 100) : 0,
+      catStats,
+      typeBreakdown,
+      topFiles,
+      fmtBytes: (b: number) => fmtBytes(b),
+    });
+  } catch (error) {
+    console.error('storageView error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const deleteUploadFile = async (req: Request, res: Response) => {
+  try {
+    const rel = (req.body.relPath || '').replace(/\.\./g, '');  // sanitize traversal
+    const fullPath = path.join(UPLOADS_ROOT, rel);
+    if (!fullPath.startsWith(UPLOADS_ROOT + path.sep) && fullPath !== UPLOADS_ROOT) {
+      return res.status(400).json({ ok: false, error: 'Caminho inválido' });
+    }
+    await fs.promises.unlink(fullPath);
+    res.json({ ok: true });
+  } catch (error: any) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
 
 // ─── Município Ativo (sessão do super_admin) ──────────────────────────────────
 

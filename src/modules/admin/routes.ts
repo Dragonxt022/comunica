@@ -34,4 +34,7 @@ router.post('/usuarios/:id/excluir', onlyAdmin, AdminController.destroyUsuario);
 router.get('/configuracoes', onlyAdmin, AdminController.configView);
 router.post('/configuracoes', onlyAdmin, AdminController.saveConfig);
 
+router.get('/armazenamento', onlyAdmin, AdminController.storageView);
+router.post('/armazenamento/deletar', onlyAdmin, AdminController.deleteUploadFile);
+
 export default router;

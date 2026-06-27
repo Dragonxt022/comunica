@@ -1,0 +1,385 @@
+<style>
+.ring-track { stroke: #e5e7eb; }
+.ring-bar   { stroke: #3b82f6; stroke-linecap: round; transition: stroke-dasharray .6s ease; }
+.ring-warn  { stroke: #f59e0b; }
+.ring-danger{ stroke: #ef4444; }
+
+@keyframes shimFade { from { opacity: .4; } to { opacity: 1; } }
+.stat-animate { animation: shimFade .5s ease-in-out; }
+
+.cat-bar { transition: width .7s cubic-bezier(.4,0,.2,1); }
+.type-bar { transition: width .6s ease; }
+
+.file-row:hover .del-btn { opacity: 1; }
+.del-btn { opacity: 0; transition: opacity .15s; }
+</style>
+
+<div class="space-y-6" x-data="storagePage()">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h2 class="text-xl font-bold text-gray-900">Gerenciamento de Armazenamento</h2>
+      <p class="text-sm text-gray-400 mt-0.5">Espaço em disco utilizado pelos arquivos de mídia</p>
+    </div>
+    <a href="/admin/armazenamento"
+       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Atualizar dados
+    </a>
+  </div>
+
+  <!-- Top row: disco + uploads + categorias -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- Card: Disco total -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-5">
+      <!-- Donut -->
+      <div class="relative w-20 h-20 shrink-0">
+        <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+          <circle cx="18" cy="18" r="15.5" fill="none" class="ring-track" stroke-width="3.5"/>
+          <circle cx="18" cy="18" r="15.5" fill="none"
+                  class="ring-bar <%= diskUsedPct >= 90 ? 'ring-danger' : diskUsedPct >= 75 ? 'ring-warn' : '' %>"
+                  stroke-width="3.5"
+                  stroke-dasharray="<%= Math.round(diskUsedPct * 97.389 / 100) %>, 97.389"/>
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm font-bold text-gray-800"><%= diskUsedPct %>%</span>
+        </div>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Disco do Servidor</p>
+        <p class="text-lg font-bold text-gray-900"><%= diskFmtTotal %> total</p>
+        <p class="text-sm text-gray-500"><%= diskFmtFree %> livre</p>
+        <% if (diskUsedPct >= 90) { %>
+        <span class="mt-1 inline-block text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Disco crítico!</span>
+        <% } else if (diskUsedPct >= 75) { %>
+        <span class="mt-1 inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Atenção ao espaço</span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Card: Uploads da aplicação -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-5">
+      <div class="relative w-20 h-20 shrink-0">
+        <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+          <circle cx="18" cy="18" r="15.5" fill="none" class="ring-track" stroke-width="3.5"/>
+          <circle cx="18" cy="18" r="15.5" fill="none"
+                  class="ring-bar" style="stroke:#6366f1"
+                  stroke-width="3.5"
+                  stroke-dasharray="<%= Math.min(Math.round(uploadsPct * 97.389 / 100), 97.389) %>, 97.389"/>
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm font-bold text-indigo-700"><%= uploadsPct %>%</span>
+        </div>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Mídia da Aplicação</p>
+        <p class="text-2xl font-black text-indigo-700"><%= total.fmt %></p>
+        <p class="text-sm text-gray-500"><%= total.count %> arquivo<%= total.count !== 1 ? 's' : '' %></p>
+        <p class="text-xs text-gray-400 mt-0.5">do espaço total do disco</p>
+      </div>
+    </div>
+
+    <!-- Card: Distribuição por categoria -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Por Categoria</p>
+      <div class="space-y-2.5">
+        <% const catColors = { blue: '#3b82f6', purple: '#8b5cf6', orange: '#f97316', teal: '#14b8a6' }; %>
+        <% catStats.forEach(function(c) { %>
+        <%   const pct = total.size > 0 ? Math.round(c.size / total.size * 100) : 0; %>
+        <div>
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="font-medium text-gray-700"><%= c.label %></span>
+            <span class="text-gray-400"><%= c.fmt %> · <%= pct %>%</span>
+          </div>
+          <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full cat-bar" style="width:<%= pct %>%; background:<%= catColors[c.color] || '#6b7280' %>"></div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tipos de arquivo + Top 5 extensões -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+    <!-- Tipos -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Distribuição por Tipo</p>
+      <div class="space-y-4">
+        <% const typeIcons = { 'Imagens': '#3b82f6', 'Vídeos': '#8b5cf6', 'Documentos': '#f97316', 'Outros': '#6b7280' }; %>
+        <% typeBreakdown.forEach(function(t) { %>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+               style="background:<%= typeIcons[t.type] || '#6b7280' %>22">
+            <% if (t.type === 'Imagens') { %>
+            <svg class="w-4 h-4" fill="none" stroke="<%= typeIcons[t.type] %>" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <% } else if (t.type === 'Vídeos') { %>
+            <svg class="w-4 h-4" fill="none" stroke="<%= typeIcons[t.type] %>" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <% } else if (t.type === 'Documentos') { %>
+            <svg class="w-4 h-4" fill="none" stroke="<%= typeIcons[t.type] %>" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <% } else { %>
+            <svg class="w-4 h-4" fill="none" stroke="<%= typeIcons[t.type] || '#6b7280' %>" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            <% } %>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between text-sm mb-1">
+              <span class="font-medium text-gray-700"><%= t.type %></span>
+              <span class="text-gray-500 text-xs font-semibold"><%= t.fmt %> · <%= t.pct %>%</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full type-bar" style="width:<%= t.pct %>%; background:<%= typeIcons[t.type] || '#6b7280' %>"></div>
+            </div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Top extensões -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Extensões Mais Comuns</p>
+      <%
+        const extMap = {};
+        topFiles.concat(total.files.slice(20)).forEach(function(f) {
+          if (!extMap[f.ext]) extMap[f.ext] = { count: 0, size: 0 };
+          extMap[f.ext].count++;
+          extMap[f.ext].size += f.size;
+        });
+        // Actually use all files
+        const allExtMap = {};
+        // We only have topFiles here, let's use the category approach
+      %>
+      <%
+        const extAgg = {};
+        topFiles.forEach(function(f) {
+          if (!extAgg[f.ext]) extAgg[f.ext] = { count: 0, size: 0 };
+          extAgg[f.ext].count++;
+          extAgg[f.ext].size += f.size;
+        });
+        const extList = Object.entries(extAgg)
+          .map(function([ext, d]) { return { ext, count: d.count, size: d.size }; })
+          .sort(function(a, b) { return b.size - a.size; })
+          .slice(0, 8);
+      %>
+      <div class="space-y-3">
+        <% extList.forEach(function(e) { %>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded uppercase">.<%= e.ext %></span>
+            <span class="text-xs text-gray-500"><%= e.count %> arquivo<%= e.count !== 1 ? 's' : '' %></span>
+          </div>
+          <span class="text-sm font-semibold text-gray-700">
+            <%= e.size < 1048576 ? (e.size / 1024).toFixed(0) + ' KB' : (e.size / 1048576).toFixed(1) + ' MB' %>
+          </span>
+        </div>
+        <% }) %>
+        <% if (extList.length === 0) { %>
+        <p class="text-sm text-gray-400 italic">Nenhum arquivo encontrado.</p>
+        <% } %>
+      </div>
+
+      <!-- Totais por categoria -->
+      <div class="mt-5 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+        <% catStats.forEach(function(c) { %>
+        <div class="bg-gray-50 rounded-lg p-3">
+          <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5"><%= c.label %></p>
+          <p class="text-sm font-bold text-gray-800"><%= c.fmt %></p>
+          <p class="text-xs text-gray-400"><%= c.count %> arquivo<%= c.count !== 1 ? 's' : '' %></p>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tabela dos maiores arquivos -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900">Maiores Arquivos</h3>
+        <p class="text-xs text-gray-400 mt-0.5">Top <%= topFiles.length %> arquivos por tamanho — clique na lixeira para excluir</p>
+      </div>
+      <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 font-medium">
+        ⚠ Excluir arquivo apaga definitivamente
+      </span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Arquivo</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Categoria</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Data</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tamanho</th>
+            <th class="px-4 py-3 w-10"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          <% topFiles.forEach(function(f, i) { %>
+          <%   const isImg = ['jpg','jpeg','png','webp','gif','avif'].includes(f.ext); %>
+          <%   const isPdf = f.ext === 'pdf'; %>
+          <%   const isVid = ['mp4','webm','mov','avi'].includes(f.ext); %>
+          <%   const folder = f.relPath.split('/')[0]; %>
+          <tr class="file-row hover:bg-gray-50 transition-colors" x-data="{ deleting: false }">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-3">
+                <!-- Thumbnail / icon -->
+                <% if (isImg) { %>
+                <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-100 shrink-0 bg-gray-50">
+                  <img src="/uploads/<%= f.relPath %>" alt="" class="w-full h-full object-cover" loading="lazy"
+                       onerror="this.style.display='none'">
+                </div>
+                <% } else { %>
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 <%= isPdf ? 'bg-red-50' : isVid ? 'bg-purple-50' : 'bg-gray-100' %>">
+                  <% if (isPdf) { %>
+                  <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  <% } else if (isVid) { %>
+                  <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  <% } else { %>
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  <% } %>
+                </div>
+                <% } %>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-gray-800 truncate max-w-[220px]" title="<%= f.name %>"><%= f.name %></p>
+                  <p class="text-[10px] text-gray-400 truncate max-w-[220px]"><%= f.relPath %></p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell">
+              <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase">
+                <%= f.ext %>
+              </span>
+              <span class="ml-1.5 text-xs text-gray-400"><%= f.ftype %></span>
+            </td>
+            <td class="px-4 py-3 hidden lg:table-cell">
+              <span class="text-xs text-gray-400">
+                <%= new Date(f.mtime).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) %>
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span class="text-sm font-bold <%= f.size > 5_000_000 ? 'text-red-600' : f.size > 1_000_000 ? 'text-amber-600' : 'text-gray-700' %>">
+                <%= f.size < 1048576 ? (f.size / 1024).toFixed(0) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB' %>
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <button type="button"
+                      class="del-btn w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                      title="Excluir arquivo"
+                      data-path="<%= encodeURIComponent(f.relPath) %>"
+                      data-name="<%= encodeURIComponent(f.name) %>"
+                      @click="confirmDelete($el)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (topFiles.length === 0) { %>
+          <tr>
+            <td colspan="5" class="px-5 py-12 text-center text-gray-400 text-sm">Nenhum arquivo encontrado na pasta de uploads.</td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação de deleção -->
+  <div x-show="modal.open" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background:rgba(0,0,0,0.5);backdrop-filter:blur(2px)"
+       @click.self="modal.open = false"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900">Excluir arquivo?</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Esta ação não pode ser desfeita.</p>
+        </div>
+      </div>
+      <div class="bg-gray-50 rounded-lg px-3 py-2">
+        <p class="text-xs font-mono text-gray-600 break-all" x-text="modal.name"></p>
+      </div>
+      <div class="flex gap-3">
+        <button @click="modal.open = false"
+                class="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+        <button @click="doDelete()"
+                :disabled="modal.loading"
+                class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition disabled:opacity-50">
+          <span x-show="!modal.loading">Excluir</span>
+          <span x-show="modal.loading">Excluindo…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast feedback -->
+  <div x-show="toast.show" x-cloak
+       class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium"
+       :class="toast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 translate-y-4"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0">
+    <span x-text="toast.msg"></span>
+  </div>
+
+</div>
+
+<script>
+function storagePage() {
+  return {
+    modal: { open: false, relPath: '', name: '', loading: false },
+    toast: { show: false, ok: true, msg: '' },
+
+    confirmDelete(el) {
+      const relPath = decodeURIComponent(el.dataset.path);
+      const name    = decodeURIComponent(el.dataset.name);
+      this.modal = { open: true, relPath, name, loading: false };
+    },
+
+    async doDelete() {
+      this.modal.loading = true;
+      try {
+        const r = await fetch('/admin/armazenamento/deletar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'relPath=' + encodeURIComponent(this.modal.relPath),
+        });
+        const data = await r.json();
+        this.modal.open = false;
+        if (data.ok) {
+          this.showToast(true, 'Arquivo excluído com sucesso');
+          setTimeout(() => location.reload(), 1200);
+        } else {
+          this.showToast(false, 'Erro: ' + (data.error || 'falha ao excluir'));
+        }
+      } catch {
+        this.modal.open = false;
+        this.showToast(false, 'Erro de conexão ao excluir arquivo');
+      }
+    },
+
+    showToast(ok, msg) {
+      this.toast = { show: true, ok, msg };
+      setTimeout(() => { this.toast.show = false; }, 3500);
+    },
+  };
+}
+</script>
