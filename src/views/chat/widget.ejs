@@ -1,179 +1,327 @@
-<%#
-  Chat widget — rendered inside main.ejs layout (requires Alpine.js + ComunicaChat + EventSource já inicializado)
-  Floats bottom-right on every page, shows unread badge, opens full panel.
-%>
+<%# Chat widget — floats on every page. Requires Alpine.js + ComunicaChat (chat.js) + SSE already connected. %>
 
-<!-- ══ Chat widget CSS ══════════════════════════════════════════════════ -->
 <style>
   #chat-widget * { box-sizing: border-box; }
   #chat-panel {
     transition: transform .25s cubic-bezier(.4,0,.2,1), opacity .2s;
     transform-origin: bottom right;
   }
-  #chat-panel.hidden-panel {
-    transform: scale(.92) translateY(16px);
-    opacity: 0;
-    pointer-events: none;
-  }
+  #chat-panel.hidden-panel { transform: scale(.92) translateY(16px); opacity: 0; pointer-events: none; }
   .chat-msg-in  { border-radius: 4px 18px 18px 18px; }
   .chat-msg-out { border-radius: 18px 4px 18px 18px; }
-  .chat-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+  .chat-scroll  { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
   .chat-scroll::-webkit-scrollbar { width: 4px; }
   .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   .emoji-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 2px; }
-  .emoji-grid span { cursor: pointer; font-size: 1.4rem; text-align: center; padding: 2px; border-radius: 4px; }
+  .emoji-grid span { cursor: pointer; font-size: 1.35rem; text-align: center; padding: 2px; border-radius: 4px; }
   .emoji-grid span:hover { background: #e2e8f0; }
   @keyframes chatPop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .chat-pop { animation: chatPop .15s ease; }
+  @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+  .typing-dot { width: 5px; height: 5px; background: #94a3b8; border-radius: 50%; display: inline-block; }
+  .typing-dot:nth-child(1) { animation: dotBounce .9s .0s infinite; }
+  .typing-dot:nth-child(2) { animation: dotBounce .9s .2s infinite; }
+  .typing-dot:nth-child(3) { animation: dotBounce .9s .4s infinite; }
   @keyframes audioPulse { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
-  .audio-bar { width: 3px; background: #3b82f6; border-radius: 2px; height: 12px; display: inline-block; }
-  .audio-bar:nth-child(1) { animation: audioPulse .6s .0s infinite; }
-  .audio-bar:nth-child(2) { animation: audioPulse .6s .1s infinite; }
-  .audio-bar:nth-child(3) { animation: audioPulse .6s .2s infinite; }
-  .audio-bar:nth-child(4) { animation: audioPulse .6s .15s infinite; }
+
+  /* ── Custom audio player ── */
+  .chat-audio-player { display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-width: 200px; }
+  .chat-audio-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; border: none; transition: opacity .15s; }
+  .chat-audio-btn:hover { opacity: .85; }
+  .chat-audio-track { flex: 1; position: relative; height: 32px; cursor: pointer; display: flex; align-items: center; }
+  .chat-audio-bars { display: flex; align-items: center; gap: 1.5px; width: 100%; height: 28px; }
+  .chat-audio-bar { border-radius: 2px; flex-shrink: 0; width: 2.5px; transition: background .1s; }
+  .chat-audio-time { font-size: 10px; white-space: nowrap; flex-shrink: 0; min-width: 28px; text-align: right; }
 </style>
 
-<!-- ══ Alpine data definition ══════════════════════════════════════════ -->
 <div id="chat-widget"
      x-data="chatWidget()"
      x-init="init()"
      @chat-msg.window="handleSSEMsg($event.detail)"
      @chat-conversa.window="handleSSEConversa($event.detail)"
+     @chat-lida.window="handleSSELida($event.detail)"
+     @chat-digitando.window="handleSSEDigitando($event.detail)"
+     @chat-reconectado.window="onSSEReconectado()"
      class="fixed bottom-6 right-6 z-[9800] flex flex-col items-end gap-3 select-none">
 
-  <!-- Floating button — pill shape -->
+  <!-- Floating pill button -->
   <button @click="togglePanel()"
-          class="relative flex items-center gap-2 px-4 h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-xl text-white"
-          title="Chat">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          class="relative flex items-center gap-2 px-4 h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-xl text-white">
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 15c0 1.1-.9 2-2 2h-5l-5 5v-5H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10z"/>
     </svg>
     <span class="text-sm font-semibold">Chat</span>
-    <!-- unread badge -->
     <span x-show="unreadTotal > 0" x-cloak
           class="min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold flex items-center justify-center chat-pop ml-0.5"
           x-text="unreadTotal > 99 ? '99+' : unreadTotal"></span>
   </button>
 
-  <!-- Main panel — taller and wider for a more rectangular look -->
+  <!-- Panel — hidden-panel na classe estática evita flash antes do Alpine inicializar -->
   <div id="chat-panel"
-       :class="panelOpen ? '' : 'hidden-panel'"
-       class="bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden"
+       :class="{ 'hidden-panel': !panelOpen }"
+       class="hidden-panel bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden"
        style="position:absolute;bottom:60px;right:0;width:430px;height:680px;max-height:80vh">
 
-    <!-- ── Header ── -->
+    <!-- Header -->
     <div class="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white flex-shrink-0">
-      <!-- back button (inside conversa) -->
-      <button x-show="activeConversa" @click="fecharConversa()" class="mr-1 hover:bg-blue-700 p-1 rounded-lg transition">
+      <button x-show="activeConversa || buscandoUsuarios" @click="fecharConversa()"
+              class="mr-1 hover:bg-blue-700 p-1 rounded-lg transition flex-shrink-0">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
       </button>
       <div class="flex-1 min-w-0">
-        <span x-show="!activeConversa" class="font-semibold text-[15px]">Mensagens</span>
-        <span x-show="activeConversa" class="font-semibold text-[15px] truncate block" x-text="activeConversa?.nome"></span>
-        <!-- encryption indicator -->
-        <span x-show="activeConversa?.tipo === 'dm'" class="text-[10px] text-blue-200 flex items-center gap-1">
-          🔒 Criptografia de ponta a ponta
-        </span>
-        <span x-show="activeConversa?.tipo === 'grupo'" class="text-[10px] text-blue-200 flex items-center gap-1">
-          👥 Conversa de grupo
-        </span>
+        <span x-show="!activeConversa && !buscandoUsuarios" class="font-semibold text-[15px]">Mensagens</span>
+        <span x-show="buscandoUsuarios && !activeConversa" class="font-semibold text-[15px]"
+              x-text="modoBusca==='grupo' ? 'Novo grupo' : 'Nova mensagem'"></span>
+        <div x-show="activeConversa" class="flex items-center gap-2 min-w-0">
+          <!-- Group avatar (clickable to change) -->
+          <template x-if="activeConversa?.tipo === 'grupo'">
+            <label class="relative w-8 h-8 rounded-full flex-shrink-0 cursor-pointer group/av" title="Alterar foto do grupo">
+              <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                <template x-if="activeConversa?.avatar"><img :src="activeConversa.avatar" class="w-full h-full object-cover"></template>
+                <template x-if="!activeConversa?.avatar"><span x-text="activeConversa?.nome?.charAt(0)?.toUpperCase()"></span></template>
+              </div>
+              <div class="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover/av:opacity-100 transition flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+              <input type="file" accept="image/*" class="hidden" @change="atualizarAvatarGrupo($event)">
+            </label>
+          </template>
+          <div class="min-w-0">
+            <span class="font-semibold text-[15px] truncate block" x-text="activeConversa?.nome"></span>
+            <span x-show="activeConversa?.tipo === 'dm'" class="text-[10px] text-blue-200">🔒 Criptografia de ponta a ponta</span>
+            <span x-show="activeConversa?.tipo === 'grupo'" class="text-[10px] text-blue-200">👥 Conversa de grupo</span>
+          </div>
+        </div>
       </div>
-      <!-- new DM / new group buttons -->
-      <div x-show="!activeConversa" class="flex items-center gap-1">
-        <button @click="abrirBuscaUsuarios('dm')"
-                title="Nova conversa"
+      <div x-show="!activeConversa && !buscandoUsuarios" class="flex items-center gap-1">
+        <button @click="abrirBuscaUsuarios('dm')" title="Nova conversa"
                 class="w-7 h-7 hover:bg-blue-700 rounded-lg transition flex items-center justify-center">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
-        <button @click="abrirBuscaUsuarios('grupo')"
-                title="Novo grupo"
+        <button @click="abrirBuscaUsuarios('grupo')" title="Novo grupo"
                 class="w-7 h-7 hover:bg-blue-700 rounded-lg transition flex items-center justify-center">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </button>
       </div>
-      <button @click="panelOpen = false" class="w-7 h-7 hover:bg-blue-700 rounded-lg transition flex items-center justify-center">
+      <button @click="panelOpen=false" class="w-7 h-7 hover:bg-blue-700 rounded-lg transition flex items-center justify-center flex-shrink-0">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
 
-    <!-- ── Conversa list ── -->
-    <div x-show="!activeConversa && !buscandoUsuarios" class="flex-1 overflow-y-auto chat-scroll">
-      <!-- search filter -->
-      <div class="px-3 pt-2 pb-1">
+    <!-- ══ Conversa list ══ -->
+    <div x-show="!activeConversa && !buscandoUsuarios" class="flex-1 overflow-y-auto chat-scroll flex flex-col">
+
+      <!-- Search bar -->
+      <div class="px-3 pt-2 pb-1 flex-shrink-0">
         <input x-model="filtroConversa" type="text" placeholder="Pesquisar…"
                class="w-full text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400">
       </div>
-      <template x-if="conversas.length === 0 && !carregando">
-        <div class="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
-          <svg class="w-10 h-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M21 15c0 1.1-.9 2-2 2h-5l-5 5v-5H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>
-          <span class="text-sm">Nenhuma conversa ainda</span>
-          <span class="text-xs">Clique em + para iniciar</span>
+
+      <!-- Category tabs -->
+      <div class="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 overflow-x-auto chat-scroll flex-shrink-0" style="scrollbar-width:none">
+        <!-- Todas -->
+        <button @click="categoriaAtiva=null"
+                :class="categoriaAtiva===null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                class="flex-shrink-0 text-xs font-medium px-3 py-1 rounded-full transition">
+          Todas
+        </button>
+        <!-- Favoritos (pinned) -->
+        <button @click="categoriaAtiva='__pinned__'"
+                :class="categoriaAtiva==='__pinned__' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                class="flex-shrink-0 text-xs font-medium px-3 py-1 rounded-full transition flex items-center gap-1">
+          <span>⭐</span><span>Favoritos</span>
+        </button>
+        <!-- Custom categories -->
+        <template x-for="cat in categorias" :key="cat.id">
+          <button @click="categoriaAtiva===cat.id ? categoriaAtiva=null : categoriaAtiva=cat.id"
+                  :class="categoriaAtiva===cat.id ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                  :style="categoriaAtiva===cat.id ? 'background:'+cat.cor : ''"
+                  class="flex-shrink-0 text-xs font-medium px-3 py-1 rounded-full transition flex items-center gap-1 group">
+            <span x-text="cat.emoji"></span>
+            <span class="max-w-[70px] truncate" x-text="cat.nome"></span>
+            <span @click.stop="excluirCategoriaItem(cat)"
+                  class="opacity-0 group-hover:opacity-100 ml-0.5 text-[10px] font-bold hover:text-red-400 leading-none">×</span>
+          </button>
+        </template>
+        <!-- Add category -->
+        <button @click="showNovaCat=!showNovaCat"
+                class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition text-sm font-bold">
+          +
+        </button>
+      </div>
+
+      <!-- New category form -->
+      <div x-show="showNovaCat" x-cloak class="px-3 py-2 border-b border-gray-100 flex-shrink-0 bg-gray-50">
+        <div class="flex items-center gap-2 mb-2">
+          <!-- emoji picker trigger -->
+          <div class="relative">
+            <button @click="showCatEmojiPick=!showCatEmojiPick"
+                    class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-base hover:border-blue-400 transition"
+                    x-text="novaCatEmoji"></button>
+            <div x-show="showCatEmojiPick" @click.outside="showCatEmojiPick=false"
+                 class="absolute left-0 top-9 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-[9950] w-[180px]">
+              <div class="grid grid-cols-6 gap-1 max-h-[120px] overflow-y-auto chat-scroll">
+                <template x-for="e in ['📁','💼','⭐','❤️','🏠','📌','🎯','💡','🔔','📝','🎉','🌟','🔥','💬','📊','🗂️','🧩','🌈','⚡','🎵']" :key="e">
+                  <span @click="novaCatEmoji=e; showCatEmojiPick=false"
+                        class="text-center cursor-pointer hover:bg-gray-100 rounded p-0.5 text-lg">
+                    <span x-text="e"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+          </div>
+          <input x-model="novaCatNome" type="text" placeholder="Nome da categoria…"
+                 @keydown.enter.prevent="salvarNovaCategoria()"
+                 class="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
         </div>
-      </template>
+        <!-- Color picker -->
+        <div class="flex items-center gap-1.5 mb-2">
+          <span class="text-xs text-gray-500">Cor:</span>
+          <template x-for="cor in ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b']" :key="cor">
+            <button @click="novaCatCor=cor"
+                    :style="'background:'+cor"
+                    :class="novaCatCor===cor ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
+                    class="w-5 h-5 rounded-full transition"></button>
+          </template>
+        </div>
+        <div class="flex gap-2">
+          <button @click="showNovaCat=false; novaCatNome=''; novaCatEmoji='📁'; novaCatCor='#6366f1'"
+                  class="flex-1 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+            Cancelar
+          </button>
+          <button @click="salvarNovaCategoria()"
+                  :disabled="!novaCatNome.trim()"
+                  class="flex-1 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition">
+            Criar
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading -->
       <div x-show="carregando" class="flex justify-center py-8">
         <svg class="animate-spin w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
       </div>
+
+      <!-- Empty state -->
+      <template x-if="conversasFiltradas.length === 0 && !carregando">
+        <div class="flex flex-col items-center justify-center flex-1 text-gray-400 gap-2 py-16">
+          <svg class="w-12 h-12 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M21 15c0 1.1-.9 2-2 2h-5l-5 5v-5H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>
+          <span class="text-sm font-medium" x-text="categoriaAtiva ? 'Nenhuma conversa nesta categoria' : 'Nenhuma conversa ainda'"></span>
+          <span x-show="!categoriaAtiva" class="text-xs">Clique em + para iniciar</span>
+        </div>
+      </template>
+
+      <!-- Conversation items -->
       <template x-for="c in conversasFiltradas" :key="c.id">
         <div @click="abrirConversa(c)"
-             class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer transition border-b border-gray-50">
-          <!-- avatar -->
+             class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer transition border-b border-gray-50 group relative">
+          <!-- pin indicator -->
+          <span x-show="c.pinned" class="absolute top-1.5 right-1 text-amber-400 text-[10px]">📌</span>
           <div class="relative flex-shrink-0">
             <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-base font-bold overflow-hidden">
-              <template x-if="c.avatar"><img :src="c.avatar" class="w-full h-full object-cover"></template>
+              <template x-if="c.avatar"><img :src="c.avatar" class="w-full h-full object-cover" loading="lazy"></template>
               <template x-if="!c.avatar"><span x-text="c.nome?.charAt(0)?.toUpperCase()"></span></template>
             </div>
             <span x-show="c.tipo === 'grupo'" class="absolute -bottom-0.5 -right-0.5 text-[10px]">👥</span>
           </div>
-          <!-- info -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-1">
               <span class="text-sm font-semibold text-gray-900 truncate" x-text="c.nome"></span>
-              <span class="text-[10px] text-gray-400 ml-1 flex-shrink-0" x-text="formatTime(c.updatedAt)"></span>
+              <span class="text-[10px] text-gray-400 flex-shrink-0" x-text="formatTime(c.updatedAt)"></span>
             </div>
-            <div class="text-xs text-gray-500 truncate mt-0.5" x-text="previewUltimaMsg(c)"></div>
+            <!-- category badge -->
+            <div class="flex items-center gap-1 mt-0.5">
+              <template x-if="c.categoria_id">
+                <span class="text-[9px] px-1.5 py-px rounded-full text-white font-medium"
+                      :style="'background:' + (categorias.find(x=>x.id===c.categoria_id)?.cor || '#6366f1')"
+                      x-text="(categorias.find(x=>x.id===c.categoria_id)?.emoji || '') + ' ' + (categorias.find(x=>x.id===c.categoria_id)?.nome || '')">
+                </span>
+              </template>
+              <div class="text-xs text-gray-500 truncate flex-1" x-text="previewUltimaMsg(c)"></div>
+            </div>
           </div>
-          <!-- unread badge -->
-          <span x-show="c.nao_lidas > 0"
-                class="min-w-[18px] h-[18px] px-1 bg-blue-600 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0"
-                x-text="c.nao_lidas > 99 ? '99+' : c.nao_lidas"></span>
+          <!-- unread badge + context menu btn -->
+          <div class="flex flex-col items-center gap-1 flex-shrink-0">
+            <span x-show="c.nao_lidas > 0"
+                  class="min-w-[18px] h-[18px] px-1 bg-blue-600 rounded-full text-[10px] font-bold text-white flex items-center justify-center chat-pop"
+                  x-text="c.nao_lidas > 99 ? '99+' : c.nao_lidas"></span>
+            <button @click.stop="abrirMenuContexto(c, $event)"
+                    class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-700 transition rounded"
+                    title="Opções">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/></svg>
+            </button>
+          </div>
         </div>
       </template>
     </div>
 
-    <!-- ── Busca de usuários (novo DM / grupo) ── -->
-    <div x-show="buscandoUsuarios" class="flex flex-col flex-1 overflow-hidden">
-      <div class="px-3 pt-3 pb-2 border-b border-gray-100">
-        <div class="flex items-center gap-2 mb-2">
-          <button @click="buscandoUsuarios=false;grupoNome='';grupoSelecionados=[]" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-          </button>
-          <span class="font-semibold text-sm text-gray-700" x-text="modoBusca==='grupo' ? 'Novo grupo' : 'Nova mensagem'"></span>
-        </div>
+    <!-- Context menu -->
+    <div x-show="menuContexto.open" x-cloak
+         @click.outside="menuContexto.open=false"
+         :style="'position:fixed;top:'+menuContexto.y+'px;left:'+menuContexto.x+'px;'"
+         class="bg-white border border-gray-200 rounded-xl shadow-xl py-1 z-[9999] w-48 text-sm">
+      <button @click.stop="doPin(menuContexto.conversa)"
+              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2">
+        <span x-text="menuContexto.conversa?.pinned ? '📌 Desafixar' : '📌 Fixar no topo'"></span>
+      </button>
+      <button @click.stop="limparConversa(menuContexto.conversa)"
+              class="w-full text-left px-3 py-2 hover:bg-orange-50 text-orange-500 flex items-center gap-2">
+        🧹 Limpar mensagens
+      </button>
+      <button @click.stop="apagarConversa(menuContexto.conversa)"
+              class="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 font-medium">
+        🗑️ Apagar conversa
+      </button>
+      <div class="border-t border-gray-100 my-0.5"></div>
+      <div class="px-3 py-1 text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Mover para categoria</div>
+      <button @click.stop="doCategoria(menuContexto.conversa, null)"
+              :class="!menuContexto.conversa?.categoria_id ? 'font-semibold text-blue-600' : ''"
+              class="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2 text-xs">
+        <span>✕ Sem categoria</span>
+      </button>
+      <template x-for="cat in categorias" :key="cat.id">
+        <button @click.stop="doCategoria(menuContexto.conversa, cat.id)"
+                :class="menuContexto.conversa?.categoria_id===cat.id ? 'font-semibold text-blue-600' : ''"
+                class="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2 text-xs">
+          <span x-text="cat.emoji"></span>
+          <span x-text="cat.nome"></span>
+        </button>
+      </template>
+      <template x-if="categorias.length === 0">
+        <div class="px-3 py-1.5 text-xs text-gray-400">Nenhuma categoria ainda. Use o + acima.</div>
+      </template>
+    </div>
+
+    <!-- ══ Busca de usuários ══ -->
+    <div x-show="buscandoUsuarios && !activeConversa" class="flex flex-col flex-1 overflow-hidden">
+      <div class="px-3 pt-2 pb-2 border-b border-gray-100 flex-shrink-0">
         <template x-if="modoBusca === 'grupo'">
           <input x-model="grupoNome" type="text" placeholder="Nome do grupo…"
                  class="w-full text-sm border border-gray-200 rounded-xl px-3 py-1.5 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
         </template>
-        <input x-model="filtroBusca" type="text" placeholder="Pesquisar pessoas…"
+        <input x-model="filtroBusca" type="text" placeholder="Pesquisar pessoas…" autofocus
                class="w-full text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400">
-        <!-- selected for group -->
         <template x-if="modoBusca === 'grupo' && grupoSelecionados.length > 0">
           <div class="flex flex-wrap gap-1 mt-2">
             <template x-for="uid in grupoSelecionados" :key="uid">
               <span class="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs rounded-full px-2 py-0.5">
                 <span x-text="usuarioNome(uid)"></span>
-                <button @click="grupoSelecionados=grupoSelecionados.filter(i=>i!==uid)" class="font-bold">×</button>
+                <button @click.stop="grupoSelecionados=grupoSelecionados.filter(i=>i!==uid)" class="font-bold hover:text-red-500">×</button>
               </span>
             </template>
           </div>
         </template>
       </div>
       <div class="flex-1 overflow-y-auto chat-scroll">
+        <template x-if="usuariosFiltrados.length === 0">
+          <div class="text-center text-gray-400 text-sm py-10">Nenhum usuário encontrado</div>
+        </template>
         <template x-for="u in usuariosFiltrados" :key="u.id">
           <div @click="selecionarUsuario(u)"
                :class="grupoSelecionados.includes(u.id) ? 'bg-blue-50' : 'hover:bg-gray-50'"
                class="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition border-b border-gray-50">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
-              <template x-if="u.avatar"><img :src="u.avatar" class="w-full h-full object-cover"></template>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+              <template x-if="u.avatar"><img :src="u.avatar" class="w-full h-full object-cover" loading="lazy"></template>
               <template x-if="!u.avatar"><span x-text="u.nome?.charAt(0)?.toUpperCase()"></span></template>
             </div>
             <div class="flex-1 min-w-0">
@@ -182,15 +330,17 @@
             </div>
             <template x-if="modoBusca === 'grupo'">
               <div :class="grupoSelecionados.includes(u.id) ? 'bg-blue-600 border-blue-600' : 'border-gray-300'"
-                   class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0">
-                <svg x-show="grupoSelecionados.includes(u.id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                   class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition">
+                <svg x-show="grupoSelecionados.includes(u.id)" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
               </div>
             </template>
           </div>
         </template>
       </div>
       <template x-if="modoBusca === 'grupo' && grupoSelecionados.length > 0">
-        <div class="p-3 border-t border-gray-100">
+        <div class="p-3 border-t border-gray-100 flex-shrink-0">
           <button @click="criarGrupo()"
                   class="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition">
             Criar grupo (<span x-text="grupoSelecionados.length"></span> pessoas)
@@ -199,288 +349,401 @@
       </template>
     </div>
 
-    <!-- ── Mensagens ── -->
-    <div x-show="activeConversa" class="flex flex-col flex-1 overflow-hidden">
+    <!-- ══ Mensagens ══ -->
+    <div x-show="activeConversa" class="flex flex-col flex-1 overflow-hidden relative">
+
       <!-- messages list -->
-      <div id="chat-msgs-list"
-           class="flex-1 overflow-y-auto chat-scroll px-3 py-2 flex flex-col gap-1"
-           @scroll="onScroll($event)">
-        <!-- load more -->
-        <div x-show="hasMore" class="flex justify-center py-1">
+      <div x-ref="msgsList"
+           class="flex-1 overflow-y-auto chat-scroll px-3 py-2 flex flex-col gap-0.5"
+           @scroll.passive="onScroll()">
+        <div x-show="hasMore" class="flex justify-center py-1 flex-shrink-0">
           <button @click="carregarMaisAntigas()" class="text-xs text-blue-500 hover:underline">Carregar anteriores</button>
         </div>
-        <div x-show="carregandoMsgs" class="flex justify-center py-2">
-          <svg class="animate-spin w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        <div x-show="carregandoMsgs" class="flex justify-center py-3">
+          <svg class="animate-spin w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
         </div>
+
+        <!-- Empty conversation state -->
+        <template x-if="mensagens.length === 0 && !carregandoMsgs">
+          <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8 py-12">
+            <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center shadow-inner">
+              <span class="text-3xl">🔒</span>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-700">Mensagens com criptografia de ponta a ponta</p>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Suas conversas são protegidas. Nem mesmo nós podemos lê-las. Envie sua primeira mensagem!</p>
+            </div>
+          </div>
+        </template>
+
         <template x-for="(msg, idx) in mensagens" :key="msg.id">
-          <div :class="msg.user_id === myUserId ? 'items-end' : 'items-start'" class="flex flex-col gap-0.5">
-            <!-- sender name (not own, not DM) -->
+          <div :class="msg.user_id === myUserId ? 'items-end' : 'items-start'" class="flex flex-col">
+            <!-- group sender name -->
             <template x-if="msg.user_id !== myUserId && activeConversa?.tipo === 'grupo' && (idx === 0 || mensagens[idx-1]?.user_id !== msg.user_id)">
-              <span class="text-[10px] text-gray-500 px-1" x-text="msg.remetente?.nome"></span>
+              <span class="text-[10px] text-gray-500 px-2 mt-1" x-text="msg.remetente?.nome"></span>
             </template>
-            <div class="max-w-[80%] group relative">
+
+            <div class="max-w-[78%] group relative">
+              <!-- deleted -->
               <template x-if="msg.excluido">
-                <div :class="msg.user_id === myUserId ? 'bg-gray-200 chat-msg-out' : 'bg-gray-100 chat-msg-in'"
-                     class="px-3 py-1.5 text-xs text-gray-400 italic">Mensagem excluída</div>
+                <div :class="msg.user_id === myUserId ? 'bg-gray-200 text-gray-500 chat-msg-out' : 'bg-gray-100 text-gray-400 chat-msg-in'"
+                     class="px-3 py-1.5 text-xs italic">Mensagem excluída</div>
               </template>
+
               <template x-if="!msg.excluido">
                 <div>
-                  <!-- text -->
+                  <!-- TEXT -->
                   <template x-if="msg.tipo === 'texto'">
                     <div :class="msg.user_id === myUserId ? 'bg-blue-600 text-white chat-msg-out' : 'bg-gray-100 text-gray-900 chat-msg-in'"
                          class="px-3 py-2 text-sm leading-snug break-words whitespace-pre-wrap"
                          x-text="msg._texto || '🔒 …'"></div>
                   </template>
-                  <!-- image -->
+
+                  <!-- IMAGE -->
                   <template x-if="msg.tipo === 'imagem'">
-                    <div :class="msg.user_id === myUserId ? 'chat-msg-out' : 'chat-msg-in'" class="overflow-hidden max-w-[240px]">
-                      <img :src="msg.arquivo_url" class="rounded-xl object-cover max-h-48 w-full cursor-pointer"
+                    <div :class="msg.user_id === myUserId ? 'chat-msg-out' : 'chat-msg-in'" class="overflow-hidden max-w-[260px]">
+                      <img :src="msg.arquivo_url" class="object-cover max-h-52 w-full cursor-pointer rounded-2xl"
                            @click="window.open(msg.arquivo_url,'_blank')" loading="lazy">
                     </div>
                   </template>
-                  <!-- audio -->
+
+                  <!-- AUDIO — custom player -->
                   <template x-if="msg.tipo === 'audio'">
-                    <div :class="msg.user_id === myUserId ? 'bg-blue-600 text-white chat-msg-out' : 'bg-gray-100 chat-msg-in'"
-                         class="px-3 py-2">
-                      <audio controls class="h-8" style="max-width:200px"><source :src="msg.arquivo_url"></audio>
+                    <div :class="msg.user_id === myUserId ? 'bg-blue-600 chat-msg-out' : 'bg-gray-100 chat-msg-in'"
+                         class="chat-audio-player">
+                      <!-- hidden audio element -->
+                      <audio :id="'aud-' + msg.id" :src="msg.arquivo_url" preload="metadata"
+                             @loadedmetadata="onAudioMeta(msg.id, $event)"
+                             @timeupdate="onAudioTick(msg.id, $event)"
+                             @ended="onAudioEnd(msg.id)"></audio>
+                      <!-- play/pause -->
+                      <button @click.stop="toggleAudio(msg.id)"
+                              :class="msg.user_id === myUserId ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'"
+                              class="chat-audio-btn w-9 h-9">
+                        <svg x-show="!audioState(msg.id).playing" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg x-show="audioState(msg.id).playing" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                      </button>
+                      <!-- waveform + progress -->
+                      <div class="flex flex-col flex-1 gap-1">
+                        <div class="chat-audio-track" @click.stop="seekAudio(msg.id, $event)">
+                          <div class="chat-audio-bars" :id="'bars-' + msg.id">
+                            <template x-for="(h, bi) in waveformBars(msg.id)" :key="bi">
+                              <div class="chat-audio-bar"
+                                   :style="{ height: h + '%', background: barColor(msg, bi, waveformBars(msg.id).length) }"></div>
+                            </template>
+                          </div>
+                        </div>
+                        <!-- time -->
+                        <div :class="msg.user_id === myUserId ? 'text-blue-200' : 'text-gray-400'"
+                             class="chat-audio-time" :id="'atime-' + msg.id"
+                             x-text="formatAudioTime(audioState(msg.id).currentTime) + ' / ' + formatAudioTime(audioState(msg.id).duration)">
+                          0:00 / 0:00
+                        </div>
+                      </div>
                     </div>
                   </template>
-                  <!-- file -->
+
+                  <!-- FILE -->
                   <template x-if="msg.tipo === 'arquivo'">
                     <a :href="msg.arquivo_url" target="_blank"
                        :class="msg.user_id === myUserId ? 'bg-blue-600 text-white chat-msg-out' : 'bg-gray-100 text-gray-900 chat-msg-in'"
                        class="flex items-center gap-2 px-3 py-2 text-sm no-underline">
-                      📎 <span x-text="msg.arquivo_nome" class="truncate max-w-[140px]"></span>
+                      📎 <span class="truncate max-w-[160px]" x-text="msg.arquivo_nome"></span>
                     </a>
                   </template>
                 </div>
               </template>
-              <!-- delete own -->
+
+              <!-- delete button (own messages) -->
               <template x-if="msg.user_id === myUserId && !msg.excluido">
-                <button @click="excluirMensagem(msg)"
-                        class="absolute -top-1 -left-6 opacity-0 group-hover:opacity-100 transition w-5 h-5 text-gray-400 hover:text-red-500 flex items-center justify-center text-xs">✕</button>
+                <button @click.stop="excluirMensagem(msg)"
+                        class="absolute -top-1 -left-6 opacity-0 group-hover:opacity-100 transition w-5 h-5 text-gray-400 hover:text-red-500 text-xs flex items-center justify-center">✕</button>
               </template>
             </div>
-            <span :class="msg.user_id === myUserId ? 'text-right' : 'text-left'"
-                  class="text-[9px] text-gray-400 px-1" x-text="formatTime(msg.createdAt)"></span>
+
+            <!-- time + read receipt -->
+            <div :class="msg.user_id === myUserId ? 'flex-row-reverse' : 'flex-row'"
+                 class="flex items-center gap-1 px-1 mt-0.5 mb-1">
+              <span class="text-[9px] text-gray-400" x-text="formatTime(msg.createdAt)"></span>
+              <!-- checkmarks for own messages in DM -->
+              <template x-if="msg.user_id === myUserId && activeConversa?.tipo === 'dm'">
+                <span :class="isLido(msg) ? 'text-blue-500' : 'text-gray-400'"
+                      class="text-[11px] leading-none font-bold" x-text="isLido(msg) ? '✓✓' : '✓'"></span>
+              </template>
+            </div>
           </div>
         </template>
         <div id="chat-bottom-anchor"></div>
       </div>
 
-      <!-- emoji picker -->
-      <div x-show="showEmoji" x-cloak
-           class="absolute bottom-[110px] right-3 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-[9900] w-[280px]">
-        <div class="flex gap-1 mb-1 text-xs text-gray-500">
-          <button class="hover:bg-gray-100 px-1 rounded" @click="emojiTab='smileys'" :class="emojiTab==='smileys'?'bg-gray-100':''">😀</button>
-          <button class="hover:bg-gray-100 px-1 rounded" @click="emojiTab='nature'" :class="emojiTab==='nature'?'bg-gray-100':''">🐶</button>
-          <button class="hover:bg-gray-100 px-1 rounded" @click="emojiTab='food'" :class="emojiTab==='food'?'bg-gray-100':''">🍕</button>
-          <button class="hover:bg-gray-100 px-1 rounded" @click="emojiTab='activity'" :class="emojiTab==='activity'?'bg-gray-100':''">⚽</button>
-          <button class="hover:bg-gray-100 px-1 rounded" @click="emojiTab='symbols'" :class="emojiTab==='symbols'?'bg-gray-100':''">❤️</button>
+      <!-- Typing indicator -->
+      <div x-show="digitandoInfo && digitandoInfo.conversa_id === activeConversa?.id" x-cloak
+           class="px-4 py-1 flex items-center gap-2 flex-shrink-0">
+        <div class="flex items-center gap-[3px]">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
         </div>
-        <div class="emoji-grid max-h-[140px] overflow-y-auto chat-scroll">
+        <span class="text-xs text-gray-500 italic" x-text="(digitandoInfo?.nome || '') + ' está digitando…'"></span>
+      </div>
+
+      <!-- emoji picker -->
+      <div x-show="showEmoji" x-cloak @click.outside="showEmoji=false"
+           class="absolute bottom-[115px] right-3 bg-white border border-gray-200 rounded-2xl shadow-xl p-2.5 z-[9900] w-[290px]">
+        <div class="flex gap-1 mb-1.5 text-sm border-b border-gray-100 pb-1.5">
+          <button @click="emojiTab='smileys'" :class="emojiTab==='smileys'?'bg-gray-100 rounded':''" class="px-1.5 py-0.5 rounded hover:bg-gray-100">😀</button>
+          <button @click="emojiTab='nature'"  :class="emojiTab==='nature'?'bg-gray-100 rounded':''"  class="px-1.5 py-0.5 rounded hover:bg-gray-100">🐶</button>
+          <button @click="emojiTab='food'"    :class="emojiTab==='food'?'bg-gray-100 rounded':''"    class="px-1.5 py-0.5 rounded hover:bg-gray-100">🍕</button>
+          <button @click="emojiTab='activity'" :class="emojiTab==='activity'?'bg-gray-100 rounded':''" class="px-1.5 py-0.5 rounded hover:bg-gray-100">⚽</button>
+          <button @click="emojiTab='symbols'" :class="emojiTab==='symbols'?'bg-gray-100 rounded':''" class="px-1.5 py-0.5 rounded hover:bg-gray-100">❤️</button>
+        </div>
+        <div class="emoji-grid max-h-[150px] overflow-y-auto chat-scroll">
           <template x-for="e in EMOJIS[emojiTab]" :key="e">
             <span @click="inserirEmoji(e)" x-text="e"></span>
           </template>
         </div>
       </div>
 
-      <!-- input area -->
+      <!-- Input area -->
       <div class="flex-shrink-0 border-t border-gray-100 px-2 py-2 flex flex-col gap-1.5">
-        <!-- media previews -->
+        <!-- media preview -->
         <template x-if="mediaPreview">
           <div class="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-1.5 text-xs text-blue-700">
-            <template x-if="mediaPreview.tipo === 'imagem'">
-              <img :src="mediaPreview.src" class="h-8 w-8 object-cover rounded">
-            </template>
-            <template x-if="mediaPreview.tipo === 'audio'">
-              <span>🎤 Áudio gravado</span>
-            </template>
-            <span x-text="mediaPreview.nome" class="flex-1 truncate"></span>
-            <button @click="cancelarMedia()" class="font-bold text-blue-400 hover:text-red-500">✕</button>
+            <template x-if="mediaPreview.tipo === 'imagem'"><img :src="mediaPreview.src" class="h-8 w-8 object-cover rounded"></template>
+            <template x-if="mediaPreview.tipo === 'audio'"><span>🎤</span></template>
+            <span class="flex-1 truncate" x-text="mediaPreview.nome"></span>
+            <button @click="cancelarMedia()" class="font-bold text-blue-400 hover:text-red-500 text-base leading-none">×</button>
           </div>
         </template>
 
-        <!-- audio recording bar -->
+        <!-- recording bar -->
         <template x-if="gravando">
           <div class="flex items-center gap-3 bg-red-50 rounded-xl px-3 py-1.5">
-            <div class="flex items-end gap-[3px] h-5">
-              <span class="audio-bar"></span>
-              <span class="audio-bar"></span>
-              <span class="audio-bar"></span>
-              <span class="audio-bar"></span>
-            </div>
-            <span class="text-xs text-red-600 font-medium flex-1" x-text="formatGravacaoTempo()"></span>
-            <button @click="cancelarGravacao()" class="text-xs text-gray-400 hover:text-red-600 px-2">Cancelar</button>
-            <button @click="pararGravacao()" class="text-xs bg-red-500 text-white px-3 py-1 rounded-lg font-medium hover:bg-red-600 transition">Enviar</button>
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0"></span>
+            <span class="text-xs text-red-600 font-medium flex-1" x-text="'Gravando ' + formatGravacaoTempo()"></span>
+            <button @click="cancelarGravacao()" class="text-xs text-gray-400 hover:text-red-600">Cancelar</button>
+            <button @click="pararGravacao()" class="text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition">Enviar</button>
           </div>
         </template>
 
         <div class="flex items-end gap-1.5">
-          <!-- emoji btn -->
-          <button @click="showEmoji=!showEmoji" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-500 transition text-lg flex-shrink-0 mb-0.5">😊</button>
-          <!-- text input -->
-          <textarea x-model="inputText"
-                    @keydown.enter.exact.prevent="enviarTexto()"
-                    @keydown.enter.shift.prevent="inputText+='\n'"
-                    @input="autoResize($event)"
-                    placeholder="Mensagem…"
+          <button @click="showEmoji=!showEmoji" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-yellow-500 transition text-lg flex-shrink-0 mb-0.5">😊</button>
+          <textarea x-ref="inputMsg"
+                    x-model="inputText"
+                    @keydown="handleKeydown($event)"
+                    @input="onInput($event)"
+                    placeholder="Mensagem… (Enter para enviar)"
                     rows="1"
                     class="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none overflow-hidden leading-snug max-h-24"></textarea>
-          <!-- image attach -->
-          <label class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-500 transition cursor-pointer flex-shrink-0 mb-0.5" title="Anexar imagem">
+          <label class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-500 transition cursor-pointer flex-shrink-0 mb-0.5" title="Imagem">
             <input type="file" accept="image/*" class="hidden" @change="onFileSelect($event)">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           </label>
-          <!-- audio record -->
-          <button @click="alternarGravacao()" title="Gravar áudio"
-                  :class="gravando ? 'text-red-500' : 'text-gray-400 hover:text-blue-500'"
-                  class="w-8 h-8 flex items-center justify-center transition flex-shrink-0 mb-0.5">
+          <button @click="alternarGravacao()" :class="gravando ? 'text-red-500' : 'text-gray-400 hover:text-blue-500'"
+                  class="w-8 h-8 flex items-center justify-center transition flex-shrink-0 mb-0.5" title="Gravar áudio">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
           </button>
-          <!-- send -->
-          <button @click="enviar()"
-                  :disabled="enviando"
-                  class="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center text-white flex-shrink-0 mb-0.5 active:scale-95">
+          <button @click="enviar()" :disabled="enviando"
+                  class="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 transition flex items-center justify-center text-white flex-shrink-0 mb-0.5 active:scale-95">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
           </button>
         </div>
       </div>
-    </div>
+    </div><!-- /activeConversa -->
 
   </div><!-- /panel -->
 </div><!-- /widget -->
 
-<!-- ══ Alpine component ════════════════════════════════════════════════ -->
 <script>
 const MY_USER_ID = <%= user.id %>;
 
 const EMOJIS = {
   smileys:  ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿'],
-  nature:   ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🦮','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷','🦂','🐢','🦎','🐍','🦕','🦖','🦔','🐾','🐉','🌿','🍃','🌱','🌲','🌳','🌴','🌵','🎄','🌾','🍀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌙','🌟','⭐','🌈','☁️','⛅','🌤','🌈','🌊','💧','❄️','🌪','🌩','⛈','🔥'],
-  food:     ['🍕','🍔','🌮','🌯','🥗','🍝','🍜','🍛','🍣','🍱','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🎂','🍰','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥐','🥖','🥨','🥯','🧀','🥚','🍳','🥞','🧇','🥓','🌭','🥪','🥙','🧆','🥚','🍿','🥤','🧃','☕','🍵','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾','🧊'],
-  activity: ['⚽','🏀','🏈','⚾','🥎','🏐','🏉','🎾','🥏','🎳','🏏','🏑','🏒','🥍','🏓','🏸','🥊','🎯','🎱','🏹','🎣','🤿','🥅','⛳','🏋','🤸','⛷','🏂','🪂','🏊','🤽','🚣','🧘','🏇','🏋','🤼','🤺','🥋','🎽','🛹','🛼','🛷','⛸','🤸','🤻','🤾','🤹','🎪','🥊','🥁','🎸','🎹','🎻','🎺','🎷','🪗','🎤','🎧','🎼'],
-  symbols:  ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☯️','🙏','👍','👎','👊','✊','🤛','🤜','🤞','✌️','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','✋','🖖','🖐','💪','🦾','🙌','👏','🙏','🫶','🤝','👌','🤌','🤏','🤞','🤟','🤘','👍','💯','✅','❌','⭕','🔴','🟡','🟢','🔵','🟣','⚫','⚪','🔺','🔻','💠','🔷','🔶','🔸','🔹','▶️','⏩','⏪','⏫','⏬','🔔','🔕','📢','📣'],
+  nature:   ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🦮','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷','🦂','🐢','🦎','🐍','🦕','🦖','🦔','🐾','🐉','🌿','🍃','🌱','🌲','🌳','🌴','🌵','🎄','🌾','🍀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌙','🌟','⭐','🌈','☁️','⛅','🌊','💧','❄️','🔥'],
+  food:     ['🍕','🍔','🌮','🌯','🥗','🍝','🍜','🍛','🍣','🍱','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🎂','🍰','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥐','🥖','🥨','🥯','🧀','🥚','🍳','🥞','🧇','🥓','🌭','🥪','🥙','🧆','🍿','🥤','🧃','☕','🍵','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾','🧊'],
+  activity: ['⚽','🏀','🏈','⚾','🥎','🏐','🏉','🎾','🥏','🎳','🏏','🏑','🏒','🥍','🏓','🏸','🥊','🎯','🎱','🏹','🎣','🤿','🥅','⛳','🏋','🤸','⛷','🏂','🪂','🏊','🤽','🚣','🧘','🏇','🤼','🤺','🥋','🎽','🛹','🛼','🛷','⛸','🤸','🤻','🤾','🤹','🎪','🥁','🎸','🎹','🎻','🎺','🎷','🪗','🎤','🎧','🎼'],
+  symbols:  ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☯️','🙏','👍','👎','👊','✊','🤛','🤜','🤞','✌️','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','✋','🖖','🖐','💪','🦾','🙌','👏','🙏','🫶','🤝','👌','🤌','🤏','🤞','🤟','🤘','👍','💯','✅','❌','⭕','🔴','🟡','🟢','🔵','🟣','⚫','⚪','🔔','🔕','📢','📣'],
 };
 
 function chatWidget() {
   return {
     myUserId: MY_USER_ID,
     EMOJIS,
+
+    // Panel / nav
     panelOpen: false,
     carregando: false,
+    buscandoUsuarios: false,
+    modoBusca: 'dm',
+
+    // Conversas
     conversas: [],
     filtroConversa: '',
+
+    // Active conversation
     activeConversa: null,
     mensagens: [],
     carregandoMsgs: false,
     hasMore: false,
+
+    // Input
     inputText: '',
     enviando: false,
     showEmoji: false,
     emojiTab: 'smileys',
-    unreadTotal: 0,
-    buscandoUsuarios: false,
-    modoBusca: 'dm',
-    filtroBusca: '',
-    grupoNome: '',
-    grupoSelecionados: [],
-    todosUsuarios: [],
     mediaPreview: null,
     mediaFile: null,
+
+    // Recording
     gravando: false,
     mediaRecorder: null,
     audioChunks: [],
     gravacaoInicio: null,
     gravacaoTimer: null,
 
+    // Audio player state per message id
+    audioStates: {},
+
+    // Typing indicator
+    digitandoInfo: null,
+    _digitandoTimer: null,
+    _lastTypingPost: 0,
+
+    // Read receipts: conversaId -> { userId -> isoDate }
+    leituras: {},
+
+    // Users for search
+    todosUsuarios: [],
+    filtroBusca: '',
+    grupoNome: '',
+    grupoSelecionados: [],
+
+    // Global unread badge
+    unreadTotal: 0,
+
+    // Polling fallback (catches messages missed during SSE downtime)
+    _pollTimer: null,
+    _lastMsgAt: null,
+
+    // Categories
+    categorias: [],
+    categoriaAtiva: null,
+    showNovaCat: false,
+    showCatEmojiPick: false,
+    novaCatNome: '',
+    novaCatEmoji: '📁',
+    novaCatCor: '#6366f1',
+
+    // Context menu
+    menuContexto: { open: false, conversa: null, x: 0, y: 0 },
+
+    // ── Computed ────────────────────────────────────────────────────────────
+
     get conversasFiltradas() {
-      const q = this.filtroConversa.toLowerCase().trim();
-      if (!q) return this.conversas;
-      return this.conversas.filter(c => c.nome?.toLowerCase().includes(q));
+      var q = this.filtroConversa.toLowerCase().trim();
+      var list = this.conversas.slice();
+      if (this.categoriaAtiva === '__pinned__') {
+        list = list.filter(c => c.pinned);
+      } else if (this.categoriaAtiva !== null) {
+        list = list.filter(c => c.categoria_id === this.categoriaAtiva);
+      }
+      if (q) list = list.filter(c => c.nome?.toLowerCase().includes(q));
+      // Pinned conversations always first
+      list.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      });
+      return list;
     },
     get usuariosFiltrados() {
-      const q = this.filtroBusca.toLowerCase().trim();
-      if (!q) return this.todosUsuarios;
-      return this.todosUsuarios.filter(u => u.nome?.toLowerCase().includes(q) || u.secretaria?.nome?.toLowerCase().includes(q));
+      var q = this.filtroBusca.toLowerCase().trim();
+      return q ? this.todosUsuarios.filter(u => u.nome?.toLowerCase().includes(q) || u.secretaria?.nome?.toLowerCase().includes(q)) : this.todosUsuarios;
     },
 
+    // ── Init ────────────────────────────────────────────────────────────────
+
     async init() {
-      // Kickoff E2E crypto engine
       if (window.ComunicaChat) await window.ComunicaChat.init();
-
-      // Register SSE message handler
-      if (window.ComunicaChat) {
-        window.ComunicaChat._onMsg = (data) => window.dispatchEvent(new CustomEvent('chat-msg', { detail: data }));
-        window.ComunicaChat._onConversa = (data) => window.dispatchEvent(new CustomEvent('chat-conversa', { detail: data }));
-      }
-
-      await this.carregarConversas();
+      await Promise.all([this.carregarConversas(), this.carregarCategorias()]);
       await this.atualizarUnread();
+      // Polling fallback: sync active conversation every 12 s to catch SSE gaps
+      this._pollTimer = setInterval(() => this.pollSync(), 12000);
     },
 
     async carregarConversas() {
       this.carregando = true;
       try {
-        const r = await fetch('/chat/conversas');
-        const d = await r.json();
+        var r = await fetch('/chat/conversas');
+        var d = await r.json();
         this.conversas = d.conversas || [];
       } catch(e) {} finally { this.carregando = false; }
     },
 
     async atualizarUnread() {
       try {
-        const r = await fetch('/chat/unread');
-        const d = await r.json();
+        var r = await fetch('/chat/unread');
+        var d = await r.json();
         this.unreadTotal = d.total || 0;
       } catch(e) {}
     },
 
+    // ── Panel ───────────────────────────────────────────────────────────────
+
     async togglePanel() {
       this.panelOpen = !this.panelOpen;
-      if (this.panelOpen && !this.activeConversa) {
-        await this.carregarConversas();
-      }
+      if (this.panelOpen && !this.activeConversa) await this.carregarConversas();
     },
+
+    // ── Open / close conversa ───────────────────────────────────────────────
 
     async abrirConversa(c) {
       this.activeConversa = c;
       this.mensagens = [];
       this.hasMore = false;
       this.inputText = '';
+      this.showEmoji = false;
+      // Initialize read state from participant data
+      this.leituras[c.id] = {};
+      (c.participantes || []).forEach(p => {
+        if (p.id !== this.myUserId && p.lido_at) this.leituras[c.id][p.id] = p.lido_at;
+      });
       await this.carregarMensagens();
-      this.$nextTick(() => this.scrollBottom());
-      // mark read
-      fetch('/chat/conversas/' + c.id + '/lida', { method: 'POST' }).catch(() => {});
+      this.$nextTick(() => { this.scrollBottom(false); this.$refs.inputMsg?.focus(); });
+      this.marcarComoLida(c.id);
       c.nao_lidas = 0;
       this.atualizarUnread();
     },
 
     fecharConversa() {
-      this.activeConversa = null;
-      this.mensagens = [];
+      if (this.activeConversa) { this.activeConversa = null; this.mensagens = []; }
+      else { this.buscandoUsuarios = false; this.grupoNome = ''; this.grupoSelecionados = []; }
       this.showEmoji = false;
       this.mediaPreview = null;
       this.mediaFile = null;
     },
 
-    async carregarMensagens(cursor = null) {
+    // ── Load messages ───────────────────────────────────────────────────────
+
+    async carregarMensagens(cursor) {
       if (!this.activeConversa) return;
       this.carregandoMsgs = true;
       try {
-        let url = '/chat/conversas/' + this.activeConversa.id + '/mensagens';
+        var url = '/chat/conversas/' + this.activeConversa.id + '/mensagens';
         if (cursor) url += '?cursor=' + encodeURIComponent(cursor);
-        const r = await fetch(url);
-        const d = await r.json();
-        let msgs = d.mensagens || [];
-
-        // Decrypt text messages
-        if (window.ComunicaChat) {
-          msgs = await window.ComunicaChat.decryptMensagens(msgs, this.activeConversa);
-        }
-
+        var r = await fetch(url);
+        var d = await r.json();
+        var msgs = d.mensagens || [];
+        if (window.ComunicaChat) msgs = await window.ComunicaChat.decryptMensagens(msgs, this.activeConversa);
         if (cursor) {
+          var list = this.$refs.msgsList;
+          var prevH = list ? list.scrollHeight : 0;
           this.mensagens = [...msgs, ...this.mensagens];
+          this.$nextTick(() => { if (list) list.scrollTop = list.scrollHeight - prevH; });
         } else {
           this.mensagens = msgs;
         }
@@ -490,48 +753,48 @@ function chatWidget() {
 
     async carregarMaisAntigas() {
       if (!this.mensagens.length) return;
-      const cursor = this.mensagens[0].createdAt;
-      const topEl = document.getElementById('chat-msgs-list');
-      const prevH = topEl ? topEl.scrollHeight : 0;
-      await this.carregarMensagens(cursor);
-      this.$nextTick(() => {
-        if (topEl) topEl.scrollTop = topEl.scrollHeight - prevH;
-      });
+      await this.carregarMensagens(this.mensagens[0].createdAt);
     },
 
+    // ── Send ────────────────────────────────────────────────────────────────
+
     async enviar() {
-      if (this.mediaFile) {
-        await this.enviarArquivo();
-      } else {
-        await this.enviarTexto();
+      if (this.mediaFile) { await this.enviarArquivo(); return; }
+      await this.enviarTexto();
+    },
+
+    handleKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.enviar();
       }
     },
 
     async enviarTexto() {
-      const txt = this.inputText.trim();
+      var txt = this.inputText.trim();
       if (!txt || !this.activeConversa || this.enviando) return;
       this.enviando = true;
       this.inputText = '';
       this.$nextTick(() => this.autoResizeReset());
       try {
-        let payload = { tipo: 'texto', conteudo_enc: '', iv_hex: null };
+        var payload = { tipo: 'texto', conteudo_enc: '', iv_hex: null };
         if (window.ComunicaChat) {
-          const enc = await window.ComunicaChat.encryptTexto(txt, this.activeConversa);
+          var enc = await window.ComunicaChat.encryptTexto(txt, this.activeConversa);
           payload.conteudo_enc = enc.conteudo_enc;
           payload.iv_hex = enc.iv_hex;
-        } else {
-          payload.conteudo_enc = btoa(unescape(encodeURIComponent(txt)));
         }
-        const r = await fetch('/chat/conversas/' + this.activeConversa.id + '/mensagens', {
+        var r = await fetch('/chat/conversas/' + this.activeConversa.id + '/mensagens', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        const d = await r.json();
+        var d = await r.json();
         if (d.ok) {
-          const msg = Object.assign({}, d.mensagem, { _texto: txt });
+          // Add locally with decrypted text so the sender sees it immediately
+          var msg = Object.assign({}, d.mensagem, { _texto: txt });
           this.mensagens.push(msg);
           this.$nextTick(() => this.scrollBottom());
+          this.updateConversaListEntry(d.mensagem);
         }
       } catch(e) {} finally { this.enviando = false; }
     },
@@ -540,37 +803,30 @@ function chatWidget() {
       if (!this.mediaFile || !this.activeConversa || this.enviando) return;
       this.enviando = true;
       try {
-        const uploadData = await window.ComunicaChat.uploadArquivo(this.mediaFile);
-        const tipo = this.mediaFile.type.startsWith('image') ? 'imagem'
-                   : this.mediaFile.type.startsWith('audio') ? 'audio' : 'arquivo';
-        const r = await fetch('/chat/conversas/' + this.activeConversa.id + '/mensagens', {
+        var uploadData = await window.ComunicaChat.uploadArquivo(this.mediaFile);
+        var tipo = this.mediaFile.type.startsWith('image') ? 'imagem'
+                 : this.mediaFile.type.startsWith('audio') ? 'audio' : 'arquivo';
+        var r = await fetch('/chat/conversas/' + this.activeConversa.id + '/mensagens', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tipo,
-            arquivo_url: uploadData.url,
-            arquivo_nome: uploadData.nome,
-            arquivo_tamanho: uploadData.tamanho,
-            arquivo_mime: uploadData.mime,
-          }),
+          body: JSON.stringify({ tipo, arquivo_url: uploadData.url, arquivo_nome: uploadData.nome, arquivo_tamanho: uploadData.tamanho, arquivo_mime: uploadData.mime }),
         });
-        const d = await r.json();
+        var d = await r.json();
         if (d.ok) {
           this.mensagens.push(d.mensagem);
           this.$nextTick(() => this.scrollBottom());
+          this.updateConversaListEntry(d.mensagem);
         }
         this.cancelarMedia();
       } catch(e) { alert('Falha no upload'); } finally { this.enviando = false; }
     },
 
     onFileSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      var file = e.target.files[0]; if (!file) return;
       this.mediaFile = file;
-      const tipo = file.type.startsWith('image') ? 'imagem' : 'arquivo';
-      if (tipo === 'imagem') {
-        const reader = new FileReader();
-        reader.onload = (ev) => { this.mediaPreview = { tipo: 'imagem', src: ev.target.result, nome: file.name }; };
+      if (file.type.startsWith('image')) {
+        var reader = new FileReader();
+        reader.onload = ev => { this.mediaPreview = { tipo: 'imagem', src: ev.target.result, nome: file.name }; };
         reader.readAsDataURL(file);
       } else {
         this.mediaPreview = { tipo: 'arquivo', nome: file.name };
@@ -578,25 +834,35 @@ function chatWidget() {
       e.target.value = '';
     },
 
-    cancelarMedia() {
-      this.mediaFile = null;
-      this.mediaPreview = null;
+    cancelarMedia() { this.mediaFile = null; this.mediaPreview = null; },
+
+    // ── Typing notify ───────────────────────────────────────────────────────
+
+    onInput(e) {
+      this.autoResize(e);
+      if (!this.activeConversa) return;
+      var now = Date.now();
+      if (now - this._lastTypingPost > 2000) {
+        this._lastTypingPost = now;
+        fetch('/chat/conversas/' + this.activeConversa.id + '/digitando', { method: 'POST' }).catch(() => {});
+      }
     },
 
-    // ── Audio recording ────────────────────────────────────────────────
+    // ── Audio recording ─────────────────────────────────────────────────────
 
     async alternarGravacao() {
       if (this.gravando) { this.pararGravacao(); return; }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         this.audioChunks = [];
-        this.mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg' });
-        this.mediaRecorder.ondataavailable = (e) => { if (e.data.size) this.audioChunks.push(e.data); };
+        var mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg';
+        this.mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+        this.mediaRecorder.ondataavailable = e => { if (e.data.size) this.audioChunks.push(e.data); };
         this.mediaRecorder.onstop = () => this.finalizarGravacao();
         this.mediaRecorder.start(200);
         this.gravando = true;
         this.gravacaoInicio = Date.now();
-        this.gravacaoTimer = setInterval(() => this.$nextTick(() => {}), 1000);
+        this.gravacaoTimer = setInterval(() => this.$nextTick(() => {}), 500);
       } catch(e) { alert('Microfone não disponível'); }
     },
 
@@ -606,35 +872,110 @@ function chatWidget() {
       clearInterval(this.gravacaoTimer);
     },
 
-    cancelarGravacao() {
-      this.audioChunks = [];
-      this.pararGravacao();
-    },
+    cancelarGravacao() { this.audioChunks = []; this.pararGravacao(); },
 
     finalizarGravacao() {
       if (!this.audioChunks.length) return;
-      const mime = this.audioChunks[0].type || 'audio/webm';
-      const blob = new Blob(this.audioChunks, { type: mime });
-      const ext  = mime.includes('ogg') ? '.ogg' : '.webm';
-      this.mediaFile = new File([blob], 'audio' + ext, { type: mime });
+      var mime = this.audioChunks[0].type || 'audio/webm';
+      var blob = new Blob(this.audioChunks, { type: mime });
+      this.mediaFile = new File([blob], 'audio' + (mime.includes('ogg') ? '.ogg' : '.webm'), { type: mime });
       this.mediaPreview = { tipo: 'audio', nome: 'Áudio gravado' };
       this.audioChunks = [];
     },
 
     formatGravacaoTempo() {
-      if (!this.gravacaoInicio) return '00:00';
-      const s = Math.floor((Date.now() - this.gravacaoInicio) / 1000);
-      return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+      if (!this.gravacaoInicio) return '0:00';
+      var s = Math.floor((Date.now() - this.gravacaoInicio) / 1000);
+      return Math.floor(s/60) + ':' + String(s % 60).padStart(2, '0');
     },
 
-    // ── Emoji ──────────────────────────────────────────────────────────
+    // ── Custom audio player ─────────────────────────────────────────────────
 
-    inserirEmoji(e) {
-      this.inputText += e;
-      this.showEmoji = false;
+    audioState(msgId) {
+      if (!this.audioStates[msgId]) this.audioStates[msgId] = { playing: false, currentTime: 0, duration: 0, progress: 0 };
+      return this.audioStates[msgId];
     },
 
-    // ── User search / DM / Group ───────────────────────────────────────
+    onAudioMeta(msgId, e) {
+      var st = this.audioState(msgId);
+      st.duration = e.target.duration || 0;
+    },
+
+    onAudioTick(msgId, e) {
+      var el = e.target;
+      var st = this.audioState(msgId);
+      st.currentTime = el.currentTime;
+      st.duration = el.duration || st.duration;
+      st.progress = st.duration ? (el.currentTime / st.duration) : 0;
+      this.audioStates = Object.assign({}, this.audioStates); // trigger Alpine reactivity
+    },
+
+    onAudioEnd(msgId) {
+      var st = this.audioState(msgId);
+      st.playing = false;
+      st.currentTime = 0;
+      st.progress = 0;
+      this.audioStates = Object.assign({}, this.audioStates);
+    },
+
+    toggleAudio(msgId) {
+      var st = this.audioState(msgId);
+      var el = document.getElementById('aud-' + msgId);
+      if (!el) return;
+      if (st.playing) {
+        el.pause();
+        st.playing = false;
+      } else {
+        // Pause any other playing audio
+        Object.keys(this.audioStates).forEach(id => {
+          if (id != msgId && this.audioStates[id]?.playing) {
+            var other = document.getElementById('aud-' + id);
+            if (other) other.pause();
+            this.audioStates[id].playing = false;
+          }
+        });
+        el.play().then(() => { st.playing = true; this.audioStates = Object.assign({}, this.audioStates); }).catch(() => {});
+      }
+      this.audioStates = Object.assign({}, this.audioStates);
+    },
+
+    seekAudio(msgId, e) {
+      var el = document.getElementById('aud-' + msgId);
+      if (!el || !el.duration) return;
+      var rect = e.currentTarget.getBoundingClientRect();
+      var ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      el.currentTime = ratio * el.duration;
+    },
+
+    waveformBars(msgId) {
+      var bars = [];
+      var seed = Number(msgId) || 1;
+      for (var i = 0; i < 28; i++) {
+        seed = (seed * 1664525 + 1013904223) & 0x7fffffff;
+        bars.push(20 + (seed % 70)); // 20%–90% height
+      }
+      return bars;
+    },
+
+    barColor(msg, barIndex, totalBars) {
+      var st = this.audioState(msg.id);
+      var filled = st.progress * totalBars;
+      var isOut = msg.user_id === this.myUserId;
+      if (barIndex < filled) return isOut ? 'rgba(255,255,255,0.95)' : '#3b82f6';
+      return isOut ? 'rgba(255,255,255,0.35)' : '#cbd5e1';
+    },
+
+    formatAudioTime(secs) {
+      if (!secs || isNaN(secs)) return '0:00';
+      var s = Math.floor(secs);
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    },
+
+    // ── Emoji ───────────────────────────────────────────────────────────────
+
+    inserirEmoji(e) { this.inputText += e; this.showEmoji = false; this.$refs.inputMsg?.focus(); },
+
+    // ── Users / DM / Group ─────────────────────────────────────────────────
 
     async abrirBuscaUsuarios(modo) {
       this.modoBusca = modo;
@@ -643,53 +984,46 @@ function chatWidget() {
       this.grupoNome = '';
       this.grupoSelecionados = [];
       if (!this.todosUsuarios.length) {
-        const r = await fetch('/chat/usuarios');
-        const d = await r.json();
+        var r = await fetch('/chat/usuarios');
+        var d = await r.json();
         this.todosUsuarios = d.usuarios || [];
       }
     },
 
     async selecionarUsuario(u) {
       if (this.modoBusca === 'dm') {
-        // Open or create DM
-        const r = await fetch('/chat/conversas/dm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        var r = await fetch('/chat/conversas/dm', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: u.id }),
         });
-        const d = await r.json();
+        var d = await r.json();
         this.buscandoUsuarios = false;
-        // Reload conversas and open the DM
         await this.carregarConversas();
-        const conv = this.conversas.find(c => c.id === d.conversa_id);
+        var conv = this.conversas.find(c => c.id === d.conversa_id);
         if (conv) await this.abrirConversa(conv);
       } else {
-        // Group: toggle selection
-        if (this.grupoSelecionados.includes(u.id)) {
-          this.grupoSelecionados = this.grupoSelecionados.filter(i => i !== u.id);
-        } else {
-          this.grupoSelecionados.push(u.id);
-        }
+        this.grupoSelecionados = this.grupoSelecionados.includes(u.id)
+          ? this.grupoSelecionados.filter(i => i !== u.id)
+          : [...this.grupoSelecionados, u.id];
       }
     },
 
     async criarGrupo() {
       if (!this.grupoNome.trim() || !this.grupoSelecionados.length) return;
-      const r = await fetch('/chat/conversas/grupo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      var r = await fetch('/chat/conversas/grupo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: this.grupoNome.trim(), participantes: this.grupoSelecionados }),
       });
-      const d = await r.json();
+      var d = await r.json();
       this.buscandoUsuarios = false;
       await this.carregarConversas();
-      const conv = this.conversas.find(c => c.id === d.conversa_id);
+      var conv = this.conversas.find(c => c.id === d.conversa_id);
       if (conv) await this.abrirConversa(conv);
     },
 
-    usuarioNome(uid) {
-      return this.todosUsuarios.find(u => u.id === uid)?.nome || uid;
-    },
+    usuarioNome(uid) { return this.todosUsuarios.find(u => u.id === uid)?.nome || uid; },
+
+    // ── Delete message ─────────────────────────────────────────────────────
 
     async excluirMensagem(msg) {
       if (!confirm('Excluir esta mensagem?')) return;
@@ -697,93 +1031,321 @@ function chatWidget() {
       msg.excluido = true;
     },
 
-    // ── SSE handlers ───────────────────────────────────────────────────
+    // ── Read receipts ───────────────────────────────────────────────────────
+
+    marcarComoLida(conversaId) {
+      fetch('/chat/conversas/' + conversaId + '/lida', { method: 'POST' }).catch(() => {});
+    },
+
+    isLido(msg) {
+      if (!this.activeConversa || this.activeConversa.tipo !== 'dm') return false;
+      var outroId = this.activeConversa.outro_user_id;
+      if (!outroId) return false;
+      var leituras = this.leituras[this.activeConversa.id] || {};
+      var lido_at = leituras[outroId];
+      return lido_at && new Date(lido_at) >= new Date(msg.createdAt);
+    },
+
+    // ── Polling fallback — catches messages lost during SSE downtime ────────
+
+    async pollSync() {
+      if (!this.activeConversa) return;
+      try {
+        var r = await fetch('/chat/conversas/' + this.activeConversa.id + '/mensagens');
+        if (!r.ok) return;
+        var d = await r.json();
+        var msgs = d.mensagens || [];
+        var added = false;
+        for (var i = 0; i < msgs.length; i++) {
+          var m = msgs[i];
+          if (!this.mensagens.find(x => x.id === m.id)) {
+            if (m.tipo === 'texto' && window.ComunicaChat) {
+              try { m._texto = await window.ComunicaChat.decryptTexto(m, this.activeConversa); } catch(_) { m._texto = ''; }
+            }
+            this.mensagens.push(m);
+            added = true;
+          }
+        }
+        if (added) {
+          this.mensagens = this.mensagens.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          this.$nextTick(() => this.scrollBottom());
+        }
+        // Also sync unread badge for other conversas
+        await this.atualizarUnread();
+      } catch(_) {}
+    },
+
+    // ── SSE event handlers ─────────────────────────────────────────────────
 
     async handleSSEMsg(data) {
-      // Update unread badge
-      if (data.type === 'excluida') {
-        const m = this.mensagens.find(x => x.id === data.id);
-        if (m) m.excluido = true;
-        return;
-      }
+      try {
+        if (data.type === 'excluida') {
+          var m = this.mensagens.find(x => x.id === data.id);
+          if (m) { m.excluido = true; this.mensagens = this.mensagens.slice(); }
+          return;
+        }
+        if (data.type === 'limpar') {
+          if (this.activeConversa && data.conversa_id === this.activeConversa.id) {
+            this.mensagens = [];
+          }
+          var cLimpar = this.conversas.find(c => c.id === data.conversa_id);
+          if (cLimpar) { cLimpar.ultima_msg = null; this.conversas = this.conversas.slice(); }
+          return;
+        }
+        if (data.type === 'conversa_apagada') {
+          this.conversas = this.conversas.filter(c => c.id !== data.conversa_id);
+          if (this.activeConversa && this.activeConversa.id === data.conversa_id) {
+            this.activeConversa = null;
+            this.mensagens = [];
+          }
+          return;
+        }
+        if (data.type === 'grupo_atualizado') {
+          var cGrupo = this.conversas.find(c => c.id === data.conversa_id);
+          if (cGrupo) { cGrupo.avatar = data.avatar; this.conversas = this.conversas.slice(); }
+          if (this.activeConversa && this.activeConversa.id === data.conversa_id) {
+            this.activeConversa = Object.assign({}, this.activeConversa, { avatar: data.avatar });
+          }
+          return;
+        }
 
-      // Decrypt if needed
-      let msg = Object.assign({}, data);
-      if (this.activeConversa && data.conversa_id === this.activeConversa.id) {
-        if (msg.tipo === 'texto' && window.ComunicaChat) {
-          msg._texto = await window.ComunicaChat.decryptTexto(msg, this.activeConversa);
+        // Deduplicate: skip if already added locally (own sent message)
+        if (this.mensagens.find(m => m.id === data.id)) {
+          this.updateConversaListEntry(data);
+          return;
         }
-        this.mensagens.push(msg);
-        this.$nextTick(() => this.scrollBottom());
-        // mark read
-        fetch('/chat/conversas/' + data.conversa_id + '/lida', { method: 'POST' }).catch(() => {});
-      } else {
-        // bump unread in list
-        const conv = this.conversas.find(c => c.id === data.conversa_id);
-        if (conv) {
-          conv.nao_lidas = (conv.nao_lidas || 0) + 1;
-          conv.ultima_msg = data;
-          conv.updatedAt = data.createdAt;
-          // move to top
-          this.conversas = [conv, ...this.conversas.filter(c => c.id !== conv.id)];
+
+        if (this.activeConversa && data.conversa_id === this.activeConversa.id) {
+          var msg = Object.assign({}, data);
+          if (msg.tipo === 'texto' && window.ComunicaChat) {
+            try { msg._texto = await window.ComunicaChat.decryptTexto(msg, this.activeConversa); }
+            catch(_) { msg._texto = ''; }
+          }
+          this.mensagens = [...this.mensagens, msg];
+          this.$nextTick(() => this.scrollBottom());
+          this.marcarComoLida(data.conversa_id);
         } else {
-          // unknown conv — reload list
-          await this.carregarConversas();
+          var conv = this.conversas.find(c => c.id === data.conversa_id);
+          if (conv) {
+            conv.nao_lidas = (conv.nao_lidas || 0) + 1;
+            conv.ultima_msg = data;
+            conv.updatedAt = data.createdAt;
+            this.conversas = [conv, ...this.conversas.filter(c => c.id !== conv.id)];
+          } else {
+            this.carregarConversas();
+          }
+          this.unreadTotal = (this.unreadTotal || 0) + 1;
         }
-        this.unreadTotal = (this.unreadTotal || 0) + 1;
-      }
+      } catch(err) { console.error('[chat] handleSSEMsg:', err); }
     },
 
     async handleSSEConversa(data) {
-      // New conversation notification
       await this.carregarConversas();
       this.unreadTotal = (this.unreadTotal || 0) + 1;
     },
 
-    // ── Helpers ────────────────────────────────────────────────────────
+    handleSSELida(data) {
+      if (!this.leituras[data.conversa_id]) this.leituras[data.conversa_id] = {};
+      this.leituras[data.conversa_id][data.user_id] = data.lido_at;
+      this.leituras = Object.assign({}, this.leituras);
+    },
+
+    handleSSEDigitando(data) {
+      if (!this.activeConversa || data.conversa_id !== this.activeConversa.id) return;
+      if (data.user_id === this.myUserId) return;
+      this.digitandoInfo = data;
+      clearTimeout(this._digitandoTimer);
+      this._digitandoTimer = setTimeout(() => { this.digitandoInfo = null; }, 3500);
+    },
+
+    // On SSE reconnect: sync everything to recover missed events
+    async onSSEReconectado() {
+      await this.pollSync();
+      await this.carregarConversas();
+      await this.atualizarUnread();
+    },
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    updateConversaListEntry(msg) {
+      var conv = this.conversas.find(c => c.id === msg.conversa_id);
+      if (conv) {
+        conv.ultima_msg = msg;
+        conv.updatedAt = msg.createdAt;
+        this.conversas = [conv, ...this.conversas.filter(c => c.id !== conv.id)];
+      }
+    },
 
     previewUltimaMsg(c) {
-      if (!c.ultima_msg) return 'Nenhuma mensagem';
-      if (window.ComunicaChat) return window.ComunicaChat.previewMsg(c.ultima_msg, c.tipo);
-      const m = c.ultima_msg;
+      var m = c.ultima_msg;
+      if (!m) return 'Nenhuma mensagem';
       if (m.tipo === 'imagem') return '📷 Imagem';
       if (m.tipo === 'audio')  return '🎤 Áudio';
       if (m.tipo === 'arquivo') return '📎 Arquivo';
+      if (c.tipo === 'dm') return '🔒 Mensagem cifrada';
+      if (window.ComunicaChat) return window.ComunicaChat.previewMsg(m, c.tipo);
       return '💬 …';
     },
 
     formatTime(dateStr) {
       if (!dateStr) return '';
-      const d = new Date(dateStr);
-      const now = new Date();
-      const diffH = (now - d) / 3600000;
-      if (diffH < 24 && now.getDate() === d.getDate()) {
+      var d = new Date(dateStr), now = new Date();
+      var diffH = (now - d) / 3600000;
+      if (diffH < 24 && now.getDate() === d.getDate())
         return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      }
       if (diffH < 48) return 'ontem';
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     },
 
-    scrollBottom() {
-      const el = document.getElementById('chat-bottom-anchor');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    scrollBottom(smooth = true) {
+      var el = document.getElementById('chat-bottom-anchor');
+      if (el) el.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' });
     },
 
-    onScroll(e) {
-      // close emoji on scroll
-      if (this.showEmoji) this.showEmoji = false;
-    },
+    onScroll() { if (this.showEmoji) this.showEmoji = false; },
 
     autoResize(e) {
-      const el = e.target;
+      var el = e.target;
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 96) + 'px';
     },
 
     autoResizeReset() {
-      const el = this.$el.querySelector('textarea');
-      if (el) { el.style.height = 'auto'; }
+      var el = this.$refs.inputMsg;
+      if (el) el.style.height = 'auto';
+    },
+
+    // ── Categories ──────────────────────────────────────────────────────────
+
+    async carregarCategorias() {
+      try {
+        var r = await fetch('/chat/categorias');
+        var d = await r.json();
+        this.categorias = d.categorias || [];
+      } catch(e) {}
+    },
+
+    async salvarNovaCategoria() {
+      if (!this.novaCatNome.trim()) return;
+      try {
+        var r = await fetch('/chat/categorias', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: this.novaCatNome.trim(), emoji: this.novaCatEmoji, cor: this.novaCatCor }),
+        });
+        var d = await r.json();
+        if (d.ok) {
+          this.categorias = [...this.categorias, d.categoria];
+          this.showNovaCat = false;
+          this.novaCatNome = '';
+          this.novaCatEmoji = '📁';
+          this.novaCatCor = '#6366f1';
+        }
+      } catch(e) {}
+    },
+
+    async excluirCategoriaItem(cat) {
+      try {
+        await fetch('/chat/categorias/' + cat.id, { method: 'DELETE' });
+        this.categorias = this.categorias.filter(c => c.id !== cat.id);
+        this.conversas = this.conversas.map(c => c.categoria_id === cat.id ? Object.assign({}, c, { categoria_id: null }) : c);
+        if (this.categoriaAtiva === cat.id) this.categoriaAtiva = null;
+      } catch(e) {}
+    },
+
+    // ── Context menu ────────────────────────────────────────────────────────
+
+    abrirMenuContexto(c, event) {
+      event.stopPropagation();
+      var btn = event.currentTarget;
+      var rect = btn.getBoundingClientRect();
+      var menuX = rect.left - 192;
+      var menuY = rect.bottom + 4;
+      if (menuX < 8) menuX = rect.right;
+      if (menuY + 280 > window.innerHeight) menuY = rect.top - 280;
+      this.menuContexto = { open: true, conversa: c, x: menuX, y: menuY };
+    },
+
+    async doPin(c) {
+      if (!c) return;
+      this.menuContexto.open = false;
+      try {
+        var r = await fetch('/chat/conversas/' + c.id + '/pin', { method: 'POST' });
+        var d = await r.json();
+        if (d.ok !== undefined) {
+          c.pinned = !!d.pinned;
+          this.conversas = this.conversas.slice();
+        }
+      } catch(e) {}
+    },
+
+    async doCategoria(c, catId) {
+      if (!c) return;
+      this.menuContexto.open = false;
+      try {
+        var r = await fetch('/chat/conversas/' + c.id + '/categoria', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ categoria_id: catId }),
+        });
+        var d = await r.json();
+        if (d.ok) {
+          c.categoria_id = catId;
+          this.conversas = this.conversas.slice();
+        }
+      } catch(e) {}
+    },
+
+    async limparConversa(c) {
+      if (!c) return;
+      this.menuContexto.open = false;
+      if (!confirm('Limpar todas as mensagens desta conversa? Todos os participantes deixarão de ver as mensagens.')) return;
+      try {
+        var r = await fetch('/chat/conversas/' + c.id + '/mensagens', { method: 'DELETE' });
+        var d = await r.json();
+        if (d.ok) {
+          if (this.activeConversa?.id === c.id) this.mensagens = [];
+          c.ultima_msg = null;
+          this.conversas = this.conversas.slice();
+        }
+      } catch(e) {}
+    },
+
+    async apagarConversa(c) {
+      if (!c) return;
+      this.menuContexto.open = false;
+      if (!confirm('Apagar esta conversa? Ela será removida da sua lista permanentemente.')) return;
+      try {
+        var r = await fetch('/chat/conversas/' + c.id, { method: 'DELETE' });
+        var d = await r.json();
+        if (d.ok) {
+          this.conversas = this.conversas.filter(conv => conv.id !== c.id);
+          if (this.activeConversa?.id === c.id) {
+            this.activeConversa = null;
+            this.mensagens = [];
+          }
+        }
+      } catch(e) {}
+    },
+
+    async atualizarAvatarGrupo(event) {
+      var file = event.target.files[0];
+      if (!file || !this.activeConversa) { event.target.value = ''; return; }
+      try {
+        var fd = new FormData();
+        fd.append('avatar', file);
+        var r = await fetch('/chat/conversas/' + this.activeConversa.id + '/avatar', { method: 'POST', body: fd });
+        var d = await r.json();
+        if (d.ok) {
+          this.activeConversa = Object.assign({}, this.activeConversa, { avatar: d.avatar });
+          var cav = this.conversas.find(conv => conv.id === this.activeConversa.id);
+          if (cav) { cav.avatar = d.avatar; this.conversas = this.conversas.slice(); }
+        }
+      } catch(e) {}
+      event.target.value = '';
     },
   };
 }
 </script>
+
+<!-- Wire SSE events into Alpine dispatchers (outside Alpine scope — handled in main.ejs SSE listener) -->

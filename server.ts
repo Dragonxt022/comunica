@@ -12,7 +12,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -239,6 +239,11 @@ async function seed() {
   await ChatMensagem.sync({ force: false });
   await ChatParticipante.sync({ force: false });
   await ChatUserKey.sync({ force: false });
+  await ChatCategoria.sync({ force: false });
+  await addCol('chat_participantes', 'pinned', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('chat_participantes', 'categoria_id', 'INT NULL');
+  await addCol('chat_conversas', 'avatar', 'VARCHAR(255) NULL');
+  await addCol('chat_user_keys', 'private_key_jwk', 'TEXT NULL');
 
 
   // Migrate old event statuses to new values (idempotent)

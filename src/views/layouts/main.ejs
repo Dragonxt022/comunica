@@ -414,8 +414,23 @@
         };
 
         /* ── SSE ───────────────────────────────────────────────────── */
+        var _sseDropped = false;
+
+        function dispatchChat(name, data) {
+            // name = 'chat-msg', 'chat-conversa', 'chat-lida', 'chat-digitando', 'chat-reconectado'
+            window.dispatchEvent(new CustomEvent(name, { detail: data }));
+        }
+
         function connect() {
             var es = new EventSource('/sse');
+
+            es.addEventListener('connected', function() {
+                if (_sseDropped) {
+                    _sseDropped = false;
+                    dispatchChat('chat-reconectado', {});
+                }
+            });
+
             es.addEventListener('update', function(e) {
                 try {
                     var data = JSON.parse(e.data);
@@ -434,20 +449,22 @@
                     }
                 } catch(err) {}
             });
-            // Chat messages
+
+            // Chat: direct mapping to the event names Alpine widget listens for
             es.addEventListener('chat:mensagem', function(e) {
-                try {
-                    var data = JSON.parse(e.data);
-                    if (window.ComunicaChat) window.ComunicaChat.onSSEMensagem(data);
-                } catch(err) {}
+                try { dispatchChat('chat-msg', JSON.parse(e.data)); } catch(err) {}
             });
             es.addEventListener('chat:nova_conversa', function(e) {
-                try {
-                    var data = JSON.parse(e.data);
-                    if (window.ComunicaChat) window.ComunicaChat.onSSEConversa(data);
-                } catch(err) {}
+                try { dispatchChat('chat-conversa', JSON.parse(e.data)); } catch(err) {}
             });
-            es.onerror = function() {};
+            es.addEventListener('chat:lida', function(e) {
+                try { dispatchChat('chat-lida', JSON.parse(e.data)); } catch(err) {}
+            });
+            es.addEventListener('chat:digitando', function(e) {
+                try { dispatchChat('chat-digitando', JSON.parse(e.data)); } catch(err) {}
+            });
+
+            es.onerror = function() { _sseDropped = true; };
         }
         connect();
 

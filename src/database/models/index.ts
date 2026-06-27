@@ -20,6 +20,7 @@ import ChatConversa from './ChatConversa.ts';
 import ChatMensagem from './ChatMensagem.ts';
 import ChatParticipante from './ChatParticipante.ts';
 import ChatUserKey from './ChatUserKey.ts';
+import ChatCategoria from './ChatCategoria.ts';
 
 // ── Existing associations ──────────────────────────────────────────────────
 
@@ -50,6 +51,9 @@ ChatMensagem.belongsTo(User, { foreignKey: 'user_id', as: 'remetente' });
 ChatUserKey.belongsTo(User, { foreignKey: 'user_id', as: 'usuario' });
 User.hasOne(ChatUserKey, { foreignKey: 'user_id', as: 'chat_key' });
 
+ChatCategoria.belongsTo(User, { foreignKey: 'user_id', as: 'usuario' });
+User.hasMany(ChatCategoria, { foreignKey: 'user_id', as: 'chat_categorias' });
+
 export {
   User,
   Secretaria,
@@ -73,4 +77,5 @@ export {
   ChatMensagem,
   ChatParticipante,
   ChatUserKey,
+  ChatCategoria,
 };

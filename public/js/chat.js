@@ -70,23 +70,47 @@
   function buf2str(buf) { return new TextDecoder().decode(buf); }
 
   // ── Key pair management ────────────────────────────────────────────────────
+  // Priority: server (cross-device) → IndexedDB (local cache) → generate new
 
   var myKeyPair = null;   // { publicKey, privateKey } CryptoKey objects
   var sharedKeyCache = {}; // userId -> CryptoKey (AES-GCM derived key)
 
+  async function importKeyPair(pubJwk, privJwk) {
+    var pub  = await crypto.subtle.importKey('jwk', pubJwk,  { name: 'ECDH', namedCurve: 'P-256' }, true, []);
+    var priv = await crypto.subtle.importKey('jwk', privJwk, { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits']);
+    return { publicKey: pub, privateKey: priv };
+  }
+
   async function loadOrCreateKeyPair() {
+    // 1. Try server first — same key pair across all devices
+    try {
+      var res = await fetch('/chat/keys/me');
+      if (res.ok) {
+        var data = await res.json();
+        if (data.public_key_jwk && data.private_key_jwk) {
+          var pubJwk  = JSON.parse(data.public_key_jwk);
+          var privJwk = JSON.parse(data.private_key_jwk);
+          var kp = await importKeyPair(pubJwk, privJwk);
+          // Cache locally so next page load skips the server round-trip
+          await dbPut({ id: 'myKeyPair', pub: pubJwk, priv: privJwk });
+          return kp;
+        }
+      }
+    } catch (e) {
+      console.warn('[Chat] Could not fetch key from server, falling back to IndexedDB…', e);
+    }
+
+    // 2. Try IndexedDB (local cache for performance)
     var record = await dbGet('myKeyPair');
     if (record) {
       try {
-        var pub  = await crypto.subtle.importKey('jwk', record.pub,  { name: 'ECDH', namedCurve: 'P-256' }, true, []);
-        var priv = await crypto.subtle.importKey('jwk', record.priv, { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits']);
-        return { publicKey: pub, privateKey: priv };
+        return await importKeyPair(record.pub, record.priv);
       } catch (e) {
-        console.warn('[Chat] Key import failed, regenerating…', e);
+        console.warn('[Chat] IndexedDB key import failed, regenerating…', e);
       }
     }
 
-    // Generate new key pair
+    // 3. Generate brand-new key pair and persist to both IndexedDB and server
     var kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits']);
     var pubJwk  = await crypto.subtle.exportKey('jwk', kp.publicKey);
     var privJwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
@@ -137,7 +161,8 @@
   async function decryptDM(conteudo_enc, iv_hex, otherUserId) {
     try {
       var key = await getDerivedKey(otherUserId);
-      if (!key) return decodeGrupo(conteudo_enc); // fallback
+      // Message has iv_hex → was AES-GCM encrypted; if no key available, can't decrypt
+      if (!key) return '🔒 [mensagem cifrada]';
       var dec = await crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: hex2buf(iv_hex) },
         key,
@@ -145,8 +170,6 @@
       );
       return buf2str(dec);
     } catch (e) {
-      // Key mismatch (message encrypted in another session) — try plain decode
-      try { return decodeGrupo(conteudo_enc); } catch (_) {}
       return '🔒 [mensagem de outra sessão]';
     }
   }
@@ -177,11 +200,13 @@
     async init() {
       try {
         myKeyPair = await loadOrCreateKeyPair();
-        var jwk   = await getMyPublicKeyJwk();
+        var pubJwk  = JSON.stringify(await crypto.subtle.exportKey('jwk', myKeyPair.publicKey));
+        var privJwk = JSON.stringify(await crypto.subtle.exportKey('jwk', myKeyPair.privateKey));
+        // Persist both keys to server so any device can load them after login
         await fetch('/chat/keys', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ public_key_jwk: jwk }),
+          body: JSON.stringify({ public_key_jwk: pubJwk, private_key_jwk: privJwk }),
         });
         this.ready = true;
       } catch (e) {

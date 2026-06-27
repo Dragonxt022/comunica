@@ -15,6 +15,8 @@ ChatParticipante.init({
   user_id:       { type: DataTypes.INTEGER, allowNull: false },
   ultimo_lido_at:{ type: DataTypes.DATE, allowNull: true },
   ativo:         { type: DataTypes.BOOLEAN, defaultValue: true },
+  pinned:        { type: DataTypes.BOOLEAN, defaultValue: false },
+  categoria_id:  { type: DataTypes.INTEGER, allowNull: true },
 }, { sequelize, tableName: 'chat_participantes', timestamps: false });
 
 export default ChatParticipante;
