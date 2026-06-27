@@ -1,137 +1,512 @@
-<div class="max-w-2xl mx-auto space-y-6">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.kpi-card { background:#fff; border:1px solid #e5e7eb; border-radius:0.875rem; padding:1.25rem 1.5rem; }
+.bar-fill { border-radius:4px; transition: width .6s ease; }
+.stat-bar-row { display:flex; align-items:center; gap:.75rem; font-size:.8rem; }
+.stat-bar-bg  { flex:1; height:6px; background:#f1f5f9; border-radius:9999px; overflow:hidden; }
+.print-only   { display:none; }
+@media print  { .print-only { display:block!important; } .no-print { display:none!important; } }
+</style>
 
-    <div>
-        <h2 class="text-xl font-semibold text-gray-900">Gerar Relatório</h2>
-        <p class="text-sm text-gray-400 mt-0.5">Selecione o período e os dados para incluir no relatório imprimível.</p>
-    </div>
+<!-- ── Filtros ───────────────────────────────────────────────────────────── -->
+<div class="space-y-6" x-data="{ printModal: false }">
 
-    <form id="form-relatorio" action="/relatorios/gerar" method="POST"
-          class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-
-        <!-- Período -->
-        <div>
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Período</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Data inicial</label>
-                    <input type="date" name="data_inicio" required
-                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Data final</label>
-                    <input type="date" name="data_fim" required
-                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-            </div>
-        </div>
-
-        <!-- Secretaria (opcional) -->
-        <div>
-            <label class="block text-sm font-semibold text-gray-800 mb-1.5">Secretaria <span class="text-gray-400 font-normal">(opcional)</span></label>
-            <select name="secretaria_id"
-                class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <option value="">Todas as secretarias</option>
-                <% secretarias.forEach(function(s) { %>
-                <option value="<%= s.id %>"><%= s.nome %></option>
-                <% }) %>
-            </select>
-        </div>
-
-        <!-- O que incluir -->
-        <div>
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Incluir no relatório</h3>
-            <div class="space-y-3">
-                <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                    <input type="checkbox" name="incluir_releases" value="1" checked
-                        class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <div>
-                        <p class="text-sm font-semibold text-gray-800">Releases publicados</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Releases publicados no período selecionado.</p>
-                    </div>
-                </label>
-
-                <label id="label-solicitacoes"
-                    class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                    <input type="checkbox" name="incluir_solicitacoes" value="1" checked id="chk-solic"
-                        class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        onchange="toggleTipos(this.checked)">
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold text-gray-800">Solicitações de produção</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Chamados abertos no período, por tipo de mídia.</p>
-                    </div>
-                </label>
-            </div>
-        </div>
-
-        <!-- Tipos de mídia (visível quando solicitações está marcado) -->
-        <div id="tipos-midia-section" class="space-y-2.5">
-            <h3 class="text-sm font-semibold text-gray-800">Tipos de mídia a incluir</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <% tiposMidia.forEach(function(tipo) { %>
-                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition">
-                    <input type="checkbox" name="tipos_midia" value="<%= tipo %>" checked
-                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <%= tipo %>
-                </label>
-                <% }) %>
-            </div>
-            <div class="flex gap-2">
-                <button type="button" onclick="setAllTipos(true)"  class="text-xs text-blue-600 hover:underline">Selecionar todos</button>
-                <span class="text-gray-300">|</span>
-                <button type="button" onclick="setAllTipos(false)" class="text-xs text-gray-500 hover:underline">Desmarcar todos</button>
-            </div>
-        </div>
-
-        <!-- Botão gerar -->
-        <div class="pt-2 border-t border-gray-100 flex justify-end">
-            <button type="submit" id="btn-gerar"
-                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Gerar Relatório
-            </button>
-        </div>
-    </form>
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap no-print">
+  <div>
+    <h2 class="text-xl font-bold text-gray-900">Analíticos</h2>
+    <p class="text-sm text-gray-400 mt-0.5">
+      <%= new Date(filtro.inicio).toLocaleDateString('pt-BR') %> — <%= new Date(filtro.fim).toLocaleDateString('pt-BR') %>
+      <% if (filtro.secretaria) { %> · Filtrado por secretaria<% } %>
+    </p>
+  </div>
+  <div class="flex gap-2 flex-wrap">
+    <button @click="printModal = true"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      Imprimir / Exportar
+    </button>
+  </div>
 </div>
 
+<!-- Filtros de período -->
+<form method="GET" action="/relatorios" class="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3 items-end no-print">
+  <div class="flex gap-1.5 flex-wrap">
+    <% [['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','Este ano']].forEach(function(p) { %>
+    <a href="/relatorios?periodo=<%= p[0] %><%= filtro.secretaria ? '&secretaria=' + filtro.secretaria : '' %>"
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition <%= filtro.periodo === p[0] && !filtro.inicio ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600' %>">
+      <%= p[1] %>
+    </a>
+    <% }) %>
+  </div>
+  <div class="flex gap-2 items-end flex-wrap">
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">De</label>
+      <input type="date" name="inicio" value="<%= filtro.inicio %>"
+             class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">Até</label>
+      <input type="date" name="fim" value="<%= filtro.fim %>"
+             class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+    </div>
+    <select name="secretaria" class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="">Todas as secretarias</option>
+      <% secretarias.forEach(function(s) { %>
+      <option value="<%= s.id %>" <%= filtro.secretaria == s.id ? 'selected' : '' %>><%= s.nome %></option>
+      <% }) %>
+    </select>
+    <button type="submit" class="px-4 py-1.5 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition">Filtrar</button>
+  </div>
+</form>
+
+<!-- ── KPIs principais ───────────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Solicitações</p>
+    <p class="text-3xl font-black text-gray-900"><%= sol.total %></p>
+    <p class="text-xs text-gray-400 mt-1"><%= sol.emAndamento %> em andamento</p>
+  </div>
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Finalizadas</p>
+    <p class="text-3xl font-black text-emerald-600"><%= sol.finalizadas %></p>
+    <p class="text-xs text-gray-400 mt-1">Taxa: <span class="font-semibold text-gray-700"><%= sol.taxaConclusao %>%</span></p>
+  </div>
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Tempo Médio</p>
+    <p class="text-3xl font-black text-blue-600"><%= sol.avgDias %><span class="text-lg font-semibold">d</span></p>
+    <p class="text-xs text-gray-400 mt-1">Mín <%= sol.minDias %>d · Máx <%= sol.maxDias %>d</p>
+  </div>
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">No Prazo</p>
+    <p class="text-3xl font-black <%= sol.atrasadas > sol.noPrazo ? 'text-red-500' : 'text-emerald-600' %>"><%= sol.noPrazo %></p>
+    <p class="text-xs text-gray-400 mt-1"><%= sol.atrasadas %> atrasadas · <%= sol.semPrazo %> sem prazo</p>
+  </div>
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Releases</p>
+    <p class="text-3xl font-black text-purple-600"><%= rel.total %></p>
+    <p class="text-xs text-gray-400 mt-1">publicados no período</p>
+  </div>
+  <div class="kpi-card col-span-1">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Eventos</p>
+    <p class="text-3xl font-black text-amber-600"><%= ev.total %></p>
+    <p class="text-xs text-gray-400 mt-1"><%= ev.totalInscritos %> inscritos · <%= ev.comInscricoes %> c/ inscrição</p>
+  </div>
+</div>
+
+<!-- ── Linha 1: tendência mensal + status ────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-5">
+
+  <!-- Gráfico mensal -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-4">Solicitações por Mês</p>
+    <div class="relative h-48">
+      <canvas id="chart-mensal"></canvas>
+    </div>
+  </div>
+
+  <!-- Por status (donut) -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-4">Por Status</p>
+    <div class="flex items-center gap-4">
+      <div class="relative w-36 h-36 shrink-0">
+        <canvas id="chart-status"></canvas>
+      </div>
+      <div class="space-y-1.5 min-w-0 flex-1">
+        <% const statusColors = { 'pendente':'#f59e0b','aprovado':'#3b82f6','produção':'#8b5cf6','concluído':'#06b6d4','finalizado':'#10b981','cancelado':'#ef4444' }; %>
+        <% Object.entries(sol.byStatus).forEach(function([k,v]) { %>
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<%= statusColors[k] || '#6b7280' %>"></span>
+            <span class="text-gray-600 capitalize"><%= k %></span>
+          </div>
+          <span class="font-bold text-gray-800"><%= v %></span>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Linha 2: por secretaria + por tipo ───────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+  <!-- Por secretaria -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-4">Solicitações por Secretaria</p>
+    <% if (sol.bySec.length === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhum dado no período.</p>
+    <% } else { %>
+    <div class="space-y-3">
+      <% const maxSec = sol.bySec[0] ? sol.bySec[0].count : 1; %>
+      <% sol.bySec.forEach(function(s) { %>
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="font-medium text-gray-700 truncate max-w-[60%]" title="<%= s.nome %>"><%= s.nome %></span>
+          <span class="text-gray-500"><%= s.count %> total · <span class="text-emerald-600 font-semibold"><%= s.finalizadas %> fin.</span></span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full bg-indigo-500 rounded-full bar-fill" style="width:<%= Math.round(s.count/maxSec*100) %>%"></div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Por tipo de mídia -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-4">Por Tipo de Mídia</p>
+    <% if (sol.byTipo.length === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhum dado no período.</p>
+    <% } else { %>
+    <div class="space-y-3">
+      <% const maxTipo = sol.byTipo[0] ? sol.byTipo[0].count : 1; %>
+      <% const tipoColors = ['#6366f1','#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899']; %>
+      <% sol.byTipo.forEach(function(t, i) { %>
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="font-medium text-gray-700"><%= t.label %></span>
+          <span class="font-bold text-gray-800"><%= t.count %> <span class="text-gray-400 font-normal">(<%= sol.total > 0 ? Math.round(t.count/sol.total*100) : 0 %>%)</span></span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full bar-fill" style="width:<%= Math.round(t.count/maxTipo*100) %>%; background:<%= tipoColors[i % tipoColors.length] %>"></div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- ── Linha 3: tempo atendimento + prioridade + prazo ──────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+  <!-- Faixas de tempo de atendimento -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-1">Tempo de Atendimento</p>
+    <p class="text-xs text-gray-400 mb-4">Distribuição das solicitações finalizadas</p>
+    <% if (sol.finalizadas === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhuma solicitação finalizada no período.</p>
+    <% } else { %>
+    <div class="space-y-3">
+      <% const maxFaixa = sol.faixas.reduce(function(m,f){ return Math.max(m, f.count); }, 1); %>
+      <% sol.faixas.forEach(function(f) { %>
+      <div class="stat-bar-row">
+        <span class="text-gray-500 w-16 shrink-0"><%= f.label %></span>
+        <div class="stat-bar-bg">
+          <div class="h-full bg-blue-500 rounded-full bar-fill" style="width:<%= f.count > 0 ? Math.round(f.count/maxFaixa*100) : 0 %>%"></div>
+        </div>
+        <span class="font-bold text-gray-700 w-6 text-right shrink-0"><%= f.count %></span>
+      </div>
+      <% }) %>
+    </div>
+    <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-xs text-gray-500">
+      <span>Média: <strong class="text-gray-900"><%= sol.avgDias %>d</strong></span>
+      <span>Mín: <strong class="text-gray-900"><%= sol.minDias %>d</strong></span>
+      <span>Máx: <strong class="text-gray-900"><%= sol.maxDias %>d</strong></span>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Por prioridade -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-4">Por Prioridade</p>
+    <div class="space-y-4">
+      <% const priMeta = [['alta','#ef4444','Urgente'],['media','#f59e0b','Média'],['baixa','#10b981','Baixa']]; %>
+      <% priMeta.forEach(function(pm) { %>
+      <%   const cnt = sol.byPri[pm[0]] || 0; %>
+      <%   const pct = sol.total > 0 ? Math.round(cnt/sol.total*100) : 0; %>
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full" style="background:<%= pm[1] %>"></span>
+            <span class="font-medium text-gray-700"><%= pm[2] %></span>
+          </div>
+          <span class="font-bold text-gray-800"><%= cnt %> <span class="text-xs text-gray-400">(<%= pct %>%)</span></span>
+        </div>
+        <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full bar-fill" style="width:<%= pct %>%; background:<%= pm[1] %>"></div>
+        </div>
+      </div>
+      <% }) %>
+
+      <div class="pt-3 border-t border-gray-100">
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
+            <p class="font-bold text-lg text-gray-900"><%= sol.emAndamento %></p>
+            <p class="text-gray-400">Em andamento</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
+            <p class="font-bold text-lg text-red-600"><%= sol.canceladas %></p>
+            <p class="text-gray-400">Canceladas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cumprimento de prazo -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-gray-800 mb-1">Cumprimento de Prazo</p>
+    <p class="text-xs text-gray-400 mb-4">Solicitações com prazo definido: <strong><%= sol.comPrazo %></strong></p>
+
+    <% if (sol.comPrazo === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhuma solicitação com prazo no período.</p>
+    <% } else { %>
+    <%
+      const prazoTotal = sol.noPrazo + sol.atrasadas;
+      const pctNoPrazo  = prazoTotal > 0 ? Math.round(sol.noPrazo  / prazoTotal * 100) : 0;
+      const pctAtrasado = prazoTotal > 0 ? Math.round(sol.atrasadas / prazoTotal * 100) : 0;
+    %>
+    <!-- Gauge-like visual -->
+    <div class="flex items-center justify-center my-3">
+      <div class="relative w-32 h-32">
+        <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="#f1f5f9" stroke-width="4"/>
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="#10b981" stroke-width="4"
+                  stroke-dasharray="<%= Math.round(pctNoPrazo * 97.389 / 100) %> 97.389"
+                  stroke-linecap="round"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-2xl font-black text-gray-900"><%= pctNoPrazo %>%</span>
+          <span class="text-[10px] text-gray-400">no prazo</span>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-2 text-xs">
+      <div class="flex items-center justify-between px-2 py-1.5 bg-emerald-50 rounded-lg">
+        <span class="flex items-center gap-1.5 text-emerald-700 font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          No prazo
+        </span>
+        <span class="font-bold text-emerald-700"><%= sol.noPrazo %></span>
+      </div>
+      <div class="flex items-center justify-between px-2 py-1.5 bg-red-50 rounded-lg">
+        <span class="flex items-center gap-1.5 text-red-600 font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Atrasadas
+        </span>
+        <span class="font-bold text-red-600"><%= sol.atrasadas %></span>
+      </div>
+      <div class="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-lg">
+        <span class="text-gray-500">Sem prazo definido</span>
+        <span class="font-semibold text-gray-600"><%= sol.semPrazo %></span>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- ── Linha 4: releases + eventos ──────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+  <!-- Releases -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold text-gray-800">Releases Publicados</p>
+      <span class="text-2xl font-black text-purple-600"><%= rel.total %></span>
+    </div>
+    <% if (rel.total === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhum release publicado no período.</p>
+    <% } else { %>
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Por mês -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por mês</p>
+        <div class="space-y-1.5">
+          <% const maxRelMes = rel.byMonth.reduce(function(m,r){ return Math.max(m, r.count); }, 1); %>
+          <% rel.byMonth.forEach(function(r) { %>
+          <div class="stat-bar-row">
+            <span class="text-gray-400 w-10 shrink-0 text-[11px]"><%= r.label %></span>
+            <div class="stat-bar-bg">
+              <div class="h-full bg-purple-500 rounded-full bar-fill" style="width:<%= r.count > 0 ? Math.round(r.count/maxRelMes*100) : 0 %>%"></div>
+            </div>
+            <span class="font-bold text-gray-700 w-5 text-right shrink-0 text-[11px]"><%= r.count %></span>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <!-- Por secretaria -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por secretaria</p>
+        <div class="space-y-1.5">
+          <% const maxRelSec = rel.bySec[0] ? rel.bySec[0].count : 1; %>
+          <% rel.bySec.slice(0,6).forEach(function(r) { %>
+          <div class="stat-bar-row">
+            <span class="text-gray-500 truncate" style="max-width:80px;font-size:11px" title="<%= r.nome %>"><%= r.nome.split(' ').slice(-1)[0] %></span>
+            <div class="stat-bar-bg">
+              <div class="h-full bg-purple-400 rounded-full bar-fill" style="width:<%= Math.round(r.count/maxRelSec*100) %>%"></div>
+            </div>
+            <span class="font-bold text-gray-700 w-4 text-right shrink-0 text-[11px]"><%= r.count %></span>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Eventos -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold text-gray-800">Eventos</p>
+      <span class="text-2xl font-black text-amber-600"><%= ev.total %></span>
+    </div>
+    <% if (ev.total === 0) { %>
+    <p class="text-sm text-gray-400 italic">Nenhum evento no período.</p>
+    <% } else { %>
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="text-center bg-amber-50 rounded-lg p-2.5">
+        <p class="text-xl font-black text-amber-700"><%= ev.comInscricoes %></p>
+        <p class="text-[10px] text-amber-600">c/ inscrições</p>
+      </div>
+      <div class="text-center bg-blue-50 rounded-lg p-2.5">
+        <p class="text-xl font-black text-blue-700"><%= ev.totalInscritos %></p>
+        <p class="text-[10px] text-blue-600">inscritos</p>
+      </div>
+      <div class="text-center bg-gray-50 rounded-lg p-2.5">
+        <p class="text-xl font-black text-gray-700"><%= ev.total - ev.comInscricoes %></p>
+        <p class="text-[10px] text-gray-500">sem inscrições</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Por status</p>
+        <% ev.byStatus.forEach(function(s) { %>
+        <div class="flex items-center justify-between text-xs py-0.5">
+          <span class="text-gray-600 capitalize"><%= s.label.replace('_',' ') %></span>
+          <span class="font-bold text-gray-800"><%= s.count %></span>
+        </div>
+        <% }) %>
+      </div>
+      <div>
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Por tipo</p>
+        <% ev.byTipo.slice(0,5).forEach(function(t) { %>
+        <div class="flex items-center justify-between text-xs py-0.5">
+          <span class="text-gray-600 truncate" style="max-width:100px"><%= t.label %></span>
+          <span class="font-bold text-gray-800"><%= t.count %></span>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- ── Modal de impressão ────────────────────────────────────────────────── -->
+<div x-show="printModal" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 no-print"
+     style="background:rgba(0,0,0,0.5);backdrop-filter:blur(2px)"
+     @click.self="printModal = false"
+     x-transition>
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100">
+
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-bold text-gray-900">Imprimir / Exportar PDF</h3>
+      <button @click="printModal = false" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form action="/relatorios/gerar" method="POST" target="_blank" id="form-print">
+      <input type="hidden" name="data_inicio" value="<%= filtro.inicio %>">
+      <input type="hidden" name="data_fim"    value="<%= filtro.fim %>">
+      <input type="hidden" name="secretaria_id" value="<%= filtro.secretaria %>">
+
+      <div class="space-y-3 mb-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seções a incluir</p>
+
+        <% const secoes_opts = [
+          ['sol', 'Solicitações', 'Listagem e estatísticas de chamados'],
+          ['rel', 'Releases', 'Releases publicados no período'],
+          ['ev',  'Eventos',  'Eventos realizados e inscrições'],
+        ]; %>
+        <% secoes_opts.forEach(function(opt) { %>
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-indigo-400 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50">
+          <input type="checkbox" name="secoes" value="<%= opt[0] %>" checked
+                 class="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+          <div>
+            <p class="text-sm font-semibold text-gray-800"><%= opt[1] %></p>
+            <p class="text-xs text-gray-400 mt-0.5"><%= opt[2] %></p>
+          </div>
+        </label>
+        <% }) %>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-3 mb-4 text-xs text-gray-500">
+        <strong>Período:</strong> <%= new Date(filtro.inicio).toLocaleDateString('pt-BR') %> a <%= new Date(filtro.fim).toLocaleDateString('pt-BR') %><br>
+        <strong>Gerado em:</strong> <%= new Date().toLocaleString('pt-BR') %>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" @click="printModal = false"
+                class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition inline-flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Abrir PDF
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</div><!-- end x-data -->
+
 <script>
-function toggleTipos(show) {
-    document.getElementById('tipos-midia-section').style.display = show ? '' : 'none';
-}
+(function() {
+  // Mensal
+  const meses  = <%- JSON.stringify(sol.byMonth.map(function(m){ return m.label; })) %>;
+  const abertas = <%- JSON.stringify(sol.byMonth.map(function(m){ return m.abertas; })) %>;
+  const fechadas = <%- JSON.stringify(sol.byMonth.map(function(m){ return m.fechadas; })) %>;
+  const relMes  = <%- JSON.stringify(rel.byMonth.map(function(m){ return m.count; })) %>;
 
-function setAllTipos(checked) {
-    document.querySelectorAll('[name="tipos_midia"]').forEach(function(cb) { cb.checked = checked; });
-}
+  new Chart(document.getElementById('chart-mensal'), {
+    type: 'bar',
+    data: {
+      labels: meses,
+      datasets: [
+        { label: 'Abertas',     data: abertas,  backgroundColor: '#e0e7ff', borderRadius: 4 },
+        { label: 'Finalizadas', data: fechadas, backgroundColor: '#6366f1', borderRadius: 4 },
+        { label: 'Releases',    data: relMes,   backgroundColor: '#a855f7', type: 'line',
+          borderColor: '#a855f7', pointRadius: 3, tension: .4, fill: false, yAxisID: 'y2' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y:  { beginAtZero: true, ticks: { font: { size: 10 }, stepSize: 1 }, grid: { color: '#f1f5f9' } },
+        y2: { beginAtZero: true, position: 'right', ticks: { font: { size: 10 }, stepSize: 1 }, grid: { display: false } },
+      },
+    },
+  });
 
-document.getElementById('form-relatorio').addEventListener('submit', function(e) {
-    e.preventDefault();
-    var btn = document.getElementById('btn-gerar');
-    btn.disabled = true;
-    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Gerando...';
+  // Status donut
+  const stLabels = <%- JSON.stringify(Object.keys(sol.byStatus)) %>;
+  const stValues = <%- JSON.stringify(Object.values(sol.byStatus)) %>;
+  const stColors = { pendente:'#f59e0b', aprovado:'#3b82f6', 'produção':'#8b5cf6', 'concluído':'#06b6d4', finalizado:'#10b981', cancelado:'#ef4444' };
 
-    var form = e.target;
-    var data = new FormData(form);
-    var params = new URLSearchParams();
-    for (var pair of data.entries()) {
-        params.append(pair[0], pair[1]);
-    }
-
-    fetch('/relatorios/gerar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
-    })
-    .then(function(r) { return r.text(); })
-    .then(function(html) {
-        var w = window.open('', '_blank');
-        w.document.write(html);
-        w.document.close();
-        btn.disabled = false;
-        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Gerar Relatório';
-    })
-    .catch(function() {
-        btn.disabled = false;
-        btn.textContent = 'Gerar Relatório';
-        alert('Erro ao gerar relatório.');
-    });
-});
+  new Chart(document.getElementById('chart-status'), {
+    type: 'doughnut',
+    data: {
+      labels: stLabels,
+      datasets: [{ data: stValues, backgroundColor: stLabels.map(function(l){ return stColors[l]||'#9ca3af'; }), borderWidth: 2, borderColor: '#fff' }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: { legend: { display: false } },
+    },
+  });
+}());
 </script>

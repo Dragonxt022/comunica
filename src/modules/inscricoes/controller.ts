@@ -274,3 +274,27 @@ export const saveConfig = async (req: Request, res: Response) => {
     res.status(500).send('Internal Server Error');
   }
 };
+
+export const removerDuplicatas = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const eventoId = Number(req.params.eventoId);
+
+    const evento = await Evento.findOne({ where: { id: eventoId } }) as any;
+    if (!evento || !canViewInscricoes(user, evento)) {
+      return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    }
+
+    const duplicatas = await InscricaoRepository.findDuplicates(eventoId);
+    let removidos = 0;
+    for (const ins of duplicatas) {
+      await InscricaoRepository.deleteById(ins.id);
+      removidos++;
+    }
+
+    return res.json({ ok: true, removidos, mensagem: removidos > 0 ? `${removidos} inscrição(ões) duplicada(s) removida(s).` : 'Nenhuma duplicata encontrada.' });
+  } catch (error) {
+    console.error('Error removing duplicatas:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};

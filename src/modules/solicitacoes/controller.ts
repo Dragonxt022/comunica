@@ -127,10 +127,10 @@ export const updateStatus = async (req: Request, res: Response) => {
     });
 
     const notifMap: Record<string, { titulo: string; corpo: string; tipo: string }> = {
-      'produção':   { titulo: '⚙️ Em produção',          corpo: `sua solicitação entrou em produção.`,              tipo: 'solicitacao_producao'  },
-      'concluído':  { titulo: '🎨 Pronto para revisão',  corpo: `o material está pronto — aguardando sua aprovação.`, tipo: 'solicitacao_concluida' },
-      'finalizado': { titulo: '✅ Material finalizado',   corpo: `sua solicitação foi finalizada com sucesso.`,        tipo: 'solicitacao_aprovada'  },
-      'cancelado':  { titulo: '❌ Solicitação cancelada', corpo: `sua solicitação foi cancelada pela SECOM.`,          tipo: 'solicitacao_cancelada' },
+      'produção':   { titulo: 'Em produção',          corpo: `sua solicitação entrou em produção.`,              tipo: 'solicitacao_producao'  },
+      'concluído':  { titulo: 'Pronto para revisão',  corpo: `o material está pronto — aguardando sua aprovação.`, tipo: 'solicitacao_concluida' },
+      'finalizado': { titulo: 'Material finalizado',   corpo: `sua solicitação foi finalizada com sucesso.`,        tipo: 'solicitacao_aprovada'  },
+      'cancelado':  { titulo: 'Solicitação cancelada', corpo: `sua solicitação foi cancelada pela SECOM.`,          tipo: 'solicitacao_cancelada' },
     };
 
     if (notifMap[status]) {
@@ -563,7 +563,7 @@ export const concluir = async (req: Request, res: Response) => {
     const solParaPush = await SolicitacaoRepository.findById(id);
     if (solParaPush?.criado_por) {
       notificar(solParaPush.criado_por, {
-        titulo: '🎨 Material disponível para revisão',
+        titulo: 'Material disponível para revisão',
         corpo: `"${solParaPush.titulo}" está pronto para revisão.`,
         url: `/solicitacoes/${id}`,
         tipo: 'solicitacao_concluida',

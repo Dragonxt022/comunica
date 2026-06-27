@@ -8,6 +8,7 @@ router.get('/config', InscricoesController.configView);
 router.post('/config/remover-pdf', InscricoesController.removePdfRegulamento);
 router.post('/config', uploadPdfRegulamento, InscricoesController.saveConfig);
 router.get('/exportar', InscricoesController.exportarCSV);
+router.post('/remover-duplicatas', InscricoesController.removerDuplicatas);
 router.get('/', InscricoesController.list);
 router.get('/:id', InscricoesController.show);
 router.post('/:id/status', InscricoesController.updateStatus);

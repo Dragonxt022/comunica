@@ -5,7 +5,8 @@ import { isAuthenticated } from '../../middlewares/auth.middleware.ts';
 const router = Router();
 
 const isAdminOrSecom = (req: any, res: any, next: any) => {
-  if (req.session?.user?.role === 'admin' || req.session?.user?.role === 'secom') return next();
+  const role = req.session?.user?.role;
+  if (role === 'admin' || role === 'secom' || role === 'super_admin') return next();
   return res.status(403).redirect('/');
 };
 

@@ -71,20 +71,27 @@ export const submit = async (req: Request, res: Response) => {
 
     const { nome, email, telefone, ...extras } = req.body;
 
-    if (!nome || !email) {
-      let campos: any[] = [];
-      if (evento.formulario_template_id) {
-        const tpl = await FormularioTemplate.findOne({ where: { id: evento.formulario_template_id } }) as any;
-        if (tpl) try { campos = JSON.parse(tpl.campos || '[]'); } catch { campos = []; }
-      }
-      return res.render('public/inscricao-form', {
-        title: `Inscrição — ${evento.titulo}`,
-        layout: 'layouts/public',
-        evento,
-        campos,
-        erro: 'Nome e e-mail são obrigatórios.',
-        vagas: evento.max_inscricoes ? evento.max_inscricoes - total : null,
-      });
+    let campos: any[] = [];
+    if (evento.formulario_template_id) {
+      const tpl = await FormularioTemplate.findOne({ where: { id: evento.formulario_template_id } }) as any;
+      if (tpl) try { campos = JSON.parse(tpl.campos || '[]'); } catch { campos = []; }
+    }
+
+    const renderErro = (erro: string) => res.render('public/inscricao-form', {
+      title: `Inscrição — ${evento.titulo}`,
+      layout: 'layouts/public',
+      evento,
+      campos,
+      erro,
+      vagas: evento.max_inscricoes ? evento.max_inscricoes - total : null,
+    });
+
+    if (!nome || !email) return renderErro('Nome e e-mail são obrigatórios.');
+
+    const emailNorm = String(email).trim().toLowerCase();
+    const jaInscrito = await InscricaoRepository.findByEmailAndEvento(emailNorm, evento.id);
+    if (jaInscrito) {
+      return renderErro(`O e-mail ${emailNorm} já possui uma inscrição ativa para este evento (${jaInscrito.numero_inscricao}).`);
     }
 
     const numero = await InscricaoRepository.generateNumero(evento.id);
@@ -107,7 +114,7 @@ export const submit = async (req: Request, res: Response) => {
       evento_id: evento.id,
       numero_inscricao: numero,
       nome: String(nome).trim(),
-      email: String(email).trim().toLowerCase(),
+      email: emailNorm,
       telefone: telefone ? String(telefone).trim() : '',
       dados: JSON.stringify(dados),
       status: 'confirmado',

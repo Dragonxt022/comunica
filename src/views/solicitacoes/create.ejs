@@ -3,7 +3,7 @@ document.addEventListener('alpine:init', function() {
     Alpine.data('solCreateForm', function() {
         return {
             criarEvento: false,
-            selectedSec: <%- (user.role === 'secretaria' || user.role === 'secom') ? (user.secretaria_id || 'null') : 'null' %>,
+            selectedSec: <%- (user.role === 'secretaria' || user.role === 'secom') && user.secretaria_id ? user.secretaria_id : 'null' %>,
             allUsers: <%- JSON.stringify(users.map(function(u){ return { id: u.id, nome: u.nome, secretaria_id: u.secretaria_id }; })) %>,
             responsaveis: [],
             tiposSelecionados: [],
@@ -121,7 +121,7 @@ document.addEventListener('alpine:init', function() {
                         </div>
                     </div>
 
-                    <% if(user.role === 'admin' || user.role === 'secom') { %>
+                    <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
                         <select name="secretaria_id" required
