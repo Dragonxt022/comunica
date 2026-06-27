@@ -12,7 +12,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -29,6 +29,7 @@ import inscricoesRoutes from './src/modules/inscricoes/routes.ts';
 import inscricoesHubRoutes from './src/modules/inscricoes/hub.routes.ts';
 import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import planejamentoRoutes from './src/modules/planejamento/routes.ts';
+import chatRoutes from './src/modules/chat/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -232,6 +233,12 @@ async function seed() {
   await AcaoPlanejamento.sync({ force: false });
   await IndicadorMeta.sync({ force: false });
   await addCol('acoes_planejamento', 'notificado_prazo', 'BOOLEAN NOT NULL DEFAULT 0');
+
+  // Chat module tables
+  await ChatConversa.sync({ force: false });
+  await ChatMensagem.sync({ force: false });
+  await ChatParticipante.sync({ force: false });
+  await ChatUserKey.sync({ force: false });
 
 
   // Migrate old event statuses to new values (idempotent)
@@ -441,9 +448,10 @@ async function startServer() {
       }
     });
 
-    // SSE — real-time events stream
+    // SSE — real-time events stream (per-user targeting for chat)
     app.get('/sse', isAuthenticated, (req, res) => {
-      sseBroker.connect(res);
+      const userId = (req as any).session?.user?.id;
+      sseBroker.connect(res, userId);
     });
 
     // Modules
@@ -461,6 +469,7 @@ async function startServer() {
     app.use('/eventos/:eventoId/inscricoes', isAuthenticated, inscricoesRoutes);
     app.use('/inscricao', inscricaoPublicaRoutes);
     app.use('/planejamento', isAuthenticated, planejamentoRoutes);
+    app.use('/chat', chatRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {

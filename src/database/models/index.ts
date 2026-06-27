@@ -16,6 +16,12 @@ import Inscricao from './Inscricao.ts';
 import PlanoAcao from './PlanoAcao.ts';
 import AcaoPlanejamento from './AcaoPlanejamento.ts';
 import IndicadorMeta from './IndicadorMeta.ts';
+import ChatConversa from './ChatConversa.ts';
+import ChatMensagem from './ChatMensagem.ts';
+import ChatParticipante from './ChatParticipante.ts';
+import ChatUserKey from './ChatUserKey.ts';
+
+// ── Existing associations ──────────────────────────────────────────────────
 
 Secretaria.belongsTo(Municipio, { foreignKey: 'municipio_id', as: 'municipio' });
 Municipio.hasMany(Secretaria, { foreignKey: 'municipio_id', as: 'secretarias' });
@@ -27,6 +33,22 @@ Evento.belongsToMany(User, { through: EventoResponsavel, as: 'responsaveis', for
 User.belongsToMany(Evento, { through: EventoResponsavel, as: 'responsaveis_em_eventos', foreignKey: 'user_id', otherKey: 'evento_id' });
 
 Evento.hasMany(Inscricao, { foreignKey: 'evento_id', as: 'inscricoes' });
+
+// ── Chat associations ──────────────────────────────────────────────────────
+
+ChatConversa.hasMany(ChatParticipante, { foreignKey: 'conversa_id', as: 'participantes' });
+ChatParticipante.belongsTo(ChatConversa, { foreignKey: 'conversa_id', as: 'conversa' });
+
+ChatConversa.hasMany(ChatMensagem, { foreignKey: 'conversa_id', as: 'mensagens' });
+ChatMensagem.belongsTo(ChatConversa, { foreignKey: 'conversa_id', as: 'conversa' });
+
+ChatParticipante.belongsTo(User, { foreignKey: 'user_id', as: 'usuario' });
+User.hasMany(ChatParticipante, { foreignKey: 'user_id', as: 'chat_participacoes' });
+
+ChatMensagem.belongsTo(User, { foreignKey: 'user_id', as: 'remetente' });
+
+ChatUserKey.belongsTo(User, { foreignKey: 'user_id', as: 'usuario' });
+User.hasOne(ChatUserKey, { foreignKey: 'user_id', as: 'chat_key' });
 
 export {
   User,
@@ -47,4 +69,8 @@ export {
   PlanoAcao,
   AcaoPlanejamento,
   IndicadorMeta,
+  ChatConversa,
+  ChatMensagem,
+  ChatParticipante,
+  ChatUserKey,
 };
