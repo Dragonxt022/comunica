@@ -1,4 +1,5 @@
-process.env.TZ = 'America/Porto_Velho';
+// TZ vem do .env (configurado pelo setup.sh) — fallback para Brasília
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo';
 
 import express from 'express';
 import session from 'express-session';
