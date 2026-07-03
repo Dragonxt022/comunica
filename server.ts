@@ -311,6 +311,10 @@ async function startServer() {
         if (sessionUser.role !== 'super_admin') whereRole.municipio_id = sessionUser.municipio_id;
         else if (activeMid) whereRole.municipio_id = activeMid;
         if (sessionUser.role === 'secretaria') whereRole.secretaria_id = sessionUser.secretaria_id;
+        // Filtro só por município (sem secretaria_id) para contagens gerais
+        const whereMun: any = {};
+        if (sessionUser.role !== 'super_admin') whereMun.municipio_id = sessionUser.municipio_id;
+        else if (activeMid) whereMun.municipio_id = activeMid;
 
         const startOf8Weeks = new Date(now);
         startOf8Weeks.setDate(startOf8Weeks.getDate() - 56);
@@ -330,11 +334,11 @@ async function startServer() {
           acoesVencidasCount,
         ] = await Promise.all([
           Solicitacao.count({ where: { status: 'pendente', ...whereRole } }),
-          Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] } } }),
-          Release.count({ where: { publicado: true } }),
-          User.count({ where: { ativo: true } }),
+          Evento.count({ where: { data_inicio: { [Op.between]: [today, weekEnd] }, ...whereMun } }),
+          Release.count({ where: { publicado: true, ...whereMun } }),
+          User.count({ where: { ativo: true, ...whereMun } }),
           Evento.findAll({
-            where: { data_inicio: { [Op.between]: [calStart, calEnd] }, arquivado: false },
+            where: { data_inicio: { [Op.between]: [calStart, calEnd] }, arquivado: false, ...whereRole },
             include: [{ model: Secretaria, as: 'secretaria' }],
             order: [['data_inicio', 'ASC']],
           }),
@@ -358,7 +362,7 @@ async function startServer() {
           }),
           sessionUser.role !== 'secretaria'
             ? Solicitacao.findAll({
-                where: { status: { [Op.notIn]: ['cancelado'] } },
+                where: { status: { [Op.notIn]: ['cancelado'] }, ...whereMun },
                 attributes: ['secretaria_id', 'status'],
                 include: [{ model: Secretaria, as: 'secretaria', attributes: ['id', 'nome', 'cor'] }],
               })
@@ -370,7 +374,9 @@ async function startServer() {
             } as any,
             include: [{
               model: PlanoAcao, as: 'plano', required: true,
-              where: sessionUser.role === 'secretaria' ? { secretaria_id: sessionUser.secretaria_id } : {},
+              where: sessionUser.role === 'secretaria'
+                ? { secretaria_id: sessionUser.secretaria_id }
+                : whereMun.municipio_id ? { municipio_id: whereMun.municipio_id } : {},
             }],
           }).catch(() => 0),
         ]);
@@ -422,7 +428,7 @@ async function startServer() {
         if ((sessionUser.role === 'admin' || sessionUser.role === 'secom') && metas.length > 0) {
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
           const solsMes = await Solicitacao.findAll({
-            where: { createdAt: { [Op.gte]: startOfMonth } },
+            where: { createdAt: { [Op.gte]: startOfMonth }, ...whereMun },
             attributes: ['tipo_midia'],
           });
           for (const s of solsMes) {

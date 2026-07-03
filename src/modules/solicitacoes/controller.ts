@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import SolicitacaoRepository from './repository.ts';
-import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoResponsavel } from '../../database/models/index.ts';
+import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoResponsavel, Municipio } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
@@ -59,15 +59,27 @@ export const list = async (req: Request, res: Response) => {
 export const createView = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
+    const mid = getActiveMid(req);
     const secWhere: any = { ativo: true };
     const usrWhere: any = { ativo: true };
     if (user.role !== 'super_admin') {
       secWhere.municipio_id = user.municipio_id;
       usrWhere.municipio_id = user.municipio_id;
     }
-    const secretarias = await Secretaria.findAll({ where: secWhere });
-    const users = await User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] });
-    res.render('solicitacoes/create', { title: 'Nova Solicitação', secretarias, users });
+    const [secretarias, users, municipios] = await Promise.all([
+      Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] }),
+      User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] }),
+      user.role === 'super_admin'
+        ? Municipio.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] })
+        : Promise.resolve([]),
+    ]);
+    res.render('solicitacoes/create', {
+      title: 'Nova Solicitação',
+      secretarias,
+      users,
+      municipios,
+      activeMunicipioId: mid,
+    });
   } catch (error) {
     console.error('Error creating solicitacao view:', error);
     res.status(500).send('Internal Server Error');

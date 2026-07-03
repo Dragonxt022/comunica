@@ -1,12 +1,12 @@
 <div class="space-y-5">
 
     <div class="flex items-center gap-3">
-        <a href="/releases" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <a href="/releases" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
-            <h2 class="text-xl font-bold text-gray-900">Editar Release</h2>
-            <p class="text-sm text-gray-500">Atualize o conteúdo e as informações do release.</p>
+            <h1 class="text-xl font-bold text-gray-900">Editar Release</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Atualize o conteúdo e as informações do release.</p>
         </div>
     </div>
 
@@ -25,11 +25,13 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
                         <input type="text" name="titulo" required value="<%= release.titulo %>"
+                            placeholder="Ex: Prefeitura lança programa de habitação popular"
                             class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Subtítulo <span class="text-xs text-gray-400 font-normal">(opcional)</span></label>
                         <input type="text" name="subtitulo" value="<%= release.subtitulo || '' %>"
+                            placeholder="Linha complementar ao título"
                             class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
                     </div>
                 </div>
@@ -209,12 +211,23 @@
     setupImageResize(quill);
 
     window.onPublicacaoChange = function(val) {
-        document.getElementById('schedule-fields').classList.toggle('hidden', val !== 'agendar');
-        var lbl = document.getElementById('btn-submit-label');
-        lbl.textContent = val === 'publicar' ? 'Salvar e Publicar' : val === 'agendar' ? 'Salvar Agendamento' : 'Salvar Alterações';
+        var sched  = document.getElementById('schedule-fields');
+        var btnLbl = document.getElementById('btn-submit-label');
+        var btn    = document.getElementById('btn-submit');
+        sched.classList.toggle('hidden', val !== 'agendar');
+        var base = 'w-full px-4 py-2.5 text-white rounded-lg text-sm font-semibold transition shadow-sm inline-flex items-center justify-center gap-2';
+        if (val === 'publicar') {
+            btn.className = base + ' bg-green-600 hover:bg-green-700';
+            btnLbl.textContent = 'Salvar e Publicar';
+        } else if (val === 'agendar') {
+            btn.className = base + ' bg-indigo-600 hover:bg-indigo-700';
+            btnLbl.textContent = 'Salvar Agendamento';
+        } else {
+            btn.className = base + ' bg-blue-600 hover:bg-blue-700';
+            btnLbl.textContent = 'Salvar Alterações';
+        }
     };
 
-    // Inicializa aparência do botão conforme estado atual
     onPublicacaoChange(document.querySelector('[name="publicacao_tipo"]:checked').value);
 
     document.getElementById('release-form').addEventListener('submit', function (e) {
@@ -238,8 +251,11 @@
             fetch('/releases/upload-imagem', { method: 'POST', body: fd })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    if (data.ok) { var range = quill.getSelection(true); quill.insertEmbed(range.index, 'image', data.url); quill.setSelection(range.index + 1); }
-                    else { alert(data.error || 'Erro ao fazer upload'); }
+                    if (data.ok) {
+                        var range = quill.getSelection(true);
+                        quill.insertEmbed(range.index, 'image', data.url);
+                        quill.setSelection(range.index + 1);
+                    } else { alert(data.error || 'Erro ao fazer upload'); }
                 });
         };
     }
@@ -295,16 +311,24 @@
     function setupImageResize(q) {
         var bar = document.createElement('div');
         bar.style.cssText = 'display:none;position:fixed;z-index:9999;align-items:center;gap:4px;background:#1f2937;border-radius:8px;padding:5px 8px;box-shadow:0 4px 12px rgba(0,0,0,.35);font-size:11px;font-weight:600';
-        var label = document.createElement('span'); label.textContent = 'Largura:'; label.style.cssText = 'color:#9ca3af;margin-right:2px'; bar.appendChild(label);
+        var label = document.createElement('span');
+        label.textContent = 'Largura:';
+        label.style.cssText = 'color:#9ca3af;margin-right:2px';
+        bar.appendChild(label);
         [{t:'P',w:'25%'},{t:'M',w:'50%'},{t:'G',w:'75%'},{t:'100%',w:'100%'}].forEach(function(s) {
-            var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = s.t; btn.title = s.w;
+            var btn = document.createElement('button');
+            btn.type = 'button'; btn.textContent = s.t; btn.title = s.w;
             btn.style.cssText = 'color:#fff;padding:2px 7px;border-radius:5px;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)';
-            btn.addEventListener('click', function(e) { e.stopPropagation(); if (cur) { cur.style.width = s.w; cur.removeAttribute('width'); } posBar(cur); }); bar.appendChild(btn);
+            btn.addEventListener('click', function(e) { e.stopPropagation(); if (cur) { cur.style.width = s.w; cur.removeAttribute('width'); } posBar(cur); });
+            bar.appendChild(btn);
         });
-        var inp = document.createElement('input'); inp.type = 'number'; inp.placeholder = 'px'; inp.min = '50'; inp.max = '1400';
+        var inp = document.createElement('input');
+        inp.type = 'number'; inp.placeholder = 'px'; inp.min = '50'; inp.max = '1400';
         inp.style.cssText = 'width:54px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:5px;color:#fff;padding:2px 5px;font-size:11px;outline:none';
-        inp.addEventListener('keydown', function(e) { if (e.key === 'Enter' && this.value && cur) { cur.style.width = parseInt(this.value) + 'px'; cur.removeAttribute('width'); this.value = ''; posBar(cur); } }); bar.appendChild(inp);
-        document.body.appendChild(bar); var cur = null;
+        inp.addEventListener('keydown', function(e) { if (e.key === 'Enter' && this.value && cur) { cur.style.width = parseInt(this.value) + 'px'; cur.removeAttribute('width'); this.value = ''; posBar(cur); } });
+        bar.appendChild(inp);
+        document.body.appendChild(bar);
+        var cur = null;
         function posBar(img) { if (!img) return; var r = img.getBoundingClientRect(); bar.style.display = 'flex'; var top = r.top - 42; if (top < 8) top = r.bottom + 8; bar.style.top = top + 'px'; bar.style.left = Math.max(8, r.left) + 'px'; }
         q.root.addEventListener('click', function(e) { if (e.target.tagName === 'IMG') { cur = e.target; posBar(cur); } else { bar.style.display = 'none'; cur = null; } });
         document.addEventListener('click', function(e) { if (bar.contains(e.target)) return; if (e.target.tagName === 'IMG' && q.root.contains(e.target)) return; bar.style.display = 'none'; cur = null; });

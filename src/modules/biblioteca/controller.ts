@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { Solicitacao, Secretaria } from '../../database/models/index.ts';
+import { getActiveMid, secretariaWhere } from '../../lib/municipio-filter.ts';
 
 export const index = async (req: Request, res: Response) => {
   try {
     const sessionUser = (req as any).session.user;
+    const activeMid = getActiveMid(req);
     const { secretaria_id, tipo_midia, mes } = req.query;
 
     const where: any = {
@@ -12,11 +14,17 @@ export const index = async (req: Request, res: Response) => {
       status: { [Op.in]: ['finalizado', 'concluído'] },
     };
 
-    // Secretaria role sees only their own artes
+    // Isolamento por município: secretaria vê só sua secretaria; demais veem só seu município
     if (sessionUser.role === 'secretaria') {
       where.secretaria_id = sessionUser.secretaria_id;
-    } else if (secretaria_id) {
-      where.secretaria_id = secretaria_id;
+      where.municipio_id = sessionUser.municipio_id;
+    } else if (sessionUser.role === 'super_admin') {
+      if (activeMid) where.municipio_id = activeMid;
+      if (secretaria_id) where.secretaria_id = secretaria_id;
+    } else {
+      // admin / secom: apenas seu município
+      where.municipio_id = sessionUser.municipio_id;
+      if (secretaria_id) where.secretaria_id = secretaria_id;
     }
 
     if (tipo_midia) where.tipo_midia = tipo_midia;
@@ -28,6 +36,9 @@ export const index = async (req: Request, res: Response) => {
       where.updatedAt = { [Op.between]: [inicio, fim] };
     }
 
+    // Secretarias do dropdown: apenas do município ativo
+    const secWhere: any = secretariaWhere(sessionUser, { ativo: true }, activeMid);
+
     const [artes, secretarias] = await Promise.all([
       Solicitacao.findAll({
         where,
@@ -35,7 +46,7 @@ export const index = async (req: Request, res: Response) => {
         order: [['updatedAt', 'DESC']],
         limit: 200,
       }),
-      Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] }),
+      Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] }),
     ]);
 
     // Distinct tipos from current filtered artes

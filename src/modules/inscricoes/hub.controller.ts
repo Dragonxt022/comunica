@@ -1,14 +1,24 @@
 import { Request, Response } from 'express';
 import sequelize from '../../config/database.ts';
 import { Evento, Secretaria, Inscricao } from '../../database/models/index.ts';
+import { getActiveMid } from '../../lib/municipio-filter.ts';
 
 export const hub = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
+    const activeMid = getActiveMid(req);
 
     const where: any = { aceita_inscricoes: true };
-    if (user.role === 'secretaria') {
+
+    // Isolamento por município
+    if (user.role === 'super_admin') {
+      if (activeMid) where.municipio_id = activeMid;
+    } else if (user.role === 'secretaria') {
+      where.municipio_id = user.municipio_id;
       where.secretaria_id = user.secretaria_id;
+    } else {
+      // admin / secom: apenas seu município
+      where.municipio_id = user.municipio_id;
     }
 
     const eventos = await Evento.findAll({
