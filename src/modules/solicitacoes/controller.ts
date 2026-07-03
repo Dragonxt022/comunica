@@ -177,6 +177,11 @@ export const store = async (req: Request, res: Response) => {
 
     const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
 
+    // O município do chamado segue o da secretaria escolhida, não o do criador —
+    // relevante para super_admin, que pode abrir chamados em qualquer município.
+    const secRegistro = secId ? await Secretaria.findByPk(Number(secId)) : null;
+    const municipioIdChamado = secRegistro?.municipio_id || user.municipio_id;
+
     const { prazo } = req.body;
 
     for (const tipo_midia of tipos) {
@@ -188,7 +193,7 @@ export const store = async (req: Request, res: Response) => {
         prazo: prazo || null,
         secretaria_id: secId,
         criado_por: user.id,
-        municipio_id: user.municipio_id,
+        municipio_id: municipioIdChamado,
         status: 'pendente',
       });
 
@@ -217,7 +222,7 @@ export const store = async (req: Request, res: Response) => {
         tipo: tipo_evento || 'Outros',
         secretaria_id: secId,
         criado_por: user.id,
-        municipio_id: user.municipio_id,
+        municipio_id: municipioIdChamado,
         status: 'em_planejamento',
       } as any);
 
@@ -458,7 +463,8 @@ export const editView = async (req: Request, res: Response) => {
     if (user.role === 'secretaria' && sol.secretaria_id !== user.secretaria_id) {
       return res.redirect('/solicitacoes');
     }
-    const secretarias = await Secretaria.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] });
+    const secWhere: any = { ativo: true, municipio_id: user.role === 'super_admin' ? sol.municipio_id : user.municipio_id };
+    const secretarias = await Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] });
     res.render('solicitacoes/edit', { title: `Editar Solicitação #${sol.id}`, sol, secretarias });
   } catch (error) {
     console.error('Error editing solicitacao:', error);
@@ -471,8 +477,11 @@ export const updateSolicitacao = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const { titulo, descricao, prioridade, tipo_midia, secretaria_id, prazo } = req.body;
     const updateData: any = { titulo, descricao, prioridade, tipo_midia, prazo: prazo || null };
-    if (user.role === 'admin' || user.role === 'secom') {
+    if (['admin', 'secom', 'super_admin'].includes(user.role) && secretaria_id) {
       updateData.secretaria_id = secretaria_id;
+      // Mantém o município do chamado sincronizado com o da secretaria escolhida.
+      const secRegistro = await Secretaria.findByPk(Number(secretaria_id));
+      if (secRegistro?.municipio_id) updateData.municipio_id = secRegistro.municipio_id;
     }
     await SolicitacaoRepository.update(Number(req.params.id), updateData);
     res.redirect('/solicitacoes/' + req.params.id);

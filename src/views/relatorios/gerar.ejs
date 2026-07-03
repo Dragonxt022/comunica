@@ -36,13 +36,17 @@ var totalProd       = statusCounts['produção'];
     </div>
     <div class="meta">
         <div><strong>Relatório de Comunicação</strong></div>
+        <% if (municipioNome) { %><div>Município: <%= municipioNome %></div><% } %>
         <div>Período: <%= periodoLabel %></div>
         <div>Gerado em: <%= geradoEm %></div>
     </div>
 </div>
 
 <h1 class="report-title">Relatório de Comunicação</h1>
-<p class="report-subtitle">Período de referência: <strong><%= periodoLabel %></strong></p>
+<p class="report-subtitle">
+    Período de referência: <strong><%= periodoLabel %></strong>
+    <% if (municipioNome) { %> · Município: <strong><%= municipioNome %></strong><% } %>
+</p>
 
 <!-- ── Cards de sumário ── -->
 <div class="summary-grid">

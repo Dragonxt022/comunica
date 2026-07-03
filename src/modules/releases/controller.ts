@@ -76,13 +76,18 @@ export const store = async (req: Request, res: Response) => {
     const isPublicado = publicacao_tipo === 'publicar';
     const agendadoPara = publicacao_tipo === 'agendar' && agendado_para ? new Date(agendado_para) : null;
 
+    // O município do release segue o da secretaria escolhida, não o do criador —
+    // relevante para super_admin, que pode publicar em qualquer município.
+    const secRegistro = secretaria_id ? await Secretaria.findByPk(Number(secretaria_id)) : null;
+    const municipioIdRelease = secRegistro?.municipio_id || user.municipio_id;
+
     await Release.create({
       titulo,
       subtitulo:     subtitulo    || null,
       conteudo,
       imagem_capa:   imagem_capa  || null,
       secretaria_id: secretaria_id || null,
-      municipio_id:  user.municipio_id,
+      municipio_id:  municipioIdRelease,
       publicado:     isPublicado,
       publicado_em:  isPublicado ? new Date() : (agendadoPara || null),
       agendado_para: agendadoPara,
@@ -129,12 +134,15 @@ export const update = async (req: Request, res: Response) => {
       printUrl = '/' + path.relative(pubDir, file.path).split(path.sep).join('/');
     }
 
+    const secRegistro = secretaria_id ? await Secretaria.findByPk(Number(secretaria_id)) : null;
+
     await release.update({
       titulo,
       subtitulo:             subtitulo   || null,
       conteudo,
       imagem_capa:           imagem_capa !== undefined ? (imagem_capa || null) : release.imagem_capa,
       secretaria_id:         secretaria_id || null,
+      municipio_id:          secRegistro?.municipio_id || release.municipio_id,
       publicado:             isPublicado,
       publicado_em:          isPublicado ? (release.publicado ? release.publicado_em : new Date()) : (agendadoPara || null),
       agendado_para:         agendadoPara,

@@ -12,7 +12,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -30,6 +30,7 @@ import inscricoesHubRoutes from './src/modules/inscricoes/hub.routes.ts';
 import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import planejamentoRoutes from './src/modules/planejamento/routes.ts';
 import chatRoutes from './src/modules/chat/routes.ts';
+import iaRoutes from './src/modules/ia/routes.ts';
 import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
@@ -240,6 +241,8 @@ async function seed() {
   await ChatParticipante.sync({ force: false });
   await ChatUserKey.sync({ force: false });
   await ChatCategoria.sync({ force: false });
+  await IaPerfil.sync({ force: false });
+  await addCol('ia_perfis', 'modelo', "VARCHAR(255) NOT NULL DEFAULT 'gemma3:1b'");
   await addCol('chat_participantes', 'pinned', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('chat_participantes', 'categoria_id', 'INT NULL');
   await addCol('chat_conversas', 'avatar', 'VARCHAR(255) NULL');
@@ -481,6 +484,7 @@ async function startServer() {
     app.use('/inscricao', inscricaoPublicaRoutes);
     app.use('/planejamento', isAuthenticated, planejamentoRoutes);
     app.use('/chat', chatRoutes);
+    app.use('/ia', isAuthenticated, iaRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {

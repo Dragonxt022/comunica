@@ -95,6 +95,10 @@ export const update = async (req: Request, res: Response) => {
     const eventoAntes = await EventoRepository.findById(id);
 
     const updateData: any = { titulo, descricao, local, data_inicio, data_fim, tipo, secretaria_id };
+    if (secretaria_id) {
+      const secRegistro = await Secretaria.findByPk(Number(secretaria_id));
+      if (secRegistro?.municipio_id) updateData.municipio_id = secRegistro.municipio_id;
+    }
     if (file) {
       updateData.imagem_capa = capaUrl(file);
       if (eventoAntes) deleteCapaFile((eventoAntes as any).imagem_capa);
@@ -261,6 +265,12 @@ export const store = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const file = (req as any).file as Express.Multer.File | undefined;
 
+    const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
+    // O município do evento segue o da secretaria escolhida, não o do criador —
+    // relevante para super_admin, que pode cadastrar eventos em qualquer município.
+    const secRegistro = secId ? await Secretaria.findByPk(Number(secId)) : null;
+    const municipioIdEvento = secRegistro?.municipio_id || user.municipio_id;
+
     const evento = await EventoRepository.create({
       titulo,
       descricao,
@@ -268,9 +278,9 @@ export const store = async (req: Request, res: Response) => {
       data_inicio,
       data_fim,
       tipo,
-      secretaria_id: ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id,
+      secretaria_id: secId,
       criado_por: user.id,
-      municipio_id: user.municipio_id,
+      municipio_id: municipioIdEvento,
       status: 'em_planejamento',
       imagem_capa: file ? capaUrl(file) : null,
     });

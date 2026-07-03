@@ -9,6 +9,10 @@ document.addEventListener('alpine:init', function() {
             allSecretarias: <%- JSON.stringify(secretarias.map(function(s){ return { id: s.id, nome: s.nome, municipio_id: s.municipio_id }; })) %>,
             responsaveis: [],
             tiposSelecionados: [],
+            iaLoadingSugestao: false,
+            iaLoadingCorrecao: false,
+            toast: '',
+            toastOk: true,
             get filteredSecretarias() {
                 if (!this.selectedMun) return this.allSecretarias;
                 var mid = this.selectedMun;
@@ -43,6 +47,58 @@ document.addEventListener('alpine:init', function() {
                 if (this.tiposSelecionados.length === 0) return 'Selecione os tipos…';
                 return this.tiposSelecionados.join(', ');
             },
+            showToast: function(msg, ok) {
+                var self = this;
+                this.toast = msg;
+                this.toastOk = ok;
+                setTimeout(function() { self.toast = ''; }, 3000);
+            },
+            sugerirDescricao: async function() {
+                var titulo = this.$refs.tituloInput.value.trim();
+                if (!titulo) { this.showToast('Preencha o título primeiro.', false); return; }
+                this.iaLoadingSugestao = true;
+                try {
+                    var res = await fetch('/ia/sugerir-descricao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ titulo: titulo }),
+                    });
+                    var data = await res.json();
+                    if (res.ok) {
+                        this.$refs.descricaoInput.value = data.descricao;
+                        this.showToast(data.usouFallback ? 'Sugestão gerada com modelo local (nuvem indisponível) — revise antes de enviar.' : 'Sugestão gerada — revise antes de enviar.', true);
+                    } else {
+                        this.showToast(data.error || 'Erro ao gerar sugestão.', false);
+                    }
+                } catch (err) {
+                    this.showToast('Assistente de IA indisponível no momento.', false);
+                } finally {
+                    this.iaLoadingSugestao = false;
+                }
+            },
+            corrigirDescricao: async function() {
+                var texto = this.$refs.descricaoInput.value.trim();
+                if (!texto) { this.showToast('Escreva a descrição antes de corrigir.', false); return; }
+                this.iaLoadingCorrecao = true;
+                try {
+                    var res = await fetch('/ia/corrigir-texto', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ texto: texto }),
+                    });
+                    var data = await res.json();
+                    if (res.ok) {
+                        this.$refs.descricaoInput.value = data.texto;
+                        this.showToast(data.usouFallback ? 'Texto corrigido com modelo local (nuvem indisponível) — revise antes de enviar.' : 'Texto corrigido — revise antes de enviar.', true);
+                    } else {
+                        this.showToast(data.error || 'Erro ao corrigir texto.', false);
+                    }
+                } catch (err) {
+                    this.showToast('Assistente de IA indisponível no momento.', false);
+                } finally {
+                    this.iaLoadingCorrecao = false;
+                }
+            },
         };
     });
 });
@@ -69,16 +125,34 @@ document.addEventListener('alpine:init', function() {
 
                 <div id="tour-titulo">
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
-                    <input type="text" name="titulo" required placeholder="Ex: Nota sobre abertura de inscrições"
+                    <input type="text" name="titulo" x-ref="tituloInput" required placeholder="Ex: Nota sobre abertura de inscrições"
                         class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <div id="tour-descricao" class="flex-1">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Descrição / Briefing <span class="text-red-500">*</span></label>
-                    <textarea name="descricao" required rows="14"
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-sm font-semibold text-gray-700">Descrição / Briefing <span class="text-red-500">*</span></label>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" @click="sugerirDescricao()" :disabled="iaLoadingSugestao"
+                                title="Sugerir descrição a partir do título (IA — beta)"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-50 disabled:cursor-wait">
+                                <svg x-show="!iaLoadingSugestao" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                                <svg x-show="iaLoadingSugestao" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                Sugerir com IA
+                            </button>
+                            <button type="button" @click="corrigirDescricao()" :disabled="iaLoadingCorrecao"
+                                title="Corrigir ortografia e melhorar o texto (IA — beta)"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition disabled:opacity-50 disabled:cursor-wait">
+                                <svg x-show="!iaLoadingCorrecao" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <svg x-show="iaLoadingCorrecao" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                Corrigir texto
+                            </button>
+                        </div>
+                    </div>
+                    <textarea name="descricao" x-ref="descricaoInput" required rows="14"
                         placeholder="Descreva com detalhes o que precisa ser produzido: contexto, público-alvo, referências visuais, informações importantes e qualquer prazo relevante..."
                         class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-y min-h-[280px]"></textarea>
-                    <p class="text-xs text-gray-400 mt-1">Quanto mais detalhes, melhor o resultado da produção.</p>
+                    <p class="text-xs text-gray-400 mt-1">Quanto mais detalhes, melhor o resultado da produção. Sugestões de IA estão em fase de teste — revise sempre antes de enviar.</p>
                 </div>
 
             </div>
@@ -258,4 +332,17 @@ document.addEventListener('alpine:init', function() {
             </button>
         </div>
     </form>
+
+    <!-- Toast -->
+    <div x-show="toast !== ''"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-2"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white"
+        :class="toastOk ? 'bg-green-600' : 'bg-red-600'"
+        x-text="toast">
+    </div>
 </div>

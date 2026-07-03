@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Op, fn, col, literal } from 'sequelize';
 import sequelize from '../../config/database.ts';
-import { Release, Solicitacao, SolicitacaoComentario, Secretaria, Evento, Inscricao } from '../../database/models/index.ts';
+import { Release, Solicitacao, SolicitacaoComentario, Secretaria, Evento, Inscricao, Municipio } from '../../database/models/index.ts';
+import { getActiveMid } from '../../lib/municipio-filter.ts';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,13 +52,21 @@ export const index = async (req: Request, res: Response) => {
       dtInicio.setDate(dtInicio.getDate() - dias);
     }
 
-    const municipioFilter = user.role !== 'super_admin' ? { municipio_id: user.municipio_id } : {};
+    const isSuperAdmin = user.role === 'super_admin';
+    const qMunicipio = req.query.municipio_id;
+    let selectedMunicipioId: number | null = null;
+    if (isSuperAdmin) {
+      selectedMunicipioId = qMunicipio !== undefined ? (qMunicipio ? Number(qMunicipio) : null) : getActiveMid(req);
+    }
+    const municipioFilter = isSuperAdmin
+      ? (selectedMunicipioId ? { municipio_id: selectedMunicipioId } : {})
+      : { municipio_id: user.municipio_id };
     const secretariaFilter = (id?: string) => id ? { secretaria_id: Number(id) } : {};
     const secFilter = secretariaFilter(req.query.secretaria as string);
 
     // ── Busca base ──────────────────────────────────────────────────────────
 
-    const [solicitacoes, releases, eventos, secretarias] = await Promise.all([
+    const [solicitacoes, releases, eventos, secretarias, municipios] = await Promise.all([
       Solicitacao.findAll({
         where: { createdAt: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter, ...secFilter },
         include: [{ model: Secretaria, as: 'secretaria', attributes: ['id','nome'] }],
@@ -77,7 +86,15 @@ export const index = async (req: Request, res: Response) => {
       }) as Promise<any[]>,
 
       Secretaria.findAll({ where: { ativo: true, ...municipioFilter }, order: [['nome','ASC']] }) as Promise<any[]>,
+
+      isSuperAdmin
+        ? Municipio.findAll({ where: { ativo: true }, order: [['nome','ASC']] }) as Promise<any[]>
+        : Promise.resolve([]),
     ]);
+
+    const municipioNome = selectedMunicipioId
+      ? (municipios.find((m: any) => m.id === selectedMunicipioId)?.nome || '')
+      : '';
 
     // ── Solicitações — estatísticas ─────────────────────────────────────────
 
@@ -211,12 +228,16 @@ export const index = async (req: Request, res: Response) => {
     res.render('relatorios/index', {
       title: 'Analíticos',
       secretarias,
+      municipios,
+      isSuperAdmin,
       // filters
       filtro: {
         periodo: preset,
         inicio: dtInicio.toISOString().slice(0,10),
         fim:    dtFim.toISOString().slice(0,10),
         secretaria: req.query.secretaria || '',
+        municipioId: selectedMunicipioId || '',
+        municipioNome,
       },
       // sol
       sol: {
@@ -262,13 +283,21 @@ export const index = async (req: Request, res: Response) => {
 
 export const gerar = async (req: Request, res: Response) => {
   try {
-    const { data_inicio, data_fim, secoes, secretaria_id } = req.body;
+    const { data_inicio, data_fim, secoes, secretaria_id, municipio_id } = req.body;
     const user = (req as any).session.user;
+    const isSuperAdmin = user.role === 'super_admin';
 
     const dtInicio = startOfDay(new Date(data_inicio));
     const dtFim    = endOfDay(new Date(data_fim));
-    const municipioFilter = user.role !== 'super_admin' ? { municipio_id: user.municipio_id } : {};
+    const selectedMunicipioId = isSuperAdmin && municipio_id ? Number(municipio_id) : null;
+    const municipioFilter = isSuperAdmin
+      ? (selectedMunicipioId ? { municipio_id: selectedMunicipioId } : {})
+      : { municipio_id: user.municipio_id };
     const secF = secretaria_id ? { secretaria_id: Number(secretaria_id) } : {};
+
+    const municipioNome = isSuperAdmin
+      ? (selectedMunicipioId ? (await Municipio.findByPk(selectedMunicipioId))?.nome || '' : '')
+      : (await Municipio.findByPk(user.municipio_id))?.nome || '';
     const secoesArr: string[] = Array.isArray(secoes) ? secoes : (secoes ? [secoes] : ['sol','rel','ev']);
 
     const [solicitacoes, releases, eventos] = await Promise.all([
@@ -307,6 +336,7 @@ export const gerar = async (req: Request, res: Response) => {
       layout: 'layouts/print',
       periodoLabel: `${dtInicio.toLocaleDateString('pt-BR')} a ${dtFim.toLocaleDateString('pt-BR')}`,
       geradoEm: new Date().toLocaleString('pt-BR'),
+      municipioNome: municipioNome || (isSuperAdmin ? 'Todos os municípios' : ''),
       secoes: secoesArr,
       solicitacoes,
       releases,

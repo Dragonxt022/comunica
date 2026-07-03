@@ -21,6 +21,7 @@ import ChatMensagem from './ChatMensagem.ts';
 import ChatParticipante from './ChatParticipante.ts';
 import ChatUserKey from './ChatUserKey.ts';
 import ChatCategoria from './ChatCategoria.ts';
+import IaPerfil from './IaPerfil.ts';
 
 // ── Existing associations ──────────────────────────────────────────────────
 
@@ -78,4 +79,5 @@ export {
   ChatParticipante,
   ChatUserKey,
   ChatCategoria,
+  IaPerfil,
 };
