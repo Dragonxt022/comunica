@@ -298,6 +298,21 @@ export const updateIndicador = async (req: Request, res: Response) => {
   }
 };
 
+export const updateValorIndicador = async (req: Request, res: Response) => {
+  try {
+    const { valor_atual } = req.body;
+    const valor = Number(valor_atual);
+    if (!Number.isFinite(valor) || valor < 0) {
+      return res.status(400).json({ ok: false, error: 'Valor inválido' });
+    }
+    await Repo.updateIndicador(Number(req.params.iId), { valor_atual: valor });
+    return res.json({ ok: true, valor_atual: valor });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false });
+  }
+};
+
 export const destroyIndicador = async (req: Request, res: Response) => {
   try {
     const plano_id = Number(req.params.id);

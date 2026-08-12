@@ -3,7 +3,6 @@ process.env.TZ = process.env.TZ || 'America/Sao_Paulo';
 
 import express from 'express';
 import session from 'express-session';
-import connectSessionSequelize from 'connect-session-sequelize';
 import helmet from 'helmet';
 import compression from 'compression';
 import path from 'path';
@@ -36,6 +35,7 @@ import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
 import { getConfigCache, setConfigCache } from './src/lib/config-cache.ts';
+import { sessionStore } from './src/lib/session-store.ts';
 
 dotenv.config();
 
@@ -47,13 +47,6 @@ const PORT: number = parseInt(process.env.PORT || '3000');
 
 // Trust Proxy (Essential for sessions behind Cloud Run / Iframe proxy)
 app.set('trust proxy', 1);
-
-// Session Setup
-const SequelizeStore = connectSessionSequelize(session.Store);
-const sessionStore = new SequelizeStore({
-  db: sequelize,
-  tableName: 'sessions',
-});
 
 // Middlewares
 app.use(helmet({

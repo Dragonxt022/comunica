@@ -27,6 +27,7 @@ router.get('/:id/indicadores/novo', isAuthenticated, C.createIndicadorView);
 router.get('/:id/indicadores/:iId/editar', isAuthenticated, C.editIndicadorView);
 router.post('/:id/indicadores', isAuthenticated, C.storeIndicador);
 router.post('/:id/indicadores/:iId/editar', isAuthenticated, C.updateIndicador);
+router.post('/:id/indicadores/:iId/valor', isAuthenticated, C.updateValorIndicador);
 router.post('/:id/indicadores/:iId/excluir', isAuthenticated, C.destroyIndicador);
 
 export default router;
