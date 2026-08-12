@@ -18,6 +18,7 @@ class Solicitacao extends Model {
   public link_publicacao!: string | null;
   public link_arquivo_matriz!: string | null;
   public municipio_id!: number | null;
+  public ordem!: number;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -63,6 +64,7 @@ Solicitacao.init(
     link_publicacao: { type: DataTypes.STRING(500), allowNull: true },
     link_arquivo_matriz: { type: DataTypes.STRING(500), allowNull: true },
     municipio_id: { type: DataTypes.INTEGER, allowNull: true },
+    ordem: { type: DataTypes.INTEGER, defaultValue: 0 },
   },
   {
     sequelize,

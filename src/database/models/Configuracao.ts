@@ -16,6 +16,7 @@ class Configuracao extends Model {
   public site_oficial!: string;
   public status_eventos!: string | null;
   public metas_midia!: string | null;
+  public permitir_multiplos_tipos_midia!: boolean;
 }
 
 Configuracao.init(
@@ -34,6 +35,7 @@ Configuracao.init(
     site_oficial: { type: DataTypes.STRING, defaultValue: '' },
     status_eventos: { type: DataTypes.TEXT, allowNull: true },
     metas_midia: { type: DataTypes.TEXT, allowNull: true },
+    permitir_multiplos_tipos_midia: { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   { sequelize, modelName: 'Configuracao', tableName: 'configuracoes' }
 );

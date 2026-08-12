@@ -9,13 +9,13 @@
 </style>
 
 <!-- ── Filtros ───────────────────────────────────────────────────────────── -->
-<div class="space-y-6" x-data="{ printModal: false }">
+<div class="space-y-6" x-data="{ printModal: false, printInicio: '<%= filtro.inicio %>', printFim: '<%= filtro.fim %>' }">
 
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap no-print">
   <div>
     <h2 class="text-xl font-bold text-gray-900">Analíticos</h2>
     <p class="text-sm text-gray-400 mt-0.5">
-      <%= new Date(filtro.inicio).toLocaleDateString('pt-BR') %> — <%= new Date(filtro.fim).toLocaleDateString('pt-BR') %>
+      <%= new Date(filtro.inicio + 'T00:00:00').toLocaleDateString('pt-BR') %> — <%= new Date(filtro.fim + 'T00:00:00').toLocaleDateString('pt-BR') %>
       <% if (filtro.secretaria) { %> · Filtrado por secretaria<% } %>
       <% if (isSuperAdmin) { %> · <%= filtro.municipioNome ? 'Município: ' + filtro.municipioNome : 'Todos os municípios' %><% } %>
     </p>
@@ -32,9 +32,9 @@
 <!-- Filtros de período -->
 <form method="GET" action="/relatorios" class="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3 items-end no-print">
   <div class="flex gap-1.5 flex-wrap">
-    <% [['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','Este ano']].forEach(function(p) { %>
+    <% [['mes','Este mês'],['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','Este ano']].forEach(function(p) { %>
     <a href="/relatorios?periodo=<%= p[0] %><%= filtro.secretaria ? '&secretaria=' + filtro.secretaria : '' %><%= isSuperAdmin ? '&municipio_id=' + filtro.municipioId : '' %>"
-       class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition <%= filtro.periodo === p[0] && !filtro.inicio ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600' %>">
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition <%= filtro.presetAtivo === p[0] ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600' %>">
       <%= p[1] %>
     </a>
     <% }) %>
@@ -425,10 +425,21 @@
     </div>
 
     <form action="/relatorios/gerar" method="POST" target="_blank" id="form-print">
-      <input type="hidden" name="data_inicio" value="<%= filtro.inicio %>">
-      <input type="hidden" name="data_fim"    value="<%= filtro.fim %>">
       <input type="hidden" name="secretaria_id" value="<%= filtro.secretaria %>">
       <input type="hidden" name="municipio_id" value="<%= filtro.municipioId %>">
+
+      <div class="flex gap-3 mb-4">
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-gray-500 mb-1">De</label>
+          <input type="date" name="data_inicio" x-model="printInicio"
+                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Até</label>
+          <input type="date" name="data_fim" x-model="printFim"
+                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+      </div>
 
       <div class="space-y-3 mb-5">
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seções a incluir</p>
@@ -451,7 +462,8 @@
       </div>
 
       <div class="bg-gray-50 rounded-xl p-3 mb-4 text-xs text-gray-500">
-        <strong>Período:</strong> <%= new Date(filtro.inicio).toLocaleDateString('pt-BR') %> a <%= new Date(filtro.fim).toLocaleDateString('pt-BR') %><br>
+        <strong>Período:</strong> <span x-text="printInicio ? new Date(printInicio + 'T00:00:00').toLocaleDateString('pt-BR') : '—'"></span>
+        a <span x-text="printFim ? new Date(printFim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'"></span><br>
         <% if (isSuperAdmin) { %>
         <strong>Município:</strong> <%= filtro.municipioNome || 'Todos os municípios' %><br>
         <% } %>

@@ -276,7 +276,12 @@ document.addEventListener('alpine:init', function() {
             <h2 class="text-2xl font-bold text-gray-900">Calendário Institucional</h2>
             <p class="text-gray-500">Agendamentos de eventos e ações de todas as secretarias.</p>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap" x-data="pautaEditorialWidget()">
+            <button type="button" @click="abrir()"
+                class="px-3 py-2 text-sm font-medium text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                Sugestões de Pauta (IA)
+            </button>
             <a href="/eventos/historico"
                class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition inline-flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
@@ -287,8 +292,86 @@ document.addEventListener('alpine:init', function() {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Agendar Evento
             </a>
+
+            <!-- Modal: Sugestões de pauta editorial (IA) -->
+            <div x-show="open" x-cloak
+                @keydown.escape.window="open = false"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style="background:rgba(15,23,42,0.6);backdrop-filter:blur(2px)"
+                @click.self="open = false"
+                x-transition>
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
+                    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">Sugestões de Pauta</h3>
+                                <p class="text-xs text-gray-400" x-text="mesLabel || 'Ideias de conteúdo para o mês'"></p>
+                            </div>
+                        </div>
+                        <button type="button" @click="open = false" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                        <template x-if="loading">
+                            <div class="flex items-center justify-center py-10 text-sm text-gray-400 gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                Gerando sugestões…
+                            </div>
+                        </template>
+                        <template x-if="!loading && sugestoes.length === 0 && carregou">
+                            <p class="text-sm text-gray-400 text-center py-8">Não foi possível gerar sugestões desta vez.</p>
+                        </template>
+                        <template x-if="!loading && sugestoes.length > 0">
+                            <ul class="space-y-2">
+                                <template x-for="(s, idx) in sugestoes" :key="idx">
+                                    <li class="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2" x-text="s"></li>
+                                </template>
+                            </ul>
+                        </template>
+                        <p x-show="!loading && sugestoes.length > 0" class="text-xs text-gray-400">Sugestões geradas por IA — confirme datas e fatos antes de publicar.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+    function pautaEditorialWidget() {
+        return {
+            open: false,
+            loading: false,
+            carregou: false,
+            sugestoes: [],
+            mesLabel: '',
+            abrir: async function() {
+                this.open = true;
+                this.loading = true;
+                this.carregou = false;
+                this.sugestoes = [];
+                try {
+                    var r = await fetch('/ia/pauta-editorial', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    var data = await r.json();
+                    this.sugestoes = data.sugestoes || [];
+                    this.mesLabel = data.mesLabel || '';
+                } catch (err) {
+                    this.sugestoes = [];
+                } finally {
+                    this.loading = false;
+                    this.carregou = true;
+                }
+            },
+        };
+    }
+    </script>
 
     <!-- Barra de controles -->
     <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center">

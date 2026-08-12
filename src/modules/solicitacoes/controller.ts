@@ -6,6 +6,7 @@ import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoRes
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
+import { sanitizeDescricao } from '../../lib/sanitize-html.ts';
 
 function parseIds(raw: any): number[] {
   if (!raw) return [];
@@ -165,15 +166,40 @@ export const updateStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const reordenar = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!['secom', 'super_admin'].includes(user.role)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
+
+    const { status, ids } = req.body as { status?: string; ids?: number[] };
+    const idsNum = Array.isArray(ids) ? ids.map(Number).filter(Boolean) : [];
+    if (!status || idsNum.length === 0) return res.status(400).json({ ok: false, error: 'Dados inválidos' });
+
+    const { Op } = await import('sequelize');
+    const mid = getActiveMid(req);
+    const where = secretariaWhere(user, { id: { [Op.in]: idsNum }, status }, mid);
+    const count = await Solicitacao.count({ where });
+    if (count !== idsNum.length) return res.status(400).json({ ok: false, error: 'Solicitações inválidas para reordenar' });
+
+    await SolicitacaoRepository.bulkUpdateOrdem(idsNum);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error reordering solicitacoes:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
 export const store = async (req: Request, res: Response) => {
   try {
-    const { titulo, descricao, prioridade, secretaria_id, criar_evento, data_inicio, data_fim, local, tipo_evento } = req.body;
+    const { titulo, prioridade, secretaria_id, criar_evento, data_inicio, data_fim, local, tipo_evento } = req.body;
+    const descricao = sanitizeDescricao(req.body.descricao);
     const user = (req as any).session.user;
 
     let tipos: string[] = Array.isArray(req.body.tipos_midia)
       ? req.body.tipos_midia
       : req.body.tipos_midia ? [req.body.tipos_midia] : [];
     if (tipos.length === 0) tipos = ['Outros'];
+    if (!res.locals.config?.permitir_multiplos_tipos_midia) tipos = tipos.slice(0, 1);
 
     const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
 
@@ -475,7 +501,8 @@ export const editView = async (req: Request, res: Response) => {
 export const updateSolicitacao = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
-    const { titulo, descricao, prioridade, tipo_midia, secretaria_id, prazo } = req.body;
+    const { titulo, prioridade, tipo_midia, secretaria_id, prazo } = req.body;
+    const descricao = sanitizeDescricao(req.body.descricao);
     const updateData: any = { titulo, descricao, prioridade, tipo_midia, prazo: prazo || null };
     if (['admin', 'secom', 'super_admin'].includes(user.role) && secretaria_id) {
       updateData.secretaria_id = secretaria_id;

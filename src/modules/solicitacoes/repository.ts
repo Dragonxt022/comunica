@@ -1,3 +1,4 @@
+import sequelize from '../../config/database.ts';
 import { Solicitacao, Secretaria, User } from '../../database/models/index.ts';
 
 class SolicitacaoRepository {
@@ -8,7 +9,7 @@ class SolicitacaoRepository {
         { model: Secretaria, as: 'secretaria' },
         { model: User, as: 'autor' }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['ordem', 'ASC'], ['created_at', 'DESC']]
     });
   }
 
@@ -19,7 +20,7 @@ class SolicitacaoRepository {
         { model: Secretaria, as: 'secretaria' },
         { model: User, as: 'autor' },
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['ordem', 'ASC'], ['createdAt', 'DESC']],
       limit,
       offset,
     });
@@ -40,6 +41,12 @@ class SolicitacaoRepository {
 
   async update(id: number, data: any) {
     return await Solicitacao.update(data, { where: { id } });
+  }
+
+  async bulkUpdateOrdem(ids: number[]) {
+    return sequelize.transaction((t) =>
+      Promise.all(ids.map((id, idx) => Solicitacao.update({ ordem: idx }, { where: { id }, transaction: t })))
+    );
   }
 }
 

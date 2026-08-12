@@ -91,12 +91,13 @@
     </div>
 
     <!-- Modo grade -->
-    <div x-show="view==='grid'" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <template x-if="view==='grid'">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <% artes.forEach(function(arte) { %>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
              @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')">
             <div class="aspect-square overflow-hidden relative img-skel">
-                <img src="<%= arte.arte_final_url %>" alt="<%= arte.titulo %>"
+                <img src="<%= arte.arte_final_url %>" alt="<%= arte.titulo %>" loading="lazy"
                      class="relative w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
                      style="opacity:0;transition:opacity .35s ease"
                      onload="this.style.opacity='1';this.parentElement.classList.remove('img-skel')"
@@ -126,9 +127,11 @@
         </div>
         <% }) %>
     </div>
+    </template>
 
     <!-- Modo lista -->
-    <div x-show="view==='list'" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <template x-if="view==='list'">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-100">
                 <tr>
@@ -144,7 +147,7 @@
                 <% artes.forEach(function(arte) { %>
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-4 py-3">
-                        <img src="<%= arte.arte_final_url %>" alt="" class="w-12 h-12 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80"
+                        <img src="<%= arte.arte_final_url %>" alt="" loading="lazy" class="w-12 h-12 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80"
                              @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')">
                     </td>
                     <td class="px-4 py-3">
@@ -192,6 +195,41 @@
             </tbody>
         </table>
     </div>
+    </template>
+
+    <!-- Paginação -->
+    <% if (totalPages > 1) {
+        var qs = function(p) {
+            var parts = ['page=' + p];
+            if (filtros.secretaria_id) parts.push('secretaria_id=' + encodeURIComponent(filtros.secretaria_id));
+            if (filtros.tipo_midia) parts.push('tipo_midia=' + encodeURIComponent(filtros.tipo_midia));
+            if (filtros.mes) parts.push('mes=' + encodeURIComponent(filtros.mes));
+            return '?' + parts.join('&');
+        };
+    %>
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <p class="text-xs text-gray-500">
+            <strong><%= total %></strong> arte<%= total !== 1 ? 's' : '' %> encontrada<%= total !== 1 ? 's' : '' %>
+        </p>
+        <div class="flex items-center gap-1">
+            <% if (currentPage > 1) { %>
+            <a href="<%= qs(currentPage - 1) %>"
+               class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
+            <% } %>
+            <% for (var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
+            <a href="<%= qs(p) %>"
+               class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
+                      <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
+                <%= p %>
+            </a>
+            <% } %>
+            <% if (currentPage < totalPages) { %>
+            <a href="<%= qs(currentPage + 1) %>"
+               class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
+            <% } %>
+        </div>
+    </div>
+    <% } %>
     <% } %>
 
     <!-- Lightbox -->

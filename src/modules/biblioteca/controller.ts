@@ -39,18 +39,23 @@ export const index = async (req: Request, res: Response) => {
     // Secretarias do dropdown: apenas do município ativo
     const secWhere: any = secretariaWhere(sessionUser, { ativo: true }, activeMid);
 
-    const [artes, secretarias] = await Promise.all([
-      Solicitacao.findAll({
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = 24;
+
+    const [{ count, rows: artes }, secretarias, tiposRows] = await Promise.all([
+      Solicitacao.findAndCountAll({
         where,
         include: [{ model: Secretaria, as: 'secretaria' }],
         order: [['updatedAt', 'DESC']],
-        limit: 200,
+        limit: perPage,
+        offset: (page - 1) * perPage,
       }),
       Secretaria.findAll({ where: secWhere, order: [['nome', 'ASC']] }),
+      Solicitacao.findAll({ where, attributes: ['tipo_midia'], group: ['tipo_midia'] }),
     ]);
 
-    // Distinct tipos from current filtered artes
-    const tiposSet = new Set<string>(artes.map((a: any) => a.tipo_midia).filter(Boolean));
+    // Distinct tipos entre todos os registros filtrados (não só a página atual)
+    const tiposSet = new Set<string>(tiposRows.map((a: any) => a.tipo_midia).filter(Boolean));
     const tipos = Array.from(tiposSet).sort();
 
     res.render('biblioteca/index', {
@@ -59,7 +64,10 @@ export const index = async (req: Request, res: Response) => {
       secretarias,
       tipos,
       filtros: { secretaria_id: secretaria_id || '', tipo_midia: tipo_midia || '', mes: mes || '' },
-      totalGeral: artes.length,
+      totalGeral: count,
+      currentPage: page,
+      totalPages: Math.ceil(count / perPage),
+      total: count,
     });
   } catch (error) {
     console.error(error);

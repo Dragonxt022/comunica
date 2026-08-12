@@ -9,6 +9,24 @@ import { getActiveMid } from '../../lib/municipio-filter.ts';
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function endOfDay(d: Date)   { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 
+// Datas "YYYY-MM-DD" vindas de <input type="date"> são interpretadas como UTC por
+// `new Date(string)`; combinado com startOfDay/endOfDay (que mutam em horário local),
+// isso perdia um dia inteiro em fusos atrás de UTC (ex: America/Sao_Paulo). Construir
+// a partir dos componentes evita o parse em UTC.
+function parseDateOnly(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+// Contraparte de parseDateOnly: formata em componentes locais, não via
+// toISOString() (que converteria para UTC e poderia mudar o dia exibido).
+function formatDateOnly(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function diffDays(a: Date, b: Date) {
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86_400_000));
 }
@@ -38,19 +56,25 @@ export const index = async (req: Request, res: Response) => {
 
     // Period
     let dtInicio: Date, dtFim: Date;
-    const preset = String(req.query.periodo || '30');
+    const preset = String(req.query.periodo || 'mes');
     const customInicio = req.query.inicio as string;
     const customFim    = req.query.fim    as string;
+    const now = new Date();
 
     if (customInicio && customFim) {
-      dtInicio = startOfDay(new Date(customInicio));
-      dtFim    = endOfDay(new Date(customFim));
+      dtInicio = startOfDay(parseDateOnly(customInicio));
+      dtFim    = endOfDay(parseDateOnly(customFim));
+    } else if (preset === 'mes') {
+      dtInicio = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+      dtFim    = endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
     } else {
       dtFim    = endOfDay(new Date());
       dtInicio = startOfDay(new Date());
       const dias = Number(preset) || 30;
       dtInicio.setDate(dtInicio.getDate() - dias);
     }
+
+    const presetAtivo = (customInicio && customFim) ? 'custom' : preset;
 
     const isSuperAdmin = user.role === 'super_admin';
     const qMunicipio = req.query.municipio_id;
@@ -233,8 +257,9 @@ export const index = async (req: Request, res: Response) => {
       // filters
       filtro: {
         periodo: preset,
-        inicio: dtInicio.toISOString().slice(0,10),
-        fim:    dtFim.toISOString().slice(0,10),
+        presetAtivo,
+        inicio: formatDateOnly(dtInicio),
+        fim:    formatDateOnly(dtFim),
         secretaria: req.query.secretaria || '',
         municipioId: selectedMunicipioId || '',
         municipioNome,
@@ -287,8 +312,8 @@ export const gerar = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const isSuperAdmin = user.role === 'super_admin';
 
-    const dtInicio = startOfDay(new Date(data_inicio));
-    const dtFim    = endOfDay(new Date(data_fim));
+    const dtInicio = startOfDay(parseDateOnly(data_inicio));
+    const dtFim    = endOfDay(parseDateOnly(data_fim));
     const selectedMunicipioId = isSuperAdmin && municipio_id ? Number(municipio_id) : null;
     const municipioFilter = isSuperAdmin
       ? (selectedMunicipioId ? { municipio_id: selectedMunicipioId } : {})

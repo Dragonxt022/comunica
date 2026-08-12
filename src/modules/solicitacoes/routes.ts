@@ -29,6 +29,7 @@ router.get('/pendentes-count', isAuthenticated, SolicitacaoController.pendentesC
 router.get('/', isAuthenticated, SolicitacaoController.list);
 router.get('/nova', isAuthenticated, SolicitacaoController.createView);
 router.post('/', isAuthenticated, SolicitacaoController.store);
+router.post('/reordenar', isAuthenticated, SolicitacaoController.reordenar);
 router.get('/:id', isAuthenticated, SolicitacaoController.show);
 router.get('/:id/comentarios', isAuthenticated, SolicitacaoController.getComentariosJson);
 router.post('/:id/status', isAuthenticated, SolicitacaoController.updateStatus);

@@ -31,6 +31,36 @@ export async function ollamaGenerate(prompt: string, system?: string, model?: st
   }
 }
 
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
+export async function ollamaChat(mensagens: ChatMessage[], model?: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || OLLAMA_MODEL,
+        messages: mensagens,
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(body?.error || `Ollama respondeu ${res.status}`);
+    }
+
+    const data = await res.json() as { message?: { content?: string } };
+    return (data.message?.content || '').trim();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function ollamaListModels(): Promise<{ name: string; cloud: boolean; size: number }[]> {
   const res = await fetch(`${OLLAMA_HOST}/api/tags`);
   if (!res.ok) throw new Error(`Ollama respondeu ${res.status}`);

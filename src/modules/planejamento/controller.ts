@@ -3,6 +3,7 @@ import * as Repo from './repository.ts';
 import { Secretaria, Evento } from '../../database/models/index.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
 import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
+import { notificar, notificarRole } from '../../lib/notificacao.ts';
 
 // ─── Planos ───────────────────────────────────────────────────────────────────
 
@@ -197,7 +198,23 @@ export const updateStatusAcao = async (req: Request, res: Response) => {
     if (!status || !/^[\w_]+$/.test(status)) {
       return res.status(400).json({ ok: false, error: 'Status inválido' });
     }
+    const acao: any = await Repo.findAcaoById(Number(req.params.aId));
     await Repo.updateAcao(Number(req.params.aId), { status });
+
+    if (acao?.plano) {
+      const statusLabels: Record<string, string> = {
+        nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído', cancelado: 'Cancelado',
+      };
+      const payload = {
+        titulo: 'Status de ação atualizado',
+        corpo: `"${acao.titulo}" — novo status: "${statusLabels[status] || status}"`,
+        url: `/planejamento/${acao.plano.id}`,
+        tipo: 'acao_status_alterado',
+      };
+      notificar(acao.plano.criado_por, payload).catch(() => {});
+      notificarRole(['admin', 'secom'], payload).catch(() => {});
+    }
+
     return res.json({ ok: true });
   } catch (err) {
     return res.status(500).json({ ok: false });

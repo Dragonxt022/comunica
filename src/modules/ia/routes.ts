@@ -11,5 +11,9 @@ router.post('/testar-modelo', onlyAdmin, IaController.testarModelo);
 
 router.post('/sugerir-descricao', IaController.sugerirDescricao);
 router.post('/corrigir-texto', IaController.corrigirTexto);
+router.post('/estruturar-chamado', IaController.estruturarChamado);
+router.post('/variacoes-redes-sociais', IaController.variacoesRedesSociais);
+router.post('/priorizar-fila', IaController.priorizarFila);
+router.post('/pauta-editorial', IaController.pautaEditorial);
 
 export default router;

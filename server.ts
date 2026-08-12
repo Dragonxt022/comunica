@@ -59,7 +59,7 @@ app.use(helmet({
       "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com"],
       "font-src": ["'self'", "https://fonts.gstatic.com"],
       "img-src": ["'self'", "data:", "blob:", "https://img.youtube.com", "https://i.ytimg.com"],
-      "connect-src": ["'self'"],
+      "connect-src": ["'self'", "https://cdn.jsdelivr.net"],
       "frame-src": ["https://www.youtube.com", "https://www.youtube-nocookie.com"],
       "frame-ancestors": ["'self'"],
     },
@@ -167,6 +167,7 @@ async function seed() {
 
   // ─── Multi-município: criar tabela e colunas ──────────────────────────────
   await Municipio.sync({ force: false });
+  await addCol('municipios',          'ultimo_resumo_fila_em', 'DATETIME NULL');
   await addCol('secretarias',         'municipio_id', 'INTEGER NULL');
   await addCol('users',               'municipio_id', 'INTEGER NULL');
   await addCol('eventos',             'municipio_id', 'INTEGER NULL');
@@ -205,6 +206,7 @@ async function seed() {
   await addCol('configuracoes', 'youtube', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'twitter', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'whatsapp', 'VARCHAR(50) NULL');
+  await addCol('configuracoes', 'permitir_multiplos_tipos_midia', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('users', 'avatar', 'VARCHAR(255) NULL');
   await addCol('users', 'celular', 'VARCHAR(50) NULL');
   await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
@@ -213,6 +215,7 @@ async function seed() {
   await addCol('solicitacoes', 'prazo', 'DATE NULL');
   await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'link_arquivo_matriz', 'VARCHAR(500) NULL');
+  await addCol('solicitacoes', 'ordem', 'INTEGER NOT NULL DEFAULT 0');
   // Inscrições em eventos — novos campos na tabela existente
   await addCol('eventos', 'aceita_inscricoes', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('eventos', 'formulario_template_id', 'INTEGER NULL');
@@ -535,6 +538,41 @@ async function startServer() {
     // Roda imediatamente e depois a cada 24h
     verificarPrazosVencidos();
     setInterval(verificarPrazosVencidos, 24 * 60 * 60 * 1000);
+
+    // Resumo diário da fila de pendentes, por IA — iniciativa própria da IA, mas só
+    // para avisar (nunca reordena/decide sozinha; quem prioriza continua sendo a pessoa).
+    const enviarResumoDiarioFila = async () => {
+      try {
+        const municipios = await Municipio.findAll({ where: { ativo: true } });
+        const agora = new Date();
+        const { gerarResumoDigestFila } = await import('./src/modules/ia/controller.ts');
+        const { notificar, notificarRole } = await import('./src/lib/notificacao.ts');
+
+        for (const mun of municipios as any[]) {
+          // Evita reenviar se já mandou nas últimas ~20h (tolera restarts do processo).
+          if (mun.ultimo_resumo_fila_em && (agora.getTime() - new Date(mun.ultimo_resumo_fila_em).getTime()) < 20 * 60 * 60 * 1000) {
+            continue;
+          }
+
+          const resumo = await gerarResumoDigestFila(mun.id);
+          await Municipio.update({ ultimo_resumo_fila_em: agora } as any, { where: { id: mun.id } });
+          if (!resumo) continue; // nada pendente — nada a avisar
+
+          const payload = {
+            titulo: `${resumo.atrasadas > 0 ? '⚠️' : '📋'} Resumo da fila — ${resumo.total} pendente(s)${resumo.atrasadas > 0 ? `, ${resumo.atrasadas} atrasada(s)` : ''}`,
+            corpo: resumo.texto,
+            url: '/solicitacoes',
+            tipo: 'resumo_fila_diario',
+          };
+
+          const secomUsers = await User.findAll({ where: { role: 'secom', municipio_id: mun.id, ativo: true } });
+          for (const u of secomUsers) notificar(u.id, payload).catch(() => {});
+          await notificarRole(['super_admin'], payload).catch(() => {});
+        }
+      } catch (e) { /* silencioso */ }
+    };
+    enviarResumoDiarioFila();
+    setInterval(enviarResumoDiarioFila, 24 * 60 * 60 * 1000);
 
     // Audit helper available in req
     app.use((req, res, next) => {

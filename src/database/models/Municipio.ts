@@ -7,6 +7,7 @@ class Municipio extends Model {
   public slug!: string;
   public estado!: string;
   public ativo!: boolean;
+  public ultimo_resumo_fila_em!: Date | null;
 }
 
 Municipio.init(
@@ -33,6 +34,10 @@ Municipio.init(
     ativo: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    ultimo_resumo_fila_em: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {
