@@ -4,6 +4,7 @@ dist/
 coverage/
 public/uploads/
 !public/icon.svg
+data/whatsapp-auth/
 .DS_Store
 *.log
 .env*

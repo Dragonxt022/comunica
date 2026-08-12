@@ -18,6 +18,13 @@ class User extends Model {
   public municipio?: Municipio;
   public avatar!: string | null;
   public celular!: string | null;
+  public whatsapp_numero!: string | null;
+  public whatsapp_numero_pendente!: string | null;
+  public whatsapp_codigo_verificacao!: string | null;
+  public whatsapp_codigo_enviado_em!: Date | null;
+  public whatsapp_codigo_expira_em!: Date | null;
+  public whatsapp_notificacoes_ativo!: boolean;
+  public whatsapp_prompt_snooze_until!: Date | null;
 
   public async checkPassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.senha_hash);
@@ -84,6 +91,13 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    whatsapp_numero: { type: DataTypes.STRING, allowNull: true },
+    whatsapp_numero_pendente: { type: DataTypes.STRING, allowNull: true },
+    whatsapp_codigo_verificacao: { type: DataTypes.STRING(6), allowNull: true },
+    whatsapp_codigo_enviado_em: { type: DataTypes.DATE, allowNull: true },
+    whatsapp_codigo_expira_em: { type: DataTypes.DATE, allowNull: true },
+    whatsapp_notificacoes_ativo: { type: DataTypes.BOOLEAN, defaultValue: false },
+    whatsapp_prompt_snooze_until: { type: DataTypes.DATE, allowNull: true },
   },
   {
     sequelize,

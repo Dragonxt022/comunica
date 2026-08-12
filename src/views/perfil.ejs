@@ -123,6 +123,60 @@
                     </div>
                 </div>
 
+                <div class="pt-4 border-t border-gray-100 space-y-4" id="whatsapp"
+                    x-data="whatsappPerfil()">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            Notificações por WhatsApp
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Receba o status dos seus chamados e lembretes de tarefas direto no WhatsApp.</p>
+                    </div>
+
+                    <!-- Número já verificado -->
+                    <div x-show="verificado" x-cloak class="space-y-3">
+                        <div class="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>WhatsApp verificado: <span class="font-semibold" x-text="'+' + numero"></span></span>
+                        </div>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                            <input type="checkbox" name="whatsapp_notificacoes_ativo" x-model="ativo"
+                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            Receber notificações por WhatsApp
+                        </label>
+                        <button type="button" @click="trocarNumero()" class="text-xs font-medium text-blue-600 hover:underline">Trocar número</button>
+                    </div>
+
+                    <!-- Fluxo de verificação (número novo ou trocando) -->
+                    <div x-show="!verificado" x-cloak class="space-y-3">
+                        <template x-if="step === 'idle'">
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="tel" x-model="numeroInput" placeholder="(XX) 9XXXX-XXXX"
+                                    class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition text-sm">
+                                <button type="button" @click="enviarCodigo()" :disabled="loading || !numeroInput"
+                                    class="px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-wait shrink-0">
+                                    <span x-text="loading ? 'Enviando…' : 'Enviar código'"></span>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="step === 'codigo_enviado'">
+                            <div class="space-y-2">
+                                <p class="text-xs text-gray-500">Enviamos um código de 6 dígitos pro WhatsApp <span class="font-medium" x-text="numeroInput"></span>.</p>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" x-model="codigo" maxlength="6" inputmode="numeric" placeholder="000000"
+                                        class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition text-sm tracking-widest text-center">
+                                    <button type="button" @click="confirmarCodigo()" :disabled="loading || codigo.length !== 6"
+                                        class="px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-wait shrink-0">
+                                        <span x-text="loading ? 'Confirmando…' : 'Confirmar'"></span>
+                                    </button>
+                                </div>
+                                <button type="button" @click="step = 'idle'; codigo = ''" class="text-xs font-medium text-gray-500 hover:underline">Usar outro número</button>
+                            </div>
+                        </template>
+                        <p x-show="erro" x-cloak class="text-xs text-red-600" x-text="erro"></p>
+                    </div>
+                </div>
+
                 <div class="pt-4 border-t border-gray-100 space-y-4">
                     <div>
                         <h3 class="text-sm font-semibold text-gray-800">Alterar senha</h3>
@@ -156,6 +210,74 @@
 </div>
 
 <script>
+var _WHATSAPP_PERFIL_INITIAL = {
+    numero: <%- JSON.stringify(usuario.whatsapp_numero || '') %>,
+    ativo: <%- JSON.stringify(!!usuario.whatsapp_notificacoes_ativo) %>,
+};
+function whatsappPerfil() {
+    var initial = _WHATSAPP_PERFIL_INITIAL;
+    return {
+        verificado: !!initial.numero,
+        numero: initial.numero || '',
+        ativo: initial.ativo,
+        numeroInput: '',
+        step: 'idle',
+        loading: false,
+        erro: '',
+        codigo: '',
+        trocarNumero: function() {
+            this.verificado = false;
+            this.step = 'idle';
+            this.numeroInput = '';
+            this.codigo = '';
+            this.erro = '';
+        },
+        enviarCodigo: function() {
+            var self = this;
+            this.loading = true;
+            this.erro = '';
+            fetch('/perfil/whatsapp/enviar-codigo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ numero: this.numeroInput }),
+            })
+                .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                .then(function(res) {
+                    if (res.ok && res.data.ok) {
+                        self.step = 'codigo_enviado';
+                    } else {
+                        self.erro = res.data.error || 'Erro ao enviar código.';
+                    }
+                })
+                .catch(function() { self.erro = 'Erro de conexão.'; })
+                .finally(function() { self.loading = false; });
+        },
+        confirmarCodigo: function() {
+            var self = this;
+            this.loading = true;
+            this.erro = '';
+            fetch('/perfil/whatsapp/confirmar-codigo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo: this.codigo }),
+            })
+                .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                .then(function(res) {
+                    if (res.ok && res.data.ok) {
+                        self.verificado = true;
+                        self.numero = self.numeroInput.replace(/\D/g, '');
+                        self.ativo = true;
+                        self.step = 'idle';
+                    } else {
+                        self.erro = res.data.error || 'Código incorreto.';
+                    }
+                })
+                .catch(function() { self.erro = 'Erro de conexão.'; })
+                .finally(function() { self.loading = false; });
+        },
+    };
+}
+
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     var reader = new FileReader();

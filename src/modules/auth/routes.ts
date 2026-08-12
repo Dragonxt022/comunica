@@ -13,4 +13,8 @@ router.post('/perfil', isAuthenticated, uploadAvatar, AuthController.perfilUpdat
 router.get('/dispositivos', isAuthenticated, AuthController.dispositivosView);
 router.post('/dispositivos/:sid/encerrar', isAuthenticated, AuthController.encerrarDispositivo);
 
+router.post('/perfil/whatsapp/enviar-codigo', isAuthenticated, AuthController.whatsappEnviarCodigo);
+router.post('/perfil/whatsapp/confirmar-codigo', isAuthenticated, AuthController.whatsappConfirmarCodigo);
+router.post('/perfil/whatsapp-snooze', isAuthenticated, AuthController.whatsappSnooze);
+
 export default router;

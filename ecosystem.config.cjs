@@ -32,6 +32,11 @@ module.exports = {
       // Para ambientes pequenos, 1 é suficiente e mais fácil de debugar
       instances: 1,
 
+      // Modo fork explícito — o PM2 pode assumir cluster mode por padrão mesmo com
+      // instances:1, e a integração de WhatsApp (Baileys) não funciona sob o módulo
+      // `cluster` do Node (o processo trava/reinicia em loop). Não mudar sem testar.
+      exec_mode: 'fork',
+
       // Reinicia automaticamente se o processo cair
       autorestart: true,
       watch: false,

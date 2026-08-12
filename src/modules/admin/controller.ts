@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { User, Secretaria, Configuracao, Municipio } from '../../database/models/index.ts';
 import { bustConfigCache } from '../../lib/config-cache.ts';
+import { startWhatsapp, disconnectWhatsapp, getWhatsappStatus } from '../../lib/whatsapp.ts';
 
 const __filename_ctrl = fileURLToPath(import.meta.url);
 const __dirname_ctrl  = path.dirname(__filename_ctrl);
@@ -499,6 +500,37 @@ export const saveConfig = async (req: Request, res: Response) => {
     bustConfigCache();
     const metas = config.metas_midia ? JSON.parse(config.metas_midia as string) : [];
     res.render('admin/configuracoes', { title: 'Configurações', config, metas, success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+// ─── WhatsApp ───────────────────────────────────────────────────────────────
+
+export const whatsappView = async (req: Request, res: Response) => {
+  try {
+    res.render('admin/whatsapp', { title: 'WhatsApp', status: getWhatsappStatus() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const whatsappConectar = async (req: Request, res: Response) => {
+  try {
+    await startWhatsapp(true);
+    res.redirect('/admin/whatsapp');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const whatsappDesconectar = async (req: Request, res: Response) => {
+  try {
+    await disconnectWhatsapp();
+    res.redirect('/admin/whatsapp');
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

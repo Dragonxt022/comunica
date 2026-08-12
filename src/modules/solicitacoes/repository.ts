@@ -1,12 +1,12 @@
 import sequelize from '../../config/database.ts';
-import { Solicitacao, Secretaria, User } from '../../database/models/index.ts';
+import { Solicitacao, Secretaria, User, Municipio } from '../../database/models/index.ts';
 
 class SolicitacaoRepository {
   async findAll(where = {}) {
     return await Solicitacao.findAll({
       where,
       include: [
-        { model: Secretaria, as: 'secretaria' },
+        { model: Secretaria, as: 'secretaria', include: [{ model: Municipio, as: 'municipio' }] },
         { model: User, as: 'autor' }
       ],
       order: [['ordem', 'ASC'], ['created_at', 'DESC']]
@@ -17,7 +17,7 @@ class SolicitacaoRepository {
     return Solicitacao.findAndCountAll({
       where,
       include: [
-        { model: Secretaria, as: 'secretaria' },
+        { model: Secretaria, as: 'secretaria', include: [{ model: Municipio, as: 'municipio' }] },
         { model: User, as: 'autor' },
       ],
       order: [['ordem', 'ASC'], ['createdAt', 'DESC']],
@@ -29,7 +29,7 @@ class SolicitacaoRepository {
   async findById(id: number) {
     return await Solicitacao.findByPk(id, {
       include: [
-        { model: Secretaria, as: 'secretaria' },
+        { model: Secretaria, as: 'secretaria', include: [{ model: Municipio, as: 'municipio' }] },
         { model: User, as: 'autor' }
       ]
     });

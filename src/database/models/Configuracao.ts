@@ -17,6 +17,8 @@ class Configuracao extends Model {
   public status_eventos!: string | null;
   public metas_midia!: string | null;
   public permitir_multiplos_tipos_midia!: boolean;
+  public whatsapp_conectado!: boolean;
+  public whatsapp_numero_conectado!: string | null;
 }
 
 Configuracao.init(
@@ -36,6 +38,8 @@ Configuracao.init(
     status_eventos: { type: DataTypes.TEXT, allowNull: true },
     metas_midia: { type: DataTypes.TEXT, allowNull: true },
     permitir_multiplos_tipos_midia: { type: DataTypes.BOOLEAN, defaultValue: false },
+    whatsapp_conectado: { type: DataTypes.BOOLEAN, defaultValue: false },
+    whatsapp_numero_conectado: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'Configuracao', tableName: 'configuracoes' }
 );

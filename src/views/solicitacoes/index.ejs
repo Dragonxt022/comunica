@@ -8,7 +8,8 @@ const _SOLICITACOES = <%- JSON.stringify(kanbanSolics.map(function(s) { return {
     status: s.status,
     createdAt: s.createdAt,
     prazo: s.prazo ? String(s.prazo).slice(0, 10) : null,
-    secretaria: s.secretaria ? { id: s.secretaria.id, nome: s.secretaria.nome, cor: s.secretaria.cor } : null
+    secretaria: s.secretaria ? { id: s.secretaria.id, nome: s.secretaria.nome, cor: s.secretaria.cor } : null,
+    municipio: s.secretaria && s.secretaria.municipio ? s.secretaria.municipio.nome : null
 }; })) %>;
 
 document.addEventListener('alpine:init', function() {
@@ -441,7 +442,7 @@ document.addEventListener('alpine:init', function() {
 
     <!-- ===================== VIEW LISTA ===================== -->
     <div x-show="view === 'lista'" x-cloak>
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden" x-data="{ showAll: false }">
             <% if(solicitacoes.length === 0) { %>
             <div class="py-16 text-center">
                 <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -449,41 +450,44 @@ document.addEventListener('alpine:init', function() {
                 <a href="/solicitacoes/nova" class="mt-3 inline-block text-blue-600 font-medium hover:underline text-sm">Abrir um chamado</a>
             </div>
             <% } else { %>
+            <div class="md:hidden flex items-center justify-end px-4 py-2 border-b border-gray-100">
+                <button type="button" @click="showAll = !showAll"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition">
+                    <svg class="w-3.5 h-3.5 transition-transform" :class="showAll && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <span x-text="showAll ? 'Mostrar menos' : 'Exibir tudo'"></span>
+                </button>
+            </div>
             <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-100">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solicitação</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Secretaria</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prioridade</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prazo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Abertura</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solicitação</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">Secretaria</th>
+                        <% if(user.role === 'super_admin') { %>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden lg:table-cell'">Município</th>
+                        <% } %>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">Tipo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">Prioridade</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">Prazo</th>
+                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">Abertura</th>
+                        <th class="px-2 sm:px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm">
                     <% var descPreview = function(html) { return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140); }; %>
+                    <% var statusCls = statusSolicitacaoMap; %>
                     <% solicitacoes.forEach(function(s) {
-                        var statusCls = {
-                            pendente:   'bg-yellow-100 text-yellow-800',
-                            aprovado:   'bg-blue-100 text-blue-800',
-                            'produção': 'bg-indigo-100 text-indigo-800',
-                            'concluído':'bg-teal-100 text-teal-800',
-                            finalizado: 'bg-green-100 text-green-800',
-                            cancelado:  'bg-red-100 text-red-700',
-                        };
                         var priCls = s.prioridade === 'alta' ? 'text-red-600' : s.prioridade === 'media' ? 'text-yellow-600' : 'text-gray-400';
                     %>
                     <tr class="hover:bg-gray-50/60 transition cursor-pointer" onclick="window.location='/solicitacoes/<%= s.id %>'">
-                        <td class="px-4 py-3 text-gray-400 font-mono text-xs">#<%= s.id %></td>
-                        <td class="px-4 py-3 max-w-xs">
+                        <td class="px-2 sm:px-4 py-3 text-gray-400 font-mono text-xs">#<%= s.id %></td>
+                        <td class="px-2 sm:px-4 py-3 max-w-[110px] sm:max-w-xs">
                             <div class="font-medium text-gray-900 truncate"><%= s.titulo %></div>
-                            <div class="text-xs text-gray-400 truncate mt-0.5"><%= descPreview(s.descricao) %></div>
+                            <div class="text-xs text-gray-400 truncate mt-0.5 hidden sm:block"><%= descPreview(s.descricao) %></div>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-3" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">
                             <% if(s.secretaria) { %>
                             <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white max-w-[110px] truncate"
                                   style="background-color: <%= s.secretaria.cor %>"
@@ -492,16 +496,26 @@ document.addEventListener('alpine:init', function() {
                             </span>
                             <% } else { %><span class="text-gray-300">—</span><% } %>
                         </td>
-                        <td class="px-4 py-3 text-xs text-gray-600">
+                        <% if(user.role === 'super_admin') { %>
+                        <td class="px-4 py-3 max-w-[110px]" :class="showAll ? 'table-cell' : 'hidden lg:table-cell'">
+                            <% if(s.secretaria && s.secretaria.municipio) { %>
+                            <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 max-w-full truncate" title="<%= s.secretaria.municipio.nome %>">
+                                <svg class="w-3 h-3 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span class="truncate"><%= s.secretaria.municipio.nome %></span>
+                            </span>
+                            <% } else { %><span class="text-gray-300">—</span><% } %>
+                        </td>
+                        <% } %>
+                        <td class="px-4 py-3 text-xs text-gray-600" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">
                             <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full font-medium uppercase tracking-wide"><%= s.tipo_midia %></span>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-3" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">
                             <span class="flex items-center gap-1.5 text-xs font-semibold <%= priCls %>">
                                 <% if(s.prioridade === 'alta') { %><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span><% } else if(s.prioridade === 'media') { %><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span><% } else { %><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span><% } %>
                                 <%= s.prioridade === 'alta' ? 'Alta' : s.prioridade === 'media' ? 'Média' : 'Baixa' %>
                             </span>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-3" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">
                             <% if(s.prazo) {
                                 var hojeIdx = new Date().toISOString().slice(0,10);
                                 var pStrIdx = String(s.prazo).slice(0,10);
@@ -526,23 +540,26 @@ document.addEventListener('alpine:init', function() {
                             <span class="text-gray-300 text-xs">—</span>
                             <% } %>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-2 sm:px-4 py-3">
                             <span id="sol-status-<%= s.id %>"
-                                  class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <%= statusCls[s.status] || 'bg-gray-100 text-gray-700' %>">
+                                  class="inline-flex px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-tight sm:tracking-wide <%= statusCls[s.status] ? statusCls[s.status].badge : 'bg-gray-100 text-gray-700' %>">
                                 <%= s.status %>
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-xs text-gray-500">
+                        <td class="px-4 py-3 text-xs text-gray-500" :class="showAll ? 'table-cell' : 'hidden md:table-cell'">
                             <%= new Date(s.createdAt).toLocaleDateString('pt-BR') %>
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="flex justify-end items-center gap-2">
-                                <a href="/solicitacoes/<%= s.id %>/editar"
+                        <td class="px-2 sm:px-4 py-3 text-right">
+                            <div class="flex justify-end items-center gap-1.5 sm:gap-2">
+                                <a href="/solicitacoes/<%= s.id %>/editar" title="Editar"
                                    onclick="event.stopPropagation()"
-                                   class="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition">Editar</a>
-                                <a href="/solicitacoes/<%= s.id %>"
+                                   class="text-xs font-medium p-1.5 sm:px-2.5 sm:py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition inline-flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    <span class="hidden sm:inline">Editar</span>
+                                </a>
+                                <a href="/solicitacoes/<%= s.id %>" title="Detalhes"
                                    onclick="event.stopPropagation()"
-                                   class="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Detalhes</a>
+                                   class="hidden sm:inline-flex text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition items-center gap-1">Detalhes</a>
                             </div>
                         </td>
                     </tr>
@@ -582,20 +599,11 @@ document.addEventListener('alpine:init', function() {
 
     <!-- ===================== VIEW KANBAN ===================== -->
     <div x-show="view === 'kanban'" x-cloak>
-        <%
-        var colunas = [
-            { key: 'pendente',   label: 'Pendente',   hd: 'bg-yellow-50 border-yellow-200 text-yellow-800', dot: 'bg-yellow-400' },
-            { key: 'aprovado',   label: 'Aprovado',   hd: 'bg-blue-50   border-blue-200   text-blue-800',   dot: 'bg-blue-500'   },
-            { key: 'produção',   label: 'Produção',   hd: 'bg-indigo-50 border-indigo-200 text-indigo-800', dot: 'bg-indigo-500' },
-            { key: 'concluído',  label: 'Concluído',  hd: 'bg-teal-50   border-teal-200   text-teal-800',   dot: 'bg-teal-500'   },
-            { key: 'finalizado', label: 'Finalizado', hd: 'bg-green-50  border-green-200  text-green-800',  dot: 'bg-green-500'  },
-            { key: 'cancelado',  label: 'Cancelado',  hd: 'bg-red-50    border-red-200    text-red-800',    dot: 'bg-red-400'    },
-        ];
-        %>
-        <div class="overflow-x-auto pb-3">
+        <% var colunas = statusSolicitacao; %>
+        <div class="overflow-x-auto pb-3 snap-x snap-mandatory">
             <div class="flex gap-4" style="min-width: max-content">
                 <% colunas.forEach(function(col) { %>
-                <div class="w-72 flex flex-col gap-2"
+                <div class="w-[85vw] max-w-xs sm:w-72 sm:max-w-none snap-start flex flex-col gap-2"
                      @dragover.prevent="dragOver = '<%= col.key %>'"
                      @dragleave="dragOver === '<%= col.key %>' && (dragOver = null)"
                      @drop.prevent="onDrop($event, '<%= col.key %>')">
@@ -723,7 +731,7 @@ document.addEventListener('alpine:init', function() {
                  x-transition:leave="transition ease-in duration-200 transform"
                  x-transition:leave-start="translate-x-0"
                  x-transition:leave-end="translate-x-full"
-                 class="fixed inset-y-0 right-0 w-1/2 min-w-[360px] bg-white z-[201] shadow-2xl flex flex-col">
+                 class="fixed inset-y-0 right-0 w-full sm:w-1/2 sm:min-w-[360px] bg-white z-[201] shadow-2xl flex flex-col">
 
                 <!-- Header -->
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
@@ -746,7 +754,7 @@ document.addEventListener('alpine:init', function() {
                 <div class="flex-1 overflow-y-auto">
 
                     <!-- Detalhes -->
-                    <div class="p-6 space-y-4 border-b border-gray-100">
+                    <div class="p-4 sm:p-6 space-y-4 border-b border-gray-100">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Status</p>
@@ -781,6 +789,12 @@ document.addEventListener('alpine:init', function() {
                                 <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Abertura</p>
                                 <p class="text-sm text-gray-700" x-text="drawer ? fmtDate(drawer.createdAt) : ''"></p>
                             </div>
+                            <% if(user.role === 'super_admin') { %>
+                            <div x-show="drawer && drawer.municipio">
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Município</p>
+                                <p class="text-sm text-gray-700" x-text="drawer ? drawer.municipio : ''"></p>
+                            </div>
+                            <% } %>
                         </div>
                         <div x-show="drawer && drawer.descricao">
                             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Descrição</p>
@@ -897,7 +911,7 @@ document.addEventListener('alpine:init', function() {
                         Ver página completa →
                     </a>
                     <div class="flex items-center gap-2">
-                        <% if(user && (user.role === 'admin' || user.role === 'secom')) { %>
+                        <% if(user && ['admin','secom','super_admin'].includes(user.role)) { %>
                         <button x-show="drawer && drawer.status === 'cancelado'"
                             @click="excluir(drawer.id)"
                             class="px-3 py-2 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 border border-red-200 transition flex items-center gap-1.5">

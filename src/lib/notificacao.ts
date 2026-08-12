@@ -2,6 +2,7 @@ import Notificacao from '../database/models/Notificacao.ts';
 import { User } from '../database/models/index.ts';
 import { sendToUser } from './push.ts';
 import { sseBroker } from './sse.ts';
+import { sendWhatsapp } from './whatsapp.ts';
 
 export interface NotifPayload {
   titulo: string;
@@ -20,6 +21,7 @@ export async function notificar(userId: number, payload: NotifPayload): Promise<
       url:   payload.url,
       tag:   `${payload.tipo || 'notif'}-${userId}-${Date.now()}`,
     }).catch(() => {});
+    sendWhatsapp(userId, payload).catch(() => {});
   } catch (err) {
     console.error('Erro ao criar notificação:', err);
   }

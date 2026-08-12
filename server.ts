@@ -36,6 +36,8 @@ import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
 import { getConfigCache, setConfigCache } from './src/lib/config-cache.ts';
 import { sessionStore } from './src/lib/session-store.ts';
+import { startWhatsapp } from './src/lib/whatsapp.ts';
+import { STATUS_SOLICITACAO, STATUS_SOLICITACAO_MAP } from './src/lib/status-solicitacao.ts';
 
 dotenv.config();
 
@@ -107,6 +109,8 @@ export const DEFAULT_STATUS_EVENTOS = [
 app.use(async (req, res, next) => {
   res.locals.user = (req as any).session.user || null;
   res.locals.path = req.path;
+  res.locals.statusSolicitacao = STATUS_SOLICITACAO;
+  res.locals.statusSolicitacaoMap = STATUS_SOLICITACAO_MAP;
 
   // Seletor de município para super_admin
   const sessionUser = (req as any).session.user;
@@ -207,8 +211,17 @@ async function seed() {
   await addCol('configuracoes', 'twitter', 'VARCHAR(255) NULL');
   await addCol('configuracoes', 'whatsapp', 'VARCHAR(50) NULL');
   await addCol('configuracoes', 'permitir_multiplos_tipos_midia', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('configuracoes', 'whatsapp_conectado', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('configuracoes', 'whatsapp_numero_conectado', 'VARCHAR(20) NULL');
   await addCol('users', 'avatar', 'VARCHAR(255) NULL');
   await addCol('users', 'celular', 'VARCHAR(50) NULL');
+  await addCol('users', 'whatsapp_numero', 'VARCHAR(20) NULL');
+  await addCol('users', 'whatsapp_numero_pendente', 'VARCHAR(20) NULL');
+  await addCol('users', 'whatsapp_codigo_verificacao', 'VARCHAR(6) NULL');
+  await addCol('users', 'whatsapp_codigo_enviado_em', 'DATETIME NULL');
+  await addCol('users', 'whatsapp_codigo_expira_em', 'DATETIME NULL');
+  await addCol('users', 'whatsapp_notificacoes_ativo', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('users', 'whatsapp_prompt_snooze_until', 'DATETIME NULL');
   await addCol('eventos', 'arquivado', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('solicitacoes', 'arte_final_url', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'arte_final_nome', 'VARCHAR(255) NULL');
@@ -282,7 +295,10 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connected.');
     await seed();
-    
+
+    // WhatsApp — reconecta sozinho se já houver sessão pareada; nunca deve impedir o boot HTTP.
+    startWhatsapp().catch((err) => console.error('WhatsApp init error:', err));
+
     // Public Routes
     app.use('/', authRoutes);
     app.get('/imprensa/agenda', ImprensaController.agendaPublica);

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { sessionStore } from '../../lib/session-store.ts';
 import { parseUserAgent } from '../../lib/device.ts';
+import { enviarCodigoVerificacao, confirmarCodigoVerificacao } from '../../lib/whatsapp.ts';
 
 export const perfilView = async (req: Request, res: Response) => {
   try {
@@ -21,13 +22,19 @@ export const perfilView = async (req: Request, res: Response) => {
 export const perfilUpdate = async (req: Request, res: Response) => {
   const sessionUser = (req as any).session.user;
   try {
-    const { nome, email, celular, senha_atual, nova_senha } = req.body;
+    const { nome, email, celular, senha_atual, nova_senha, whatsapp_notificacoes_ativo } = req.body;
     const usuario = await User.findByPk(sessionUser.id, {
       include: [{ model: Secretaria, as: 'secretaria' }],
     });
     if (!usuario) return res.redirect('/perfil');
 
     const updates: Record<string, any> = { nome, email, celular: celular || null };
+
+    // O toggle só existe na tela quando o número já foi verificado por OTP — ativar/desativar
+    // aqui não exige reverificação, só troca o número via o fluxo dedicado em /perfil/whatsapp/*.
+    if ((usuario as any).whatsapp_numero) {
+      updates.whatsapp_notificacoes_ativo = whatsapp_notificacoes_ativo === 'on';
+    }
 
     // Handle avatar upload
     if ((req as any).file) {
@@ -56,6 +63,7 @@ export const perfilUpdate = async (req: Request, res: Response) => {
     sessionUser.email = email;
     sessionUser.celular = celular || null;
     if (updates.avatar) sessionUser.avatar = updates.avatar;
+    if ('whatsapp_notificacoes_ativo' in updates) sessionUser.whatsapp_notificacoes_ativo = updates.whatsapp_notificacoes_ativo;
 
     const updated = await User.findByPk(sessionUser.id, {
       include: [{ model: Secretaria, as: 'secretaria' }],
@@ -110,6 +118,9 @@ export const login = async (req: Request, res: Response) => {
       municipio_nome: (user as any).municipio?.nome || null,
       avatar: user.avatar || null,
       celular: user.celular || null,
+      whatsapp_numero: (user as any).whatsapp_numero || null,
+      whatsapp_notificacoes_ativo: (user as any).whatsapp_notificacoes_ativo || false,
+      whatsapp_prompt_snooze_until: (user as any).whatsapp_prompt_snooze_until || null,
     };
 
     (req as any).session.deviceInfo = {
@@ -205,5 +216,52 @@ export const encerrarDispositivo = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ ok: false, error: 'Erro interno.' });
+  }
+};
+
+// ─── WhatsApp — verificação de número (OTP) ─────────────────────────────────
+
+export const whatsappEnviarCodigo = async (req: Request, res: Response) => {
+  const sessionUser = (req as any).session.user;
+  try {
+    const { numero } = req.body;
+    if (!numero) return res.status(400).json({ ok: false, error: 'Informe um número.' });
+    const result = await enviarCodigoVerificacao(sessionUser.id, numero);
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao enviar código WhatsApp:', error);
+    res.status(500).json({ ok: false, error: 'Erro interno.' });
+  }
+};
+
+export const whatsappConfirmarCodigo = async (req: Request, res: Response) => {
+  const sessionUser = (req as any).session.user;
+  try {
+    const { codigo } = req.body;
+    if (!codigo) return res.status(400).json({ ok: false, error: 'Informe o código recebido.' });
+    const result = await confirmarCodigoVerificacao(sessionUser.id, codigo);
+    if (!result.ok) return res.status(400).json(result);
+
+    const usuario = await User.findByPk(sessionUser.id);
+    sessionUser.whatsapp_numero = (usuario as any)?.whatsapp_numero || null;
+    sessionUser.whatsapp_notificacoes_ativo = (usuario as any)?.whatsapp_notificacoes_ativo || false;
+    res.json({ ok: true, numero: sessionUser.whatsapp_numero });
+  } catch (error) {
+    console.error('Erro ao confirmar código WhatsApp:', error);
+    res.status(500).json({ ok: false, error: 'Erro interno.' });
+  }
+};
+
+export const whatsappSnooze = async (req: Request, res: Response) => {
+  const sessionUser = (req as any).session.user;
+  try {
+    const snoozeUntil = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    await User.update({ whatsapp_prompt_snooze_until: snoozeUntil } as any, { where: { id: sessionUser.id } });
+    sessionUser.whatsapp_prompt_snooze_until = snoozeUntil;
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Erro ao adiar aviso de WhatsApp:', error);
+    res.status(500).json({ ok: false });
   }
 };

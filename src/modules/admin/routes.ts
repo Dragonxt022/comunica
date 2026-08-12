@@ -37,4 +37,8 @@ router.post('/configuracoes', onlyAdmin, AdminController.saveConfig);
 router.get('/armazenamento', onlyAdmin, AdminController.storageView);
 router.post('/armazenamento/deletar', onlyAdmin, AdminController.deleteUploadFile);
 
+router.get('/whatsapp', onlySuperAdmin, AdminController.whatsappView);
+router.post('/whatsapp/conectar', onlySuperAdmin, AdminController.whatsappConectar);
+router.post('/whatsapp/desconectar', onlySuperAdmin, AdminController.whatsappDesconectar);
+
 export default router;
