@@ -67,6 +67,7 @@
 
     <!-- Sidebar -->
     <aside
+        x-cloak
         :data-collapsed="sc ? 'true' : 'false'"
         :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', sc ? 'w-14' : 'w-56']"
         class="fixed inset-y-0 left-0 z-40 bg-slate-900 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:shrink-0 pb-16 lg:pb-0">
@@ -110,6 +111,12 @@
                class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path === '/' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
                 <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                 <span class="nav-label">Dashboard</span>
+            </a>
+
+            <a href="/ia/olivia" title="Olivia"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/ia/olivia') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5' %>">
+                <img src="/uploads/avatars/Olivia.png" alt="" class="w-[18px] h-[18px] rounded-full object-cover shrink-0">
+                <span class="nav-label">Olivia</span>
             </a>
 
             <a href="/eventos" title="Calendário"

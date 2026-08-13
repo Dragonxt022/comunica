@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -30,7 +30,6 @@ import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import planejamentoRoutes from './src/modules/planejamento/routes.ts';
 import chatRoutes from './src/modules/chat/routes.ts';
 import iaRoutes from './src/modules/ia/routes.ts';
-import { sendToRole, sendToUser } from './src/lib/push.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
@@ -508,13 +507,14 @@ async function startServer() {
           where: { data_inicio: { [Op.between]: [em24h, em25h] }, arquivado: false },
           include: [{ model: Secretaria, as: 'secretaria' }],
         });
+        const { notificarRole } = await import('./src/lib/notificacao.ts');
         for (const ev of eventos) {
           const hora = new Date(ev.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          await sendToRole(['admin', 'secom'], {
-            title: '📅 Evento amanhã',
-            body: `${ev.titulo} às ${hora}`,
+          await notificarRole(['admin', 'secom'], {
+            titulo: '📅 Evento amanhã',
+            corpo: `${ev.titulo} às ${hora}`,
             url: `/eventos`,
-            tag: `evento-lembrete-${ev.id}`,
+            tipo: 'evento_lembrete',
           });
         }
       } catch (e) { /* silencioso */ }
@@ -589,6 +589,17 @@ async function startServer() {
     };
     enviarResumoDiarioFila();
     setInterval(enviarResumoDiarioFila, 24 * 60 * 60 * 1000);
+
+    // Limpeza de histórico antigo da Olivia (higiene de armazenamento — não é o
+    // mesmo mecanismo da janela de 72h que controla o contexto da conversa).
+    const limparHistoricoOlivia = async () => {
+      try {
+        const limite = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        await OliviaMensagem.destroy({ where: { createdAt: { [Op.lt]: limite } } });
+      } catch (e) { /* silencioso */ }
+    };
+    limparHistoricoOlivia();
+    setInterval(limparHistoricoOlivia, 24 * 60 * 60 * 1000);
 
     // Audit helper available in req
     app.use((req, res, next) => {

@@ -265,7 +265,7 @@ function whatsappPerfil() {
                 .then(function(res) {
                     if (res.ok && res.data.ok) {
                         self.verificado = true;
-                        self.numero = self.numeroInput.replace(/\D/g, '');
+                        self.numero = res.data.numero || self.numeroInput.replace(/\D/g, '');
                         self.ativo = true;
                         self.step = 'idle';
                     } else {

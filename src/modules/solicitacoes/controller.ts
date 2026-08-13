@@ -6,7 +6,7 @@ import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoRes
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
-import { sanitizeDescricao } from '../../lib/sanitize-html.ts';
+import { sanitizeDescricao, normalizeDescricao } from '../../lib/sanitize-html.ts';
 
 function parseIds(raw: any): number[] {
   if (!raw) return [];
@@ -30,9 +30,11 @@ export const list = async (req: Request, res: Response) => {
     if (filtroTipo) where.tipo_midia = filtroTipo;
 
     const { count, rows: solicitacoes } = await SolicitacaoRepository.findAndCountAll(where, perPage, (page - 1) * perPage);
+    solicitacoes.forEach((s: any) => { s.descricao = normalizeDescricao(s.descricao); });
 
     // summary counts (all, ignoring pagination)
     const allSolics = await SolicitacaoRepository.findAll(secretariaWhere(user, {}, mid));
+    allSolics.forEach((s: any) => { s.descricao = normalizeDescricao(s.descricao); });
     const counts: Record<string, number> = {};
     ['pendente','aprovado','produção','concluído','cancelado','finalizado'].forEach(s => {
       counts[s] = allSolics.filter((x: any) => x.status === s).length;
@@ -92,6 +94,7 @@ export const show = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const sol = await SolicitacaoRepository.findById(Number(req.params.id));
     if (!sol) return res.status(404).redirect('/solicitacoes');
+    (sol as any).descricao = normalizeDescricao((sol as any).descricao);
 
     if (user.role !== 'super_admin' && sol.municipio_id && sol.municipio_id !== user.municipio_id) {
       return res.status(403).redirect('/solicitacoes');

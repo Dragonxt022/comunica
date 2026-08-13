@@ -22,6 +22,7 @@ import ChatParticipante from './ChatParticipante.ts';
 import ChatUserKey from './ChatUserKey.ts';
 import ChatCategoria from './ChatCategoria.ts';
 import IaPerfil from './IaPerfil.ts';
+import OliviaMensagem from './OliviaMensagem.ts';
 
 // ── Existing associations ──────────────────────────────────────────────────
 
@@ -80,4 +81,5 @@ export {
   ChatUserKey,
   ChatCategoria,
   IaPerfil,
+  OliviaMensagem,
 };

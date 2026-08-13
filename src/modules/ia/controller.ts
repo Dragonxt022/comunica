@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { IaPerfil, Solicitacao, Evento, Secretaria } from '../../database/models/index.ts';
+import { IaPerfil, Solicitacao, Evento, Secretaria, OliviaMensagem } from '../../database/models/index.ts';
 import { ollamaGenerate, ollamaListModels, ollamaChat, ChatMessage } from '../../lib/ollama.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
+import { OLIVIA_KNOWLEDGE_BASE, selecionarTopicosRelevantes } from '../../lib/olivia-knowledge-base.ts';
+import { renderOliviaMarkdown } from '../../lib/markdown-lite.ts';
 
 function stripHtml(html: string): string {
   return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -82,7 +84,7 @@ export const testarModelo = async (req: Request, res: Response) => {
 };
 
 // Mesmo padrão de fallback nuvem→local de gerarComFallback, para o endpoint de chat.
-async function gerarComFallbackChat(mensagens: ChatMessage[], modelo: string): Promise<{ texto: string; usouFallback: boolean }> {
+export async function gerarComFallbackChat(mensagens: ChatMessage[], modelo: string): Promise<{ texto: string; usouFallback: boolean }> {
   try {
     const texto = await ollamaChat(mensagens, modelo);
     return { texto, usouFallback: false };
@@ -324,5 +326,95 @@ export const pautaEditorial = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro IA pauta-editorial:', error);
     res.status(503).json({ error: 'Assistente de IA indisponível no momento.' });
+  }
+};
+
+// ── Olivia — assistente de ajuda do sistema ─────────────────────────────────────
+
+const OLIVIA_JANELA_MS = 72 * 60 * 60 * 1000; // 72h — depois disso a conversa reinicia
+const OLIVIA_LIMITE_HISTORICO = 40;
+
+function buildOliviaSystemPrompt(role: string, mensagemAtual: string): string {
+  const topicosDoRole = OLIVIA_KNOWLEDGE_BASE.filter((t) => t.rolesPermitidos.includes(role));
+  const topicos = selecionarTopicosRelevantes(topicosDoRole, mensagemAtual);
+  const paginas = topicos
+    .map((t) => `- ${t.titulo} (rota: ${t.rota}): ${t.resumo} Como usar: ${t.comoUsar.join(' ')}`)
+    .join('\n');
+
+  return `Você é a Olivia, assistente virtual de ajuda do sistema "Comunica" (plataforma de comunicação de prefeituras municipais). Sua função é ajudar o usuário a entender e usar o sistema — não fale sobre outros assuntos.
+
+Regras de resposta:
+- Português do Brasil, tom humano, simpático, direto — nunca robótico.
+- Respostas curtas: no máximo 3-4 frases, ou uma lista curta de passos quando o usuário pedir um "passo a passo".
+- Use **negrito** para destacar palavras-chave importantes quando ajudar a clareza.
+- Quando indicar uma página do sistema, use o formato [texto do link](/rota) — só use rotas da lista de páginas abaixo; nunca invente uma rota.
+- O usuário logado tem o papel "${role}". Só sugira páginas que apareçam na lista abaixo (ela já está filtrada pelo que esse papel pode acessar).
+- Se a pergunta não for sobre como usar o sistema, ou você não souber responder com segurança, diga isso com gentileza e sugira falar com um administrador — não invente informação.
+
+Páginas do sistema disponíveis para esse usuário:
+${paginas}`;
+}
+
+export const oliviaView = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const desde = new Date(Date.now() - OLIVIA_JANELA_MS);
+    const linhas = await OliviaMensagem.findAll({
+      where: { user_id: user.id, createdAt: { [Op.gte]: desde } },
+      order: [['createdAt', 'ASC']],
+      limit: OLIVIA_LIMITE_HISTORICO,
+    });
+    const historico = linhas.map((m: any) => ({
+      role: m.role,
+      texto: m.role === 'assistant' ? renderOliviaMarkdown(m.texto) : m.texto,
+    }));
+    const topicos = OLIVIA_KNOWLEDGE_BASE.filter((t) => t.rolesPermitidos.includes(user.role));
+    res.render('ia/olivia', { title: 'Olivia', historico, topicos });
+  } catch (error) {
+    console.error('Erro ao carregar Olivia:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const oliviaMensagem = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const texto = String(req.body.texto || '').trim().slice(0, 2000);
+    if (!texto) return res.status(400).json({ error: 'Escreva uma mensagem.' });
+
+    await OliviaMensagem.create({ user_id: user.id, role: 'user', texto });
+
+    const desde = new Date(Date.now() - OLIVIA_JANELA_MS);
+    const linhas = await OliviaMensagem.findAll({
+      where: { user_id: user.id, createdAt: { [Op.gte]: desde } },
+      order: [['createdAt', 'ASC']],
+      limit: OLIVIA_LIMITE_HISTORICO,
+    });
+    const historico: ChatMessage[] = linhas.map((m: any) => ({ role: m.role, content: m.texto }));
+
+    const { modelo } = await getIaConfig();
+    const system = buildOliviaSystemPrompt(user.role, texto);
+    const { texto: resposta, usouFallback } = await gerarComFallbackChat(
+      [{ role: 'system', content: system }, ...historico],
+      modelo
+    );
+
+    await OliviaMensagem.create({ user_id: user.id, role: 'assistant', texto: resposta });
+
+    res.json({ resposta: renderOliviaMarkdown(resposta), usouFallback });
+  } catch (error) {
+    console.error('Erro Olivia mensagem:', error);
+    res.status(503).json({ error: 'A Olivia está indisponível no momento. Tente novamente em instantes.' });
+  }
+};
+
+export const oliviaLimpar = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    await OliviaMensagem.destroy({ where: { user_id: user.id } });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Erro ao limpar conversa com a Olivia:', error);
+    res.status(500).json({ ok: false, error: 'Não foi possível limpar a conversa.' });
   }
 };

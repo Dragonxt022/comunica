@@ -71,8 +71,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 // ── Status ───────────────────────────────────────────────────────────────────
 
-export function getWhatsappStatus(): { conectado: boolean; qr: string | null; conectando: boolean } {
-  return { conectado: !!sock?.user, qr: currentQr, conectando: connecting };
+export function getWhatsappStatus(): { conectado: boolean; qr: string | null; conectando: boolean; numero: string | null } {
+  const numero = sock?.user?.id?.split(':')[0]?.split('@')[0] || null;
+  return { conectado: !!sock?.user, qr: currentQr, conectando: connecting, numero };
 }
 
 async function broadcastToSuperAdmins(eventName: string, data: Record<string, any>): Promise<void> {
@@ -233,8 +234,14 @@ export async function enviarCodigoVerificacao(userId: number, numeroBruto: strin
   const agora = new Date();
   const expira = new Date(agora.getTime() + 10 * 60 * 1000);
 
+  // Persiste o número derivado do JID canônico (não o digitado) — é para esse número que as
+  // notificações futuras serão enviadas, e é o número que vai bater com o remetente quando ele
+  // mandar "hoje" pelo WhatsApp. Guardar o número "cru" aqui reintroduziria a mesma ambiguidade
+  // do 9º dígito que o lookup acima existe pra resolver.
+  const numeroCanonico = jidDestino.split('@')[0];
+
   await User.update({
-    whatsapp_numero_pendente: numero,
+    whatsapp_numero_pendente: numeroCanonico,
     whatsapp_codigo_verificacao: codigo,
     whatsapp_codigo_enviado_em: agora,
     whatsapp_codigo_expira_em: expira,

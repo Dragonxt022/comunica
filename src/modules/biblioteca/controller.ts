@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { Solicitacao, Secretaria } from '../../database/models/index.ts';
-import { getActiveMid, secretariaWhere } from '../../lib/municipio-filter.ts';
+import { getActiveMid, municipioWhere } from '../../lib/municipio-filter.ts';
 
 export const index = async (req: Request, res: Response) => {
   try {
@@ -36,8 +36,11 @@ export const index = async (req: Request, res: Response) => {
       where.updatedAt = { [Op.between]: [inicio, fim] };
     }
 
-    // Secretarias do dropdown: apenas do município ativo
-    const secWhere: any = secretariaWhere(sessionUser, { ativo: true }, activeMid);
+    // Secretarias do dropdown: apenas do município ativo. Filtra a tabela `secretarias`
+    // pela própria coluna `municipio_id` — não usar secretariaWhere() aqui, que injeta
+    // `secretaria_id` (coluna que não existe em `secretarias`, só em tabelas que
+    // referenciam uma secretaria via FK, como solicitações).
+    const secWhere: any = municipioWhere(sessionUser, { ativo: true }, activeMid);
 
     const page = Math.max(1, Number(req.query.page) || 1);
     const perPage = 24;

@@ -1,0 +1,163 @@
+<script>
+document.addEventListener('alpine:init', function() {
+    Alpine.data('oliviaApp', function() {
+        return {
+            mensagens: <%- JSON.stringify(historico) %>,
+            topicosSugeridos: <%- JSON.stringify(topicos.slice(0, 4).map(function(t){ return 'Como funciona ' + t.titulo + '?'; })) %>,
+            input: '',
+            loading: false,
+            init: function() {
+                this.scrollToBottom();
+            },
+            enviar: async function(textoForcado) {
+                var texto = (textoForcado || this.input).trim();
+                if (!texto || this.loading) return;
+                this.mensagens.push({ role: 'user', texto: texto });
+                this.input = '';
+                this.loading = true;
+                this.scrollToBottom();
+                try {
+                    var res = await fetch('/ia/olivia/mensagem', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ texto: texto }),
+                    });
+                    var data = await res.json();
+                    if (res.ok) {
+                        this.mensagens.push({ role: 'assistant', texto: data.resposta });
+                    } else {
+                        this.mensagens.push({ role: 'assistant', texto: '<p>' + (data.error || 'Não consegui responder agora.') + '</p>' });
+                    }
+                } catch (err) {
+                    this.mensagens.push({ role: 'assistant', texto: '<p>Não consegui me conectar agora. Tente novamente em instantes.</p>' });
+                } finally {
+                    this.loading = false;
+                    this.scrollToBottom();
+                }
+            },
+            perguntar: function(pergunta) {
+                this.enviar(pergunta);
+            },
+            limpar: async function() {
+                if (!confirm('Limpar toda a conversa com a Olivia?')) return;
+                await fetch('/ia/olivia/limpar', { method: 'POST' }).catch(function() {});
+                this.mensagens = [];
+            },
+            scrollToBottom: function() {
+                var box = this.$refs.oliviaBox;
+                this.$nextTick(function() { if (box) box.scrollTop = box.scrollHeight; });
+            },
+        };
+    });
+});
+</script>
+
+<div class="max-w-6xl mx-auto" x-data="oliviaApp">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 lg:gap-6 h-[calc(100vh-8rem)] lg:h-[calc(100vh-7rem)]">
+
+        <!-- Chat principal -->
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col min-h-0">
+            <!-- Header -->
+            <div class="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-gray-100 shrink-0">
+                <div class="flex items-center gap-3">
+                    <img src="/uploads/avatars/Olivia.png" alt="Olivia" class="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-purple-100">
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-900">Olivia</h2>
+                        <p class="text-xs text-gray-400">Sua assistente para usar o Comunica</p>
+                    </div>
+                </div>
+                <button type="button" @click="limpar()" title="Limpar conversa"
+                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>
+
+            <!-- Mensagens -->
+            <div class="flex-1 overflow-y-auto px-4 sm:px-5 py-4 chat-scroll" x-ref="oliviaBox">
+                <!-- Boas-vindas -->
+                <template x-if="mensagens.length === 0">
+                    <div class="h-full min-h-[280px] flex flex-col items-center justify-center text-center px-6 gap-3">
+                        <img src="/uploads/avatars/Olivia.png" alt="Olivia" class="w-16 h-16 rounded-full object-cover ring-4 ring-purple-50">
+                        <h3 class="text-base font-semibold text-gray-900">Oi, eu sou a Olivia!</h3>
+                        <p class="text-sm text-gray-500 leading-relaxed max-w-sm">Pergunte como fazer algo no sistema — por exemplo, "como eu abro um chamado?" ou "onde vejo os eventos do mês?".</p>
+                        <div class="flex flex-wrap gap-2 justify-center mt-2 lg:hidden">
+                            <template x-for="t in topicosSugeridos" :key="t">
+                                <button type="button" @click="perguntar(t)"
+                                        class="text-xs font-medium px-3 py-1.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 transition" x-text="t"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Conversa -->
+                <template x-if="mensagens.length > 0">
+                    <div class="space-y-5">
+                        <template x-for="(msg, idx) in mensagens" :key="idx">
+                            <div>
+                                <template x-if="msg.role === 'user'">
+                                    <div class="flex justify-end">
+                                        <div class="max-w-[80%] rounded-2xl rounded-br-md bg-purple-600 text-white px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap" x-text="msg.texto"></div>
+                                    </div>
+                                </template>
+                                <template x-if="msg.role === 'assistant'">
+                                    <div class="flex gap-2.5 max-w-[92%]">
+                                        <img src="/uploads/avatars/Olivia.png" alt="" class="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5">
+                                        <div class="text-sm text-gray-800 leading-relaxed pt-0.5 olivia-msg" x-html="msg.texto"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <div x-show="loading" class="flex gap-2.5">
+                            <img src="/uploads/avatars/Olivia.png" alt="" class="w-6 h-6 rounded-full object-cover shrink-0">
+                            <div class="inline-flex items-center gap-1 pt-2.5">
+                                <span class="typing-dot"></span>
+                                <span class="typing-dot"></span>
+                                <span class="typing-dot"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Input -->
+            <div class="border-t border-gray-100 p-3 shrink-0">
+                <div class="flex items-end gap-1.5 rounded-2xl border border-gray-300 bg-white px-2 py-1.5 transition focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
+                    <textarea x-model="input" rows="1" placeholder="Pergunte algo à Olivia..."
+                        @keydown.enter.exact.prevent="enviar()"
+                        @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 128) + 'px'"
+                        :disabled="loading"
+                        class="flex-1 px-2 py-1.5 outline-none text-sm resize-none bg-transparent disabled:opacity-60 max-h-32"></textarea>
+                    <button type="button" @click="enviar()" :disabled="loading || !input.trim()"
+                        :class="(loading || !input.trim()) ? 'bg-gray-100 text-gray-300' : 'bg-purple-600 text-white hover:bg-purple-700'"
+                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full transition disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tópicos (desktop) -->
+        <div class="hidden lg:flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm p-4 min-h-0 overflow-y-auto chat-scroll">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Perguntas rápidas</h3>
+            <div class="space-y-1.5">
+                <% topicos.forEach(function(t) { %>
+                <button type="button" @click="perguntar('Como funciona <%= t.titulo.replace(/'/g, "\\'") %>?')"
+                        class="w-full text-left text-xs font-medium px-3 py-2 rounded-lg text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition">
+                    <%= t.titulo %>
+                </button>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .olivia-msg p { margin: 0 0 0.5em; }
+    .olivia-msg p:last-child { margin-bottom: 0; }
+    .olivia-msg ul, .olivia-msg ol { margin: 0.25em 0 0.5em; padding-left: 1.25em; }
+    .olivia-msg ul { list-style: disc; }
+    .olivia-msg ol { list-style: decimal; }
+    .olivia-msg li { margin: 0.15em 0; }
+    .olivia-msg a { color: #7c3aed; font-weight: 600; text-decoration: underline; }
+    .olivia-msg strong { font-weight: 700; color: #111827; }
+</style>
