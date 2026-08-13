@@ -21,7 +21,7 @@
 
 O **Comunica** é um sistema web completo desenvolvido para secretarias de comunicação de prefeituras municipais. Ele centraliza o fluxo de trabalho entre as secretarias e a equipe de comunicação: desde a abertura de um chamado de produção até a publicação de um release na imprensa, passando pelo gerenciamento de eventos, inscrições públicas, planejamento estratégico e analytics.
 
-O sistema nasceu da necessidade real da Prefeitura de **Cujubim – RO** e foi desenvolvido para ser simples de instalar, fácil de usar e totalmente adaptável a qualquer município brasileiro.
+O sistema foi idealizado e desenvolvido de forma independente por **Bruno Pissinatti**, a partir da observação prática dos desafios de comunicação institucional enquanto assessor de mídia parlamentar em Cujubim – RO. O projeto foi construído para ser simples de instalar, fácil de usar e totalmente adaptável a qualquer município brasileiro.
 
 > **É gratuito. É livre. Você pode usar, adaptar e distribuir.**
 
@@ -583,7 +583,7 @@ Este projeto é distribuído sob a **licença MIT**. Você pode usar, copiar, mo
 ```
 MIT License
 
-Copyright (c) 2026 Bruno Pissinatti / Prefeitura Municipal de Cujubim – RO
+Copyright (c) 2026 Bruno Pissinatti
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -608,9 +608,9 @@ SOFTWARE.
 
 ## Sobre o Projeto
 
-O **Comunica** foi desenvolvido pela equipe de tecnologia da **Prefeitura Municipal de Cujubim – Rondônia**, como ferramenta interna para modernizar e centralizar a comunicação institucional do município.
+O **Comunica** foi idealizado e desenvolvido por **Bruno Pissinatti**, de forma independente e em caráter pessoal, como resposta aos desafios reais de comunicação institucional observados no exercício da função de assessor de mídia parlamentar.
 
-Acreditamos que ferramentas de gestão pública de qualidade devem ser acessíveis a todos os municípios, independentemente do tamanho ou orçamento. Por isso, tornamos o projeto livre e gratuito.
+Acreditamos que ferramentas de gestão pública de qualidade devem ser acessíveis a todos os municípios, independentemente do tamanho ou orçamento. Por isso, o projeto é disponibilizado de forma livre e gratuita, sob licença MIT.
 
 ---
 
