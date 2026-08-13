@@ -17,9 +17,9 @@ document.addEventListener('alpine:init', function() {
         return {
             solicitacoes: JSON.parse(JSON.stringify(_SOLICITACOES)),
             view: localStorage.getItem('sol_view') || 'lista',
-            filtroTexto: '',
-            filtroPrioridade: '',
-            filtroTipo: '',
+            filtroTexto: <%- JSON.stringify(q || '') %>,
+            filtroPrioridade: <%- JSON.stringify(filtroPrioridade || '') %>,
+            filtroTipo: <%- JSON.stringify(filtroTipo || '') %>,
             filtrosAbertos: <%= (filtroStatus || filtroPrioridade || filtroTipo) ? 'true' : 'false' %>,
             canReorder: <%- JSON.stringify(['secom', 'super_admin'].includes(user.role)) %>,
             iaFilaOpen: false,
@@ -33,6 +33,8 @@ document.addEventListener('alpine:init', function() {
             dragOver: null,
             toast: '',
             toastOk: true,
+            kanbanLimitPadrao: 25,
+            kanbanLimites: {},
 
             init: function() {
                 this.$watch('view', function(v) { localStorage.setItem('sol_view', v); });
@@ -58,6 +60,21 @@ document.addEventListener('alpine:init', function() {
 
             porStatus: function(key) {
                 return this.solicitacoesFiltradas.filter(function(s) { return s.status === key; });
+            },
+
+            // Renderizar todos os cards de uma coluna de uma vez, sem limite, deixa o Kanban
+            // pesado (muitos nós arrastáveis no DOM) quando a fila cresce — por isso cada
+            // coluna começa limitada e cresce sob demanda com "Mostrar mais".
+            limiteColuna: function(key) {
+                return this.kanbanLimites[key] || this.kanbanLimitPadrao;
+            },
+
+            porStatusVisivel: function(key) {
+                return this.porStatus(key).slice(0, this.limiteColuna(key));
+            },
+
+            mostrarMaisColuna: function(key) {
+                this.kanbanLimites[key] = this.limiteColuna(key) + this.kanbanLimitPadrao;
             },
 
             updateStatus: async function(id, status) {
@@ -387,7 +404,7 @@ document.addEventListener('alpine:init', function() {
             <select name="tipo" x-model="filtroTipo" form="form-filtros"
                 class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition focus:bg-white">
                 <option value="">Todos</option>
-                <% ['Nota','Release','Post para Redes Sociais','Arte Gráfica','Vídeo','Foto','Outros'].forEach(function(t) { %>
+                <% tiposMidia.forEach(function(t) { %>
                 <option value="<%= t %>" <%= filtroTipo === t ? 'selected' : '' %>><%= t %></option>
                 <% }) %>
             </select>
@@ -442,6 +459,39 @@ document.addEventListener('alpine:init', function() {
 
     <!-- ===================== VIEW LISTA ===================== -->
     <div x-show="view === 'lista'" x-cloak>
+
+        <!-- Abas por tipo de mídia (com contagem de pendentes) -->
+        <%
+        var buildTipoUrl = function(t) {
+            var params = [];
+            if (q) params.push('q=' + encodeURIComponent(q));
+            if (filtroStatus) params.push('status=' + encodeURIComponent(filtroStatus));
+            if (filtroPrioridade) params.push('prioridade=' + encodeURIComponent(filtroPrioridade));
+            if (t) params.push('tipo=' + encodeURIComponent(t));
+            return '/solicitacoes' + (params.length ? '?' + params.join('&') : '');
+        };
+        %>
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 -mx-1 px-1">
+            <a href="<%= buildTipoUrl('') %>"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition
+                      <%= !filtroTipo ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50' %>">
+                Todos
+                <% if(counts['pendente'] > 0) { %>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none <%= !filtroTipo ? 'bg-white/25 text-white' : 'bg-yellow-100 text-yellow-700' %>"><%= counts['pendente'] %></span>
+                <% } %>
+            </a>
+            <% tiposMidia.forEach(function(t) { %>
+            <a href="<%= buildTipoUrl(t) %>"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition
+                      <%= filtroTipo === t ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50' %>">
+                <%= t %>
+                <% if(tipoCounts[t] > 0) { %>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none <%= filtroTipo === t ? 'bg-white/25 text-white' : 'bg-yellow-100 text-yellow-700' %>"><%= tipoCounts[t] %></span>
+                <% } %>
+            </a>
+            <% }) %>
+        </div>
+
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden" x-data="{ showAll: false }">
             <% if(solicitacoes.length === 0) { %>
             <div class="py-16 text-center">
@@ -576,18 +626,18 @@ document.addEventListener('alpine:init', function() {
                 <% if(totalPages > 1) { %>
                 <div class="flex items-center gap-1">
                     <% if(currentPage > 1) { %>
-                    <a href="?page=<%= currentPage - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                    <a href="?page=<%= currentPage - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %><%= filtroTipo ? '&tipo=' + encodeURIComponent(filtroTipo) : '' %>"
                        class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
                     <% } %>
                     <% for(var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
-                    <a href="?page=<%= p %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                    <a href="?page=<%= p %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %><%= filtroTipo ? '&tipo=' + encodeURIComponent(filtroTipo) : '' %>"
                        class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
                               <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
                         <%= p %>
                     </a>
                     <% } %>
                     <% if(currentPage < totalPages) { %>
-                    <a href="?page=<%= currentPage + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %>"
+                    <a href="?page=<%= currentPage + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= filtroStatus ? '&status=' + filtroStatus : '' %><%= filtroPrioridade ? '&prioridade=' + filtroPrioridade : '' %><%= filtroTipo ? '&tipo=' + encodeURIComponent(filtroTipo) : '' %>"
                        class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
                     <% } %>
                 </div>
@@ -600,10 +650,17 @@ document.addEventListener('alpine:init', function() {
     <!-- ===================== VIEW KANBAN ===================== -->
     <div x-show="view === 'kanban'" x-cloak>
         <% var colunas = statusSolicitacao; %>
+
+        <!-- Indicação de que há mais colunas para o lado -->
+        <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-2">
+            <svg class="w-3.5 h-3.5 shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+            Arraste para o lado para ver todas as colunas
+        </div>
+
         <div class="overflow-x-auto pb-3 snap-x snap-mandatory">
-            <div class="flex gap-4" style="min-width: max-content">
+            <div class="flex gap-3" style="min-width: max-content">
                 <% colunas.forEach(function(col) { %>
-                <div class="w-[85vw] max-w-xs sm:w-72 sm:max-w-none snap-start flex flex-col gap-2"
+                <div class="w-[85vw] max-w-xs sm:w-64 sm:max-w-none snap-start flex flex-col gap-2"
                      @dragover.prevent="dragOver = '<%= col.key %>'"
                      @dragleave="dragOver === '<%= col.key %>' && (dragOver = null)"
                      @drop.prevent="onDrop($event, '<%= col.key %>')">
@@ -626,7 +683,7 @@ document.addEventListener('alpine:init', function() {
                             </div>
                         </template>
 
-                        <template x-for="sol in porStatus('<%= col.key %>')" :key="sol.id">
+                        <template x-for="sol in porStatusVisivel('<%= col.key %>')" :key="sol.id">
                             <div
                                 draggable="true"
                                 @dragstart="onDragStart($event, sol)"
@@ -698,6 +755,15 @@ document.addEventListener('alpine:init', function() {
 
                                 <p class="text-[10px] text-gray-400" x-text="fmtDate(sol.createdAt)"></p>
                             </div>
+                        </template>
+
+                        <!-- Carregar mais (evita renderizar a fila inteira de uma vez) -->
+                        <template x-if="porStatus('<%= col.key %>').length > limiteColuna('<%= col.key %>')">
+                            <button type="button" @click="mostrarMaisColuna('<%= col.key %>')"
+                                class="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg py-2 transition text-center">
+                                Mostrar mais <span x-text="Math.min(kanbanLimitPadrao, porStatus('<%= col.key %>').length - limiteColuna('<%= col.key %>'))"></span>
+                                <span class="text-gray-400 font-normal">(<span x-text="porStatus('<%= col.key %>').length - limiteColuna('<%= col.key %>')"></span> restantes)</span>
+                            </button>
                         </template>
                     </div>
                 </div>

@@ -40,11 +40,20 @@ export const list = async (req: Request, res: Response) => {
       counts[s] = allSolics.filter((x: any) => x.status === s).length;
     });
 
+    // contagem de pendentes por tipo de mídia — alimenta as abas do modo lista
+    const tiposMidia = ['Nota','Release','Post para Redes Sociais','Arte Gráfica','Vídeo','Foto','Outros'];
+    const tipoCounts: Record<string, number> = {};
+    tiposMidia.forEach(t => {
+      tipoCounts[t] = allSolics.filter((x: any) => x.tipo_midia === t && x.status === 'pendente').length;
+    });
+
     res.render('solicitacoes/index', {
       title: 'Solicitações',
       solicitacoes,
       kanbanSolics: allSolics,
       counts,
+      tiposMidia,
+      tipoCounts,
       q: q || '',
       filtroStatus: filtroStatus || '',
       filtroPrioridade: filtroPrioridade || '',
