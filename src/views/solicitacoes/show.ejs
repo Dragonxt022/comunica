@@ -44,7 +44,15 @@
                         <span id="btn-variacoes-label">Gerar variações para redes sociais</span>
                     </button>
                 </div>
-                <div class="rich-content text-gray-700 leading-relaxed text-sm"><%- sol.descricao %></div>
+                <div class="relative">
+                    <div id="descricao-content" class="rich-content text-gray-700 leading-relaxed text-sm overflow-hidden" style="max-height:260px"><%- sol.descricao %></div>
+                    <div id="descricao-fade" class="hidden absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                </div>
+                <button type="button" id="btn-descricao-toggle"
+                    class="hidden text-xs font-semibold text-blue-600 hover:text-blue-800 transition inline-flex items-center gap-1">
+                    <span id="btn-descricao-label">Ver mais</span>
+                    <svg id="btn-descricao-icon" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
 
                 <!-- Painel de variações por rede social (IA) -->
                 <div id="painel-variacoes-sociais" class="hidden pt-3 border-t border-gray-100 space-y-3">
@@ -991,5 +999,28 @@
             })
             .catch(function() { alert('Erro de conexão.'); btn.disabled = false; btn.textContent = 'Confirmar'; });
     });
+
+    /* ── Descrição longa: colapsa com "Ver mais" quando passa do limite ── */
+    (function() {
+        var LIMITE = 260;
+        var content = document.getElementById('descricao-content');
+        var fade    = document.getElementById('descricao-fade');
+        var toggle  = document.getElementById('btn-descricao-toggle');
+        var label   = document.getElementById('btn-descricao-label');
+        var icon    = document.getElementById('btn-descricao-icon');
+        if (!content || content.scrollHeight <= LIMITE + 20) return;
+
+        var expandido = false;
+        toggle.classList.remove('hidden');
+        fade.classList.remove('hidden');
+
+        toggle.addEventListener('click', function() {
+            expandido = !expandido;
+            content.style.maxHeight = expandido ? content.scrollHeight + 'px' : LIMITE + 'px';
+            fade.classList.toggle('hidden', expandido);
+            label.textContent = expandido ? 'Ver menos' : 'Ver mais';
+            icon.classList.toggle('rotate-180', expandido);
+        });
+    }());
 }());
 </script>
