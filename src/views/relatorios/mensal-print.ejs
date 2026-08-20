@@ -30,7 +30,7 @@
     <div class="rel-item">
         <p class="rel-item-titulo">3.3.<%= i + 1 %>. <%= r.titulo %></p>
         <% if (r.link) { %><p class="rel-item-link">LINK: <%= r.link %></p><% } %>
-        <% if (r.imagemUrl) { %><img class="rel-item-img" src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"><% } %>
+        <% if (r.imagemUrl) { %><div class="rel-item-img-wrap"><img src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"></div><% } %>
     </div>
     <% }) %>
     <% } %>
@@ -52,7 +52,7 @@
     <div class="rel-item">
         <p class="rel-item-titulo">3.5.<%= i + 1 %>. <%= r.titulo %></p>
         <% if (r.link) { %><p class="rel-item-link">Link: <%= r.link %></p><% } %>
-        <% if (r.imagemUrl) { %><img class="rel-item-img" src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"><% } %>
+        <% if (r.imagemUrl) { %><div class="rel-item-img-wrap"><img src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"></div><% } %>
     </div>
     <% }) %>
     <% } %>

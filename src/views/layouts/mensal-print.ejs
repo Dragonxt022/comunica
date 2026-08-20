@@ -18,8 +18,10 @@
         @page {
             size: A4 portrait;
             /* topo / direita / baixo / esquerda — reserva espaço para a faixa lateral,
-               o logo no topo e o rodapé da empresa que fazem parte da imagem de fundo. */
-            margin: 50mm 14mm 36mm 16mm;
+               o logo no topo e o rodapé da empresa que fazem parte da imagem de fundo.
+               Esquerda com folga extra (a faixa azul tem ~9.8mm) porque o suporte do
+               navegador a "Margens: Padrão" respeitando @page pode variar. */
+            margin: 50mm 14mm 36mm 22mm;
         }
 
         /* Fundo de página completo — permanece fixo à viewport durante a impressão,
@@ -104,13 +106,22 @@
             margin-bottom: 2pt;
         }
         .rel-item-link { font-size: 10.5pt; color: #1d4ed8; word-break: break-all; }
-        .rel-item-img {
-            display: block;
-            max-width: 160pt;
-            max-height: 220pt;
+        /* Tamanho fixo (não max-width/max-height) — evita que uma foto grande estoure
+           a altura da página e deixe blocos de página quase vazios por causa do
+           page-break-inside:avoid do .rel-item. */
+        .rel-item-img-wrap {
+            width: 130pt;
+            height: 170pt;
             margin-top: 5pt;
             border: 0.5pt solid #d1d5db;
             border-radius: 3pt;
+            overflow: hidden;
+        }
+        .rel-item-img-wrap img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .artes-grid {
