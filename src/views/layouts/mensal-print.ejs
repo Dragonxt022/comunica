@@ -12,7 +12,7 @@
             font-size: 11.5pt;
             line-height: 1.45;
             color: #1a1a1a;
-            background: #e5e7eb;
+            background: white;
         }
 
         @page {
@@ -25,7 +25,10 @@
         /* Fundo de página completo — permanece fixo à viewport durante a impressão,
            por isso se repete atrás de cada página física, mesmo com conteúdo contínuo.
            Precisa continuar filho direto do body, sem ancestral com transform/overflow
-           entre os dois, senão o position:fixed deixa de repetir por página. */
+           entre os dois, senão o position:fixed deixa de repetir por página.
+           z-index:-1 pinta ATRÁS do próprio fundo do body, mas AINDA NA FRENTE de
+           qualquer coisa opaca em fluxo normal (como .page-wrap) — por isso .page-wrap
+           não pode ter fundo próprio, senão ele tampa esta camada por cima. */
         .page-bg {
             position: fixed;
             inset: 0;
@@ -37,7 +40,6 @@
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            background: white;
         }
 
         /* Aviso na tela (fora da impressão) — o Chrome não imprime imagens de fundo a

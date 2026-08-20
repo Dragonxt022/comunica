@@ -439,7 +439,9 @@ export const mensalBuscarPeriodo = async (req: Request, res: Response) => {
         order: [['updatedAt', 'ASC']],
       }) as Promise<any[]>,
       Solicitacao.findAll({
-        where: { tipo_midia: 'Arte Gráfica', status: statusConcluidos, updatedAt: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter },
+        // "Artes gráficas" do relatório cobre tanto peças de design quanto posts prontos
+        // para redes sociais — as duas categorias que viram "cards/stories" no modelo.
+        where: { tipo_midia: { [Op.in]: ['Arte Gráfica', 'Post para Redes Sociais'] }, status: statusConcluidos, updatedAt: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter },
         include: [{ model: SolicitacaoImagem, as: 'imagens', separate: true, order: [['ordem', 'ASC']] }],
         order: [['updatedAt', 'ASC']],
       }) as Promise<any[]>,
