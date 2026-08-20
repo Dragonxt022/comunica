@@ -45,6 +45,7 @@ const isAdminOrSecom = (req: any, res: any, next: any) => {
 router.get('/', isAuthenticated, isAdminOrSecom, RelatoriosController.index);
 router.post('/gerar', isAuthenticated, isAdminOrSecom, RelatoriosController.gerar);
 router.get('/mensal/novo', isAuthenticated, isAdminOrSecom, RelatoriosController.mensalForm);
+router.get('/mensal/buscar-periodo', isAuthenticated, isAdminOrSecom, RelatoriosController.mensalBuscarPeriodo);
 router.post('/mensal/gerar', isAuthenticated, isAdminOrSecom, uploadRelatorioMensal, RelatoriosController.mensalGerar);
 
 export default router;

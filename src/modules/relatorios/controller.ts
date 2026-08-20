@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Op, fn, col, literal } from 'sequelize';
 import sequelize from '../../config/database.ts';
-import { Release, Solicitacao, SolicitacaoComentario, Secretaria, Evento, Inscricao, Municipio } from '../../database/models/index.ts';
+import { Release, Solicitacao, SolicitacaoComentario, SolicitacaoImagem, Secretaria, Evento, Inscricao, Municipio } from '../../database/models/index.ts';
 import { getActiveMid } from '../../lib/municipio-filter.ts';
 import {
   objetoContratoPadrao,
@@ -413,6 +413,60 @@ export const mensalForm = async (req: Request, res: Response) => {
   }
 };
 
+// Busca o que já existe no sistema para o período (vídeos e artes gráficas concluídos,
+// releases publicados) para pré-preencher o formulário — evita redigitar o que a
+// operação já registrou no dia a dia. Puro consulta ao banco, sem geração por IA.
+export const mensalBuscarPeriodo = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const isSuperAdmin = user.role === 'super_admin';
+    const { periodo_inicio, periodo_fim } = req.query as Record<string, string>;
+    if (!periodo_inicio || !periodo_fim) {
+      return res.status(400).json({ ok: false, error: 'Informe o período (início e fim).' });
+    }
+
+    const dtInicio = startOfDay(parseDateOnly(periodo_inicio));
+    const dtFim = endOfDay(parseDateOnly(periodo_fim));
+    const municipioFilter = isSuperAdmin ? {} : { municipio_id: user.municipio_id };
+    const statusConcluidos = { [Op.in]: ['concluído', 'finalizado'] };
+
+    // Não há um campo de "data de conclusão" dedicado em Solicitacao — usamos updatedAt
+    // como aproximação de quando o material foi efetivamente entregue/concluído no período.
+    const [videos, artes, releases] = await Promise.all([
+      Solicitacao.findAll({
+        where: { tipo_midia: 'Vídeo', status: statusConcluidos, updatedAt: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter },
+        include: [{ model: SolicitacaoImagem, as: 'imagens', separate: true, order: [['ordem', 'ASC']] }],
+        order: [['updatedAt', 'ASC']],
+      }) as Promise<any[]>,
+      Solicitacao.findAll({
+        where: { tipo_midia: 'Arte Gráfica', status: statusConcluidos, updatedAt: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter },
+        include: [{ model: SolicitacaoImagem, as: 'imagens', separate: true, order: [['ordem', 'ASC']] }],
+        order: [['updatedAt', 'ASC']],
+      }) as Promise<any[]>,
+      Release.findAll({
+        where: { publicado: true, publicado_em: { [Op.between]: [dtInicio, dtFim] }, ...municipioFilter },
+        order: [['publicado_em', 'ASC']],
+      }) as Promise<any[]>,
+    ]);
+
+    const imagensDe = (s: any): string[] =>
+      s.imagens && s.imagens.length ? s.imagens.map((im: any) => im.url) : s.arte_final_url ? [s.arte_final_url] : [];
+
+    res.json({
+      ok: true,
+      reels: videos.map((s) => ({ titulo: s.titulo, link: s.link_publicacao || '', imagemUrl: imagensDe(s)[0] || null })),
+      releases: releases.map((r) => ({ titulo: r.titulo, link: r.link_publicacao || '', imagemUrl: r.print_publicacao_url || r.imagem_capa || null })),
+      artes: {
+        count: artes.reduce((acc, s) => acc + Math.max(imagensDe(s).length, 1), 0),
+        imagens: artes.flatMap((s) => imagensDe(s)),
+      },
+    });
+  } catch (error) {
+    console.error('Error buscando dados do período para relatorio mensal:', error);
+    res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
 export const mensalGerar = async (req: Request, res: Response) => {
   try {
     const body = req.body || {};
@@ -436,14 +490,21 @@ export const mensalGerar = async (req: Request, res: Response) => {
           idx,
           titulo: String(body[`${prefixo}_titulo_${idx}`] || '').trim(),
           link: String(body[`${prefixo}_link_${idx}`] || '').trim(),
-          imagemUrl: fileUrlByField.get(`${prefixo}_imagem_${idx}`) || null,
+          // Upload novo tem prioridade; se nenhum arquivo foi enviado, usa a imagem já
+          // existente no sistema (preenchida pelo "Buscar do período").
+          imagemUrl: fileUrlByField.get(`${prefixo}_imagem_${idx}`) || String(body[`${prefixo}_imagem_existente_${idx}`] || '').trim() || null,
         }))
         .filter((item) => item.titulo);
     }
 
     const reels = coletarItens('reel');
     const releases = coletarItens('release');
-    const artesImagens = files.filter((f) => f.fieldname === 'artes_imagens').map((f) => `/uploads/relatorios/${f.filename}`);
+    const artesImagensNovas = files.filter((f) => f.fieldname === 'artes_imagens').map((f) => `/uploads/relatorios/${f.filename}`);
+    const artesImagensExistentes = (Array.isArray(body.artes_imagens_existentes)
+      ? body.artes_imagens_existentes
+      : body.artes_imagens_existentes ? [body.artes_imagens_existentes] : []
+    ).filter(Boolean);
+    const artesImagens = [...artesImagensExistentes, ...artesImagensNovas];
 
     const periodoInicio = body.periodo_inicio ? parseDateOnly(body.periodo_inicio) : new Date();
     const periodoFim = body.periodo_fim ? parseDateOnly(body.periodo_fim) : new Date();
