@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { Solicitacao, Secretaria } from '../../database/models/index.ts';
+import { Solicitacao, Secretaria, SolicitacaoImagem } from '../../database/models/index.ts';
 import { getActiveMid, municipioWhere } from '../../lib/municipio-filter.ts';
 
 export const index = async (req: Request, res: Response) => {
@@ -48,7 +48,10 @@ export const index = async (req: Request, res: Response) => {
     const [{ count, rows: artes }, secretarias, tiposRows] = await Promise.all([
       Solicitacao.findAndCountAll({
         where,
-        include: [{ model: Secretaria, as: 'secretaria' }],
+        include: [
+          { model: Secretaria, as: 'secretaria' },
+          { model: SolicitacaoImagem, as: 'imagens', separate: true, order: [['ordem', 'ASC']] },
+        ],
         order: [['updatedAt', 'DESC']],
         limit: perPage,
         offset: (page - 1) * perPage,

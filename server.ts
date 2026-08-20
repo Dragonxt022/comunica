@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, SolicitacaoImagem, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -228,6 +228,28 @@ async function seed() {
   await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'link_arquivo_matriz', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'ordem', 'INTEGER NOT NULL DEFAULT 0');
+
+  // Galeria de imagens da arte final (múltiplas imagens por solicitação)
+  await SolicitacaoImagem.sync({ force: false });
+  await sequelize.query(`
+    INSERT INTO solicitacao_imagens (solicitacao_id, url, nome, ordem, created_at, updated_at)
+    SELECT id, arte_final_url, arte_final_nome, 0, NOW(), NOW()
+    FROM solicitacoes
+    WHERE arte_final_url IS NOT NULL
+      AND id NOT IN (SELECT DISTINCT solicitacao_id FROM solicitacao_imagens)
+  `).catch((e: any) => {
+    // SQLite não tem NOW(); usa CURRENT_TIMESTAMP como fallback
+    if (/no such function.*now/i.test(e.message || '')) {
+      return sequelize.query(`
+        INSERT INTO solicitacao_imagens (solicitacao_id, url, nome, ordem, created_at, updated_at)
+        SELECT id, arte_final_url, arte_final_nome, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        FROM solicitacoes
+        WHERE arte_final_url IS NOT NULL
+          AND id NOT IN (SELECT DISTINCT solicitacao_id FROM solicitacao_imagens)
+      `);
+    }
+    throw e;
+  });
   // Inscrições em eventos — novos campos na tabela existente
   await addCol('eventos', 'aceita_inscricoes', 'BOOLEAN NOT NULL DEFAULT 0');
   await addCol('eventos', 'formulario_template_id', 'INTEGER NULL');

@@ -1,4 +1,5 @@
 <%- include('../partials/quill-styles.ejs') %>
+<%- include('../partials/image-carousel-modal.ejs') %>
 <div class="max-w-5xl mx-auto space-y-6">
 
     <!-- Cabeçalho -->
@@ -250,6 +251,36 @@
                     </div>
                 </div>
 
+                <% } else if(c.tipo === 'conclusao') { %>
+                <!-- ─── Entrega de material (conclusão) ─── -->
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-teal-50 border border-teal-200 rounded-xl rounded-tl-none p-4 space-y-2.5">
+                            <div class="flex items-center justify-between flex-wrap gap-1">
+                                <span class="font-semibold text-sm text-teal-900"><%= c.autor ? c.autor.nome : '' %> entregou material</span>
+                                <span class="text-[10px] text-teal-400"><%= fmtDate %></span>
+                            </div>
+                            <% if(c.texto) { %>
+                            <p class="text-sm text-teal-800 whitespace-pre-wrap">Link: <a href="<%= c.texto %>" target="_blank" class="underline"><%= c.texto %></a></p>
+                            <% } %>
+                            <% if(c.arquivo_url) { %>
+                            <button type="button" onclick="Alpine.store('carousel').showAt([{ url: '<%= c.arquivo_url %>', titulo: '<%= (c.arquivo_nome || 'Arte final').replace(/'/g, "\\'") %>' }], 0)"
+                                class="relative block rounded-lg overflow-hidden border border-teal-200 w-24 h-24 bg-gray-50">
+                                <img src="<%= c.arquivo_url %>" alt="<%= c.arquivo_nome || 'Arte final' %>" class="w-full h-full object-cover"
+                                    onerror="handleImagemExcluida(this)">
+                                <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-gray-400 bg-gray-50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3l18 18M10.5 6H18a2 2 0 012 2v9.5M6 6.5V18a2 2 0 002 2h9.5M9 12l2 2 4-4"></path></svg>
+                                    <span class="text-[9px] font-semibold">Excluída</span>
+                                </div>
+                            </button>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+
                 <% } else { %>
                 <!-- ─── Comentário padrão ─── -->
                 <div class="flex gap-3">
@@ -381,17 +412,31 @@
                     <% } %>
                 </div>
                 <div class="p-4 space-y-3">
-                    <% if(sol.arte_final_url) { %>
+                    <% if(sol.imagens && sol.imagens.length) { %>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Arte Final</p>
-                        <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <img src="<%= sol.arte_final_url %>" alt="Arte final"
-                                 class="w-14 h-14 object-cover rounded-lg border border-gray-200 flex-shrink-0">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-gray-800 truncate"><%= sol.arte_final_nome || 'Arte final' %></p>
-                                <a href="<%= sol.arte_final_url %>" target="_blank"
-                                   class="text-xs text-teal-600 hover:underline mt-0.5 inline-block">Visualizar / baixar →</a>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                            Arte Final <% if(sol.imagens.length > 1) { %>· <%= sol.imagens.length %> imagens<% } %>
+                        </p>
+                        <div class="grid grid-cols-4 gap-2">
+                            <% sol.imagens.forEach(function(img, idx) { %>
+                            <div class="relative group aspect-square">
+                                <button type="button" onclick="abrirGaleriaSolicitacao(<%= idx %>)"
+                                    class="relative w-full h-full block rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                    <img src="<%= img.url %>" alt="<%= img.nome || 'Arte final' %>" class="w-full h-full object-cover"
+                                        onerror="handleImagemExcluida(this)">
+                                    <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-gray-400 bg-gray-50">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3l18 18M10.5 6H18a2 2 0 012 2v9.5M6 6.5V18a2 2 0 002 2h9.5M9 12l2 2 4-4"></path></svg>
+                                        <span class="text-[9px] font-semibold">Excluída</span>
+                                    </div>
+                                </button>
+                                <% if(user.role !== 'secretaria') { %>
+                                <button type="button" onclick="excluirImagemSolicitacao(<%= img.id %>)" title="Excluir imagem"
+                                    class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition text-xs leading-none">
+                                    ×
+                                </button>
+                                <% } %>
                             </div>
+                            <% }) %>
                         </div>
                     </div>
                     <% } %>
@@ -427,17 +472,14 @@
                         <form id="form-update-material" enctype="multipart/form-data" class="space-y-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1.5">
-                                    Nova Arte Final <span class="text-gray-400">(opcional)</span>
+                                    Novas Imagens <span class="text-gray-400">(opcional — pode selecionar várias, serão adicionadas à galeria)</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
                                     <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    <span id="upd-file-label" class="text-xs text-gray-500 truncate flex-1">Selecionar arquivo…</span>
-                                    <input type="file" name="arte_final" class="hidden" accept="image/*,.pdf,.webp"
-                                        onchange="onUpdFile(this)">
+                                    <span id="upd-file-label" class="text-xs text-gray-500 truncate flex-1">Selecionar arquivos…</span>
+                                    <input type="file" name="arte_final" id="upd-arte-final-input" class="hidden" accept="image/*" multiple>
                                 </label>
-                                <div id="upd-img-preview" class="hidden mt-2">
-                                    <img id="upd-img" src="" alt="" class="max-h-20 rounded-lg border border-gray-200 object-contain">
-                                </div>
+                                <div id="upd-img-preview" class="hidden mt-2 flex flex-wrap"></div>
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1.5">
@@ -643,17 +685,14 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                     Arte Final
-                    <span class="text-gray-400 font-normal">(opcional)</span>
+                    <span class="text-gray-400 font-normal">(opcional — pode selecionar várias imagens)</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
                     <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span class="text-sm text-gray-500">Clique para selecionar imagem ou arquivo</span>
-                    <input type="file" name="arte_final" class="hidden" accept="image/*,.pdf"
-                        onchange="previewArteFinal(this)">
+                    <span class="text-sm text-gray-500">Clique para selecionar imagens</span>
+                    <input type="file" name="arte_final" id="concluir-arte-final-input" class="hidden" accept="image/*" multiple>
                 </label>
-                <div id="arte-preview-wrap" class="hidden mt-2">
-                    <img id="arte-preview-img" src="" alt="Preview" class="max-h-32 rounded-lg border border-gray-200 object-contain">
-                </div>
+                <div id="arte-preview-wrap" class="hidden mt-2 flex flex-wrap"></div>
             </div>
 
             <!-- Link de publicação -->
@@ -701,6 +740,33 @@
 (function() {
     var currentStatus = '<%= sol.status %>';
     var SOL_ID = <%= sol.id %>;
+    var SOL_TITULO = <%- JSON.stringify(sol.titulo) %>;
+    var SOL_IMAGENS = <%- JSON.stringify((sol.imagens || []).map(function(im) { return { url: im.url, titulo: im.nome || sol.titulo }; })) %>;
+
+    /* ── handleImagemExcluida: substitui <img> quebrada (arquivo apagado) por um
+       aviso "Excluída" em vez do ícone de imagem quebrada do navegador ────── */
+    window.handleImagemExcluida = function(imgEl) {
+        imgEl.style.display = 'none';
+        var fallback = imgEl.nextElementSibling;
+        if (fallback) { fallback.classList.remove('hidden'); fallback.classList.add('flex'); }
+        var btn = imgEl.closest('button');
+        if (btn) { btn.onclick = null; btn.style.cursor = 'default'; }
+    };
+
+    window.abrirGaleriaSolicitacao = function(idx) {
+        Alpine.store('carousel').showAt(SOL_IMAGENS, idx || 0, { titulo: SOL_TITULO });
+    };
+
+    window.excluirImagemSolicitacao = function(imagemId) {
+        if (!confirm('Excluir esta imagem da galeria?')) return;
+        fetch('/solicitacoes/' + SOL_ID + '/imagens/' + imagemId + '/excluir', { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok) { alert(data.error || 'Erro ao excluir imagem'); return; }
+                window.location.reload();
+            })
+            .catch(function() { alert('Erro de conexão.'); });
+    };
 
     var statusColors = <%- JSON.stringify(Object.fromEntries(statusSolicitacao.map(function(s) { return [s.key, s.badge]; }))) %>;
 
@@ -868,18 +934,52 @@
         document.getElementById('modal-concluir').classList.add('hidden');
     };
 
-    window.previewArteFinal = function(input) {
-        if (!input.files || !input.files[0]) return;
-        var isImage = input.files[0].type.startsWith('image/');
-        if (!isImage) { document.getElementById('arte-preview-wrap').classList.add('hidden'); return; }
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var img = document.getElementById('arte-preview-img');
-            img.src = e.target.result;
-            document.getElementById('arte-preview-wrap').classList.remove('hidden');
-        };
-        reader.readAsDataURL(input.files[0]);
-    };
+    /* ── wireMultiFileInput: preview + remover-antes-de-enviar para <input multiple> ── */
+    function wireMultiFileInput(input, previewWrapId, labelId) {
+        if (!input) return;
+        function removeAt(idx) {
+            var dt = new DataTransfer();
+            Array.prototype.slice.call(input.files).forEach(function(f, i) { if (i !== idx) dt.items.add(f); });
+            input.files = dt.files;
+            render();
+        }
+        function render() {
+            var wrap = document.getElementById(previewWrapId);
+            var label = labelId ? document.getElementById(labelId) : null;
+            if (!wrap) return;
+            var files = Array.prototype.slice.call(input.files || []);
+            if (label) {
+                label.textContent = files.length
+                    ? (files.length + ' arquivo' + (files.length > 1 ? 's' : '') + ' selecionado' + (files.length > 1 ? 's' : ''))
+                    : 'Selecionar arquivos…';
+            }
+            wrap.innerHTML = '';
+            wrap.classList.toggle('hidden', files.length === 0);
+            files.forEach(function(file, idx) {
+                if (!file.type || file.type.indexOf('image/') !== 0) return;
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var item = document.createElement('div');
+                    item.className = 'relative inline-block mr-2 mb-2';
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'h-16 w-16 object-cover rounded-lg border border-gray-200';
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = '×';
+                    btn.className = 'absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[10px] leading-none';
+                    btn.addEventListener('click', function() { removeAt(idx); });
+                    item.appendChild(img);
+                    item.appendChild(btn);
+                    wrap.appendChild(item);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        input.addEventListener('change', render);
+    }
+    wireMultiFileInput(document.getElementById('upd-arte-final-input'), 'upd-img-preview', 'upd-file-label');
+    wireMultiFileInput(document.getElementById('concluir-arte-final-input'), 'arte-preview-wrap', null);
 
     /* ── Variações por rede social (IA) ──────────────────────────── */
     window.gerarVariacoesSociais = function() {
@@ -941,23 +1041,6 @@
         if (form) form.classList.toggle('hidden');
     };
 
-    /* ── onUpdFile: preview imagem selecionada ───────────────────── */
-    window.onUpdFile = function(input) {
-        if (!input.files || !input.files[0]) return;
-        var label = document.getElementById('upd-file-label');
-        if (label) label.textContent = input.files[0].name;
-        var isImage = input.files[0].type.startsWith('image/');
-        var wrap = document.getElementById('upd-img-preview');
-        if (!isImage || !wrap) return;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var img = document.getElementById('upd-img');
-            if (img) img.src = e.target.result;
-            wrap.classList.remove('hidden');
-        };
-        reader.readAsDataURL(input.files[0]);
-    };
-
     /* ── form-update-material submit ────────────────────────────── */
     document.getElementById('form-update-material')?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -991,11 +1074,9 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.ok) { alert(data.error || 'Erro ao concluir'); btn.disabled = false; btn.textContent = 'Confirmar'; return; }
-                fecharModalConcluir();
-                applyStatusToUI('concluído');
-                refreshFeed();
-                var msg = document.getElementById('status-msg');
-                if (msg) { msg.classList.remove('hidden'); msg.classList.add('flex'); setTimeout(function() { msg.classList.add('hidden'); msg.classList.remove('flex'); }, 3000); }
+                // Reload garante que a galeria de imagens, a capa e o feed fiquem
+                // consistentes de uma vez (upload multi-imagem não se resume a um patch de DOM).
+                window.location.reload();
             })
             .catch(function() { alert('Erro de conexão.'); btn.disabled = false; btn.textContent = 'Confirmar'; });
     });

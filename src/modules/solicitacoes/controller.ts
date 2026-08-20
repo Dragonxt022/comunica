@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import SolicitacaoRepository from './repository.ts';
-import { Secretaria, Solicitacao, SolicitacaoComentario, User, Evento, EventoResponsavel, Municipio } from '../../database/models/index.ts';
+import { Secretaria, Solicitacao, SolicitacaoComentario, SolicitacaoImagem, User, Evento, EventoResponsavel, Municipio } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
@@ -11,6 +11,51 @@ import { sanitizeDescricao, normalizeDescricao } from '../../lib/sanitize-html.t
 function parseIds(raw: any): number[] {
   if (!raw) return [];
   return (Array.isArray(raw) ? raw : [raw]).map(Number).filter(Boolean);
+}
+
+// Arquivo recebido do multer (evitamos o tipo global Express.Multer.File, que não
+// resolve neste projeto por falta de @types/multer — ver mesmo padrão em eventos/controller.ts).
+type UploadedFile = { filename: string; originalname: string };
+
+// Remove um arquivo físico apontado por uma URL pública (ex: /uploads/solicitacoes/xyz.png).
+function deleteFile(urlPath: string | null | undefined) {
+  if (!urlPath) return;
+  try {
+    const abs = path.join(process.cwd(), 'public', urlPath);
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  } catch {}
+}
+
+// Anexa novos arquivos enviados como imagens da galeria (ordem contínua a partir do máximo atual),
+// e define a "capa" (arte_final_url/nome) só se ainda não houver nenhuma imagem antes deste upload.
+async function appendImagens(id: number, files: UploadedFile[]) {
+  if (!files.length) return;
+  const maxOrdem = (await SolicitacaoImagem.max('ordem', { where: { solicitacao_id: id } })) as number | null;
+  const base = (typeof maxOrdem === 'number' ? maxOrdem : -1) + 1;
+  await SolicitacaoImagem.bulkCreate(
+    files.map((f, i) => ({
+      solicitacao_id: id,
+      url: `/uploads/solicitacoes/${f.filename}`,
+      nome: f.originalname,
+      ordem: base + i,
+    }))
+  );
+  const sol = await Solicitacao.findByPk(id);
+  if (sol && !(sol as any).arte_final_url) {
+    await Solicitacao.update(
+      { arte_final_url: `/uploads/solicitacoes/${files[0].filename}`, arte_final_nome: files[0].originalname },
+      { where: { id } }
+    );
+  }
+}
+
+// Resincroniza a "capa" (arte_final_url/nome) com a primeira imagem restante da galeria.
+async function resyncCapa(id: number) {
+  const primeira = await SolicitacaoImagem.findOne({ where: { solicitacao_id: id }, order: [['ordem', 'ASC']] });
+  await Solicitacao.update(
+    { arte_final_url: (primeira as any)?.url ?? null, arte_final_nome: (primeira as any)?.nome ?? null },
+    { where: { id } }
+  );
 }
 
 export const list = async (req: Request, res: Response) => {
@@ -300,6 +345,28 @@ export const pendentesCount = async (req: Request, res: Response) => {
   }
 };
 
+export const excluirImagem = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!['admin', 'secom', 'super_admin'].includes(user?.role)) {
+      return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    }
+    const id = Number(req.params.id);
+    const imagemId = Number(req.params.imagemId);
+    const imagem = await SolicitacaoImagem.findByPk(imagemId);
+    if (!imagem || (imagem as any).solicitacao_id !== id) {
+      return res.status(404).json({ ok: false, error: 'Imagem não encontrada' });
+    }
+    deleteFile((imagem as any).url);
+    await SolicitacaoImagem.destroy({ where: { id: imagemId } });
+    await resyncCapa(id);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting solicitacao imagem:', error);
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+};
+
 export const destroy = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
@@ -315,15 +382,11 @@ export const destroy = async (req: Request, res: Response) => {
     if (sol.status !== 'cancelado') {
       return res.status(400).json({ ok: false, error: 'Só é possível excluir solicitações canceladas' });
     }
-    // Remove arquivos anexados
-    const deleteFile = (urlPath: string | null) => {
-      if (!urlPath) return;
-      try {
-        const abs = path.join(process.cwd(), 'public', urlPath);
-        if (fs.existsSync(abs)) fs.unlinkSync(abs);
-      } catch {}
-    };
+    // Remove arquivos anexados (galeria + capa legada)
+    const imagens = await SolicitacaoImagem.findAll({ where: { solicitacao_id: id } });
+    imagens.forEach((img: any) => deleteFile(img.url));
     deleteFile(sol.arte_final_url ?? null);
+    await SolicitacaoImagem.destroy({ where: { solicitacao_id: id } });
     await SolicitacaoComentario.destroy({ where: { solicitacao_id: id } });
     await Solicitacao.destroy({ where: { id } });
     return res.json({ ok: true });
@@ -537,13 +600,9 @@ export const updateMaterial = async (req: Request, res: Response) => {
 
     const id = Number(req.params.id);
     const { link_publicacao, link_arquivo_matriz } = req.body;
-    const file = (req as any).file;
+    const files = ((req as any).files || []) as UploadedFile[];
 
     const updates: any = {};
-    if (file) {
-      updates.arte_final_url = `/uploads/solicitacoes/${file.filename}`;
-      updates.arte_final_nome = file.originalname;
-    }
     if (link_publicacao !== undefined) {
       updates.link_publicacao = link_publicacao.trim() || null;
     }
@@ -551,16 +610,17 @@ export const updateMaterial = async (req: Request, res: Response) => {
       updates.link_arquivo_matriz = link_arquivo_matriz.trim() || null;
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (files.length === 0 && Object.keys(updates).length === 0) {
       return res.json({ ok: true });
     }
 
-    await SolicitacaoRepository.update(id, updates);
+    if (files.length) await appendImagens(id, files);
+    if (Object.keys(updates).length) await SolicitacaoRepository.update(id, updates);
     await SolicitacaoComentario.create({
       solicitacao_id: id,
       autor_id: user.id,
       tipo: 'evento',
-      texto: 'Material atualizado.',
+      texto: files.length ? `Material atualizado (${files.length} imagem${files.length > 1 ? 's' : ''}).` : 'Material atualizado.',
     });
 
     sseBroker.broadcast({ type: 'solicitacao_comentario', id, autor: user.nome, updatedById: user.id });
@@ -579,13 +639,9 @@ export const concluir = async (req: Request, res: Response) => {
 
     const id = Number(req.params.id);
     const { link_publicacao, link_arquivo_matriz } = req.body;
-    const file = (req as any).file;
+    const files = ((req as any).files || []) as UploadedFile[];
 
     const updates: any = { status: 'concluído' };
-    if (file) {
-      updates.arte_final_url = `/uploads/solicitacoes/${file.filename}`;
-      updates.arte_final_nome = file.originalname;
-    }
     if (link_publicacao?.trim()) {
       updates.link_publicacao = link_publicacao.trim();
     }
@@ -593,6 +649,7 @@ export const concluir = async (req: Request, res: Response) => {
       updates.link_arquivo_matriz = link_arquivo_matriz.trim();
     }
 
+    if (files.length) await appendImagens(id, files);
     await SolicitacaoRepository.update(id, updates);
     await SolicitacaoComentario.create({
       solicitacao_id: id,
@@ -601,14 +658,14 @@ export const concluir = async (req: Request, res: Response) => {
       texto: `Status alterado para "concluído"`,
     });
 
-    if (updates.arte_final_url || updates.link_publicacao) {
+    if (files.length || updates.link_publicacao) {
       await SolicitacaoComentario.create({
         solicitacao_id: id,
         autor_id: user.id,
         tipo: 'conclusao',
         texto: updates.link_publicacao || null,
-        arquivo_url: updates.arte_final_url || null,
-        arquivo_nome: updates.arte_final_nome || null,
+        arquivo_url: files.length ? `/uploads/solicitacoes/${files[0].filename}` : null,
+        arquivo_nome: files.length ? files[0].originalname : null,
       });
     }
 

@@ -4,6 +4,7 @@ import Municipio from './Municipio.ts';
 import Evento from './Evento.ts';
 import Solicitacao from './Solicitacao.ts';
 import SolicitacaoComentario from './SolicitacaoComentario.ts';
+import SolicitacaoImagem from './SolicitacaoImagem.ts';
 import Release from './Release.ts';
 import Arquivo from './Arquivo.ts';
 import Auditoria from './Auditoria.ts';
@@ -63,6 +64,7 @@ export {
   Evento,
   Solicitacao,
   SolicitacaoComentario,
+  SolicitacaoImagem,
   Release,
   Arquivo,
   Auditoria,

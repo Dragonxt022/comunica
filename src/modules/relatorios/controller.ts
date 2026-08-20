@@ -3,6 +3,13 @@ import { Op, fn, col, literal } from 'sequelize';
 import sequelize from '../../config/database.ts';
 import { Release, Solicitacao, SolicitacaoComentario, Secretaria, Evento, Inscricao, Municipio } from '../../database/models/index.ts';
 import { getActiveMid } from '../../lib/municipio-filter.ts';
+import {
+  objetoContratoPadrao,
+  OBJETIVO_SERVICO_PADRAO,
+  ARQUIVOS_NUVEM_PADRAO,
+  RESULTADOS_EVIDENCIAS_PADRAO,
+  PROXIMAS_ETAPAS_PADRAO,
+} from './mensal-textos-padrao.ts';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -372,6 +379,100 @@ export const gerar = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error gerar relatorio:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+// ── Relatório Mensal (modelo Cujubim) — formulário manual, sem persistência ──────
+
+function formatarDataLonga(d: Date): string {
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export const mensalForm = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const municipio = user.municipio_id ? await Municipio.findByPk(user.municipio_id) : null;
+    const municipioNome = municipio?.nome || '';
+    const uf = (municipio as any)?.estado || '';
+
+    res.render('relatorios/mensal-form', {
+      title: 'Relatório Mensal',
+      municipioNome,
+      uf,
+      hojeISO: formatDateOnly(new Date()),
+      objetoContratoPadrao: objetoContratoPadrao(municipioNome, uf),
+      objetivoServicoPadrao: OBJETIVO_SERVICO_PADRAO,
+      arquivosNuvemPadrao: ARQUIVOS_NUVEM_PADRAO,
+      resultadosEvidenciasPadrao: RESULTADOS_EVIDENCIAS_PADRAO,
+      proximasEtapasPadrao: PROXIMAS_ETAPAS_PADRAO,
+    });
+  } catch (error) {
+    console.error('Error rendering relatorio mensal form:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+export const mensalGerar = async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+    const files = ((req as any).files || []) as { fieldname: string; filename: string }[];
+
+    const fileUrlByField = new Map<string, string>();
+    for (const f of files) fileUrlByField.set(f.fieldname, `/uploads/relatorios/${f.filename}`);
+
+    // Agrupa linhas dinâmicas (reel_titulo_0, reel_link_0, reel_imagem_0, ...) por índice,
+    // ordenando numericamente — a ordem de chegada dos campos no FormData não é garantida.
+    function coletarItens(prefixo: string): { idx: number; titulo: string; link: string; imagemUrl: string | null }[] {
+      const idxs = new Set<number>();
+      const re = new RegExp(`^${prefixo}_titulo_(\\d+)$`);
+      for (const key of Object.keys(body)) {
+        const m = key.match(re);
+        if (m) idxs.add(Number(m[1]));
+      }
+      return Array.from(idxs)
+        .sort((a, b) => a - b)
+        .map((idx) => ({
+          idx,
+          titulo: String(body[`${prefixo}_titulo_${idx}`] || '').trim(),
+          link: String(body[`${prefixo}_link_${idx}`] || '').trim(),
+          imagemUrl: fileUrlByField.get(`${prefixo}_imagem_${idx}`) || null,
+        }))
+        .filter((item) => item.titulo);
+    }
+
+    const reels = coletarItens('reel');
+    const releases = coletarItens('release');
+    const artesImagens = files.filter((f) => f.fieldname === 'artes_imagens').map((f) => `/uploads/relatorios/${f.filename}`);
+
+    const periodoInicio = body.periodo_inicio ? parseDateOnly(body.periodo_inicio) : new Date();
+    const periodoFim = body.periodo_fim ? parseDateOnly(body.periodo_fim) : new Date();
+    const dataAssinatura = body.data_assinatura ? parseDateOnly(body.data_assinatura) : new Date();
+
+    res.render('relatorios/mensal-print', {
+      title: `Relatório Mensal Nº ${body.numero || ''}/${body.ano || ''}`,
+      layout: 'layouts/mensal-print',
+      numero: body.numero || '',
+      ano: body.ano || new Date().getFullYear(),
+      contrato: body.contrato || '',
+      contratante: body.contratante || '',
+      periodoInicioFmt: formatarDataLonga(periodoInicio),
+      periodoFimFmt: formatarDataLonga(periodoFim),
+      objetoContrato: body.objeto_contrato || '',
+      objetivoServico: body.objetivo_servico || '',
+      arquivosNuvem: body.arquivos_nuvem || '',
+      focoEditorial: body.foco_editorial || '',
+      reels,
+      artesCount: Number(body.artes_count) || 0,
+      artesImagens,
+      releases,
+      resultadosEvidencias: body.resultados_evidencias || '',
+      proximasEtapas: body.proximas_etapas || '',
+      cidadeAssinatura: body.cidade_assinatura || '',
+      dataAssinaturaFmt: formatarDataLonga(dataAssinatura),
+    });
+  } catch (error) {
+    console.error('Error gerando relatorio mensal:', error);
     res.status(500).send('Internal Server Error');
   }
 };

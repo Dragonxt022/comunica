@@ -6,7 +6,7 @@ class SolicitacaoComentario extends Model {
   public id!: number;
   public solicitacao_id!: number;
   public autor_id!: number;
-  public tipo!: 'comentario' | 'evento' | 'anexo' | 'aprovacao' | 'revisao';
+  public tipo!: 'comentario' | 'evento' | 'anexo' | 'aprovacao' | 'revisao' | 'conclusao';
   public texto!: string | null;
   public arquivo_url!: string | null;
   public arquivo_nome!: string | null;

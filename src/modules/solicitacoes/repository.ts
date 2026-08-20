@@ -1,5 +1,5 @@
 import sequelize from '../../config/database.ts';
-import { Solicitacao, Secretaria, User, Municipio } from '../../database/models/index.ts';
+import { Solicitacao, Secretaria, User, Municipio, SolicitacaoImagem } from '../../database/models/index.ts';
 
 class SolicitacaoRepository {
   async findAll(where = {}) {
@@ -30,7 +30,8 @@ class SolicitacaoRepository {
     return await Solicitacao.findByPk(id, {
       include: [
         { model: Secretaria, as: 'secretaria', include: [{ model: Municipio, as: 'municipio' }] },
-        { model: User, as: 'autor' }
+        { model: User, as: 'autor' },
+        { model: SolicitacaoImagem, as: 'imagens', separate: true, order: [['ordem', 'ASC']] },
       ]
     });
   }

@@ -21,6 +21,7 @@ class Solicitacao extends Model {
   public ordem!: number;
   public secretaria?: Secretaria;
   public autor?: User;
+  public imagens?: import('./SolicitacaoImagem.ts').default[];
 }
 
 Solicitacao.init(

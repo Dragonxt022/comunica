@@ -1,0 +1,71 @@
+<!-- Carrossel de imagens compartilhado — ver public/js/image-carousel.js ($store.carousel) -->
+<div x-show="$store.carousel.visible" x-cloak
+     @keydown.escape.window="$store.carousel.close()"
+     @keydown.arrow-left.window="$store.carousel.visible && $store.carousel.prev()"
+     @keydown.arrow-right.window="$store.carousel.visible && $store.carousel.next()"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.88);backdrop-filter:blur(4px)"
+     @click.self="$store.carousel.close()"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100">
+    <div class="relative max-w-4xl w-full flex flex-col items-center gap-4" @click.self="$store.carousel.close()">
+        <!-- Fechar -->
+        <button @click="$store.carousel.close()"
+            class="absolute -top-12 right-0 text-white/60 hover:text-white transition">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Imagem + setas + swipe -->
+        <div class="relative w-full flex items-center justify-center"
+             x-data="{ tX: 0 }"
+             @touchstart.passive="tX = $event.touches[0].clientX"
+             @touchend.passive="var dx = $event.changedTouches[0].clientX - tX; if (Math.abs(dx) > 50) { dx < 0 ? $store.carousel.next() : $store.carousel.prev(); }">
+            <img :src="$store.carousel.current().url" :alt="$store.carousel.current().titulo"
+                 class="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl select-none">
+
+            <template x-if="$store.carousel.images.length > 1">
+                <button @click.stop="$store.carousel.prev()"
+                    class="absolute left-0 sm:-left-14 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+            </template>
+            <template x-if="$store.carousel.images.length > 1">
+                <button @click.stop="$store.carousel.next()"
+                    class="absolute right-0 sm:-right-14 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </template>
+        </div>
+
+        <!-- Pontos indicadores -->
+        <template x-if="$store.carousel.images.length > 1">
+            <div class="flex items-center gap-1.5">
+                <template x-for="(img, i) in $store.carousel.images" :key="i">
+                    <button @click="$store.carousel.index = i"
+                        class="w-2 h-2 rounded-full transition"
+                        :class="i === $store.carousel.index ? 'bg-white' : 'bg-white/35 hover:bg-white/60'"></button>
+                </template>
+            </div>
+        </template>
+
+        <!-- Info + ações -->
+        <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 max-w-full">
+            <p class="text-white font-semibold text-sm truncate" x-text="$store.carousel.meta.titulo || $store.carousel.current().titulo"></p>
+            <a :href="$store.carousel.current().url" download target="_blank"
+               class="shrink-0 flex items-center gap-1.5 text-sm text-blue-300 hover:text-white transition font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download
+            </a>
+            <template x-if="$store.carousel.meta.link">
+                <a :href="$store.carousel.meta.link" target="_blank"
+                   class="shrink-0 flex items-center gap-1.5 text-sm text-indigo-300 hover:text-white transition font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    Ver publicação
+                </a>
+            </template>
+        </div>
+    </div>
+</div>

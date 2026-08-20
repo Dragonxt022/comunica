@@ -8,6 +8,7 @@ const _SOLICITACOES = <%- JSON.stringify(kanbanSolics.map(function(s) { return {
     status: s.status,
     createdAt: s.createdAt,
     prazo: s.prazo ? String(s.prazo).slice(0, 10) : null,
+    capaUrl: s.arte_final_url || null,
     secretaria: s.secretaria ? { id: s.secretaria.id, nome: s.secretaria.nome, cor: s.secretaria.cor } : null,
     municipio: s.secretaria && s.secretaria.municipio ? s.secretaria.municipio.nome : null
 }; })) %>;
@@ -714,10 +715,15 @@ document.addEventListener('alpine:init', function() {
                                     </div>
                                 </div>
 
-                                <a :href="'/solicitacoes/' + sol.id"
-                                   @click.stop
-                                   class="block text-sm font-semibold text-gray-800 leading-snug line-clamp-2 hover:text-blue-700 transition"
-                                   x-text="sol.titulo"></a>
+                                <div class="flex items-center gap-2">
+                                    <template x-if="sol.capaUrl">
+                                        <img :src="sol.capaUrl" alt="" class="w-8 h-8 rounded-md object-cover border border-gray-200 shrink-0">
+                                    </template>
+                                    <a :href="'/solicitacoes/' + sol.id"
+                                       @click.stop
+                                       class="block flex-1 min-w-0 text-sm font-semibold text-gray-800 leading-snug line-clamp-2 hover:text-blue-700 transition"
+                                       x-text="sol.titulo"></a>
+                                </div>
 
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded font-medium uppercase tracking-wide truncate max-w-[120px]"

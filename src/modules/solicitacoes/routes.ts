@@ -33,13 +33,14 @@ router.post('/reordenar', isAuthenticated, SolicitacaoController.reordenar);
 router.get('/:id', isAuthenticated, SolicitacaoController.show);
 router.get('/:id/comentarios', isAuthenticated, SolicitacaoController.getComentariosJson);
 router.post('/:id/status', isAuthenticated, SolicitacaoController.updateStatus);
-router.post('/:id/material', isAuthenticated, upload.single('arte_final'), SolicitacaoController.updateMaterial);
-router.post('/:id/concluir', isAuthenticated, upload.single('arte_final'), SolicitacaoController.concluir);
+router.post('/:id/material', isAuthenticated, upload.array('arte_final', 10), SolicitacaoController.updateMaterial);
+router.post('/:id/concluir', isAuthenticated, upload.array('arte_final', 10), SolicitacaoController.concluir);
 router.post('/:id/comentarios', isAuthenticated, upload.single('arquivo'), SolicitacaoController.addComentario);
 router.post('/:id/aprovar', isAuthenticated, SolicitacaoController.aprovar);
 router.post('/:id/revisao', isAuthenticated, SolicitacaoController.pedirRevisao);
 router.get('/:id/editar', isAuthenticated, SolicitacaoController.editView);
 router.post('/:id/editar', isAuthenticated, SolicitacaoController.updateSolicitacao);
+router.post('/:id/imagens/:imagemId/excluir', isAuthenticated, SolicitacaoController.excluirImagem);
 router.post('/:id/excluir', isAuthenticated, SolicitacaoController.destroy);
 
 export default router;

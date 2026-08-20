@@ -9,6 +9,7 @@
   animation: imgShimmer 1.4s ease-in-out infinite;
 }
 </style>
+<%- include('../partials/image-carousel-modal.ejs') %>
 <div class="space-y-6" x-data="bibliotecaPage()">
 
     <!-- Cabeçalho -->
@@ -93,9 +94,14 @@
     <!-- Modo grade -->
     <template x-if="view==='grid'">
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        <% artes.forEach(function(arte) { %>
+        <% artes.forEach(function(arte) {
+            var imgsAttr = JSON.stringify((arte.imagens && arte.imagens.length)
+                ? arte.imagens.map(function(im){ return { url: im.url, titulo: arte.titulo }; })
+                : [{ url: arte.arte_final_url, titulo: arte.titulo }]).replace(/'/g, '&#39;');
+            var metaAttr = JSON.stringify({ titulo: arte.titulo, link: arte.link_publicacao || '' }).replace(/'/g, '&#39;');
+        %>
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
-             @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')">
+             @click='$store.carousel.showAt(<%- imgsAttr %>, 0, <%- metaAttr %>)'>
             <div class="aspect-square overflow-hidden relative img-skel">
                 <img src="<%= arte.arte_final_url %>" alt="<%= arte.titulo %>" loading="lazy"
                      class="relative w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
@@ -144,11 +150,16 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                <% artes.forEach(function(arte) { %>
+                <% artes.forEach(function(arte) {
+                    var imgsAttr = JSON.stringify((arte.imagens && arte.imagens.length)
+                        ? arte.imagens.map(function(im){ return { url: im.url, titulo: arte.titulo }; })
+                        : [{ url: arte.arte_final_url, titulo: arte.titulo }]).replace(/'/g, '&#39;');
+                    var metaAttr = JSON.stringify({ titulo: arte.titulo, link: arte.link_publicacao || '' }).replace(/'/g, '&#39;');
+                %>
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-4 py-3">
                         <img src="<%= arte.arte_final_url %>" alt="" loading="lazy" class="w-12 h-12 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80"
-                             @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')">
+                             @click='$store.carousel.showAt(<%- imgsAttr %>, 0, <%- metaAttr %>)'>
                     </td>
                     <td class="px-4 py-3">
                         <p class="font-medium text-gray-900 line-clamp-1"><%= arte.titulo %></p>
@@ -174,7 +185,7 @@
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
-                            <button @click="openLightbox('<%= arte.arte_final_url %>', '<%= (arte.titulo || '').replace(/'/g, "\\'") %>', '<%= arte.link_publicacao || '' %>')"
+                            <button @click='$store.carousel.showAt(<%- imgsAttr %>, 0, <%- metaAttr %>)'
                                 class="text-xs text-blue-600 hover:text-blue-800 font-medium transition">
                                 Ver
                             </button>
@@ -232,56 +243,12 @@
     <% } %>
     <% } %>
 
-    <!-- Lightbox -->
-    <div x-show="lightbox.open" x-cloak
-         @keydown.escape.window="lightbox.open = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style="background:rgba(0,0,0,0.88);backdrop-filter:blur(4px)"
-         @click.self="lightbox.open = false"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100">
-        <div class="relative max-w-4xl w-full flex flex-col items-center gap-4">
-            <!-- Fechar -->
-            <button @click="lightbox.open = false"
-                class="absolute -top-12 right-0 text-white/60 hover:text-white transition">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-            <!-- Imagem -->
-            <img :src="lightbox.url" :alt="lightbox.titulo"
-                 class="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl">
-            <!-- Info + ações -->
-            <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5">
-                <p class="text-white font-semibold text-sm" x-text="lightbox.titulo"></p>
-                <a :href="lightbox.url" download target="_blank"
-                   class="flex items-center gap-1.5 text-sm text-blue-300 hover:text-white transition font-medium">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Download
-                </a>
-                <template x-if="lightbox.link">
-                    <a :href="lightbox.link" target="_blank"
-                       class="flex items-center gap-1.5 text-sm text-indigo-300 hover:text-white transition font-medium">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                        Ver publicação
-                    </a>
-                </template>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <script>
 function bibliotecaPage() {
     return {
         view: localStorage.getItem('biblioteca_view') || 'grid',
-        lightbox: { open: false, url: '', titulo: '', link: '' },
-
-        openLightbox(url, titulo, link) {
-            this.lightbox = { open: true, url, titulo, link };
-        },
 
         init() {
             this.$watch('view', v => localStorage.setItem('biblioteca_view', v));

@@ -1,0 +1,75 @@
+<h1 class="rel-titulo">RELATÓRIO DE PRODUÇÃO Nº <%= numero %>/<%= ano %></h1>
+<div class="rel-meta-block">
+    <p class="rel-meta">Contrato Nº <%= contrato %></p>
+    <p class="rel-meta">Contratante <%= contratante %></p>
+    <p class="rel-meta">Período de referência <%= periodoInicioFmt %> a <%= periodoFimFmt %></p>
+</div>
+
+<div class="rel-secao">
+    <p class="rel-secao-h">1. OBJETO DO CONTRATO</p>
+    <p class="rel-body"><%= objetoContrato %></p>
+</div>
+
+<div class="rel-secao">
+    <p class="rel-secao-h">2. OBJETIVO DO SERVIÇO</p>
+    <p class="rel-body"><%= objetivoServico %></p>
+</div>
+
+<div class="rel-secao">
+    <p class="rel-secao-h">ENTREGAS DO PERÍODO</p>
+
+    <p class="rel-subsecao-h">3.1. Disponibilização de arquivos em nuvem</p>
+    <p class="rel-body"><%= arquivosNuvem %></p>
+
+    <p class="rel-subsecao-h">3.2. Foco editorial do período</p>
+    <p class="rel-body"><%= focoEditorial %></p>
+
+    <% if (reels.length) { %>
+    <p class="rel-subsecao-h">3.3. Produção de material em vídeo – (<%= reels.length %> REELS) (vertical 1080x1920 pixels)</p>
+    <% reels.forEach(function(r, i) { %>
+    <div class="rel-item">
+        <p class="rel-item-titulo">3.3.<%= i + 1 %>. <%= r.titulo %></p>
+        <% if (r.link) { %><p class="rel-item-link">LINK: <%= r.link %></p><% } %>
+        <% if (r.imagemUrl) { %><img class="rel-item-img" src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"><% } %>
+    </div>
+    <% }) %>
+    <% } %>
+
+    <% if (artesImagens.length || artesCount) { %>
+    <p class="rel-subsecao-h">3.4. Artes gráficas (<%= artesCount || artesImagens.length %> cards/stories/impressos) produzidas sob demanda.</p>
+    <% if (artesImagens.length) { %>
+    <div class="artes-grid">
+        <% artesImagens.forEach(function(url) { %>
+        <img src="<%= url %>" alt="Arte gráfica">
+        <% }) %>
+    </div>
+    <% } %>
+    <% } %>
+
+    <% if (releases.length) { %>
+    <p class="rel-subsecao-h">3.5. Releases produzidos (<%= releases.length %> unidades)</p>
+    <% releases.forEach(function(r, i) { %>
+    <div class="rel-item">
+        <p class="rel-item-titulo">3.5.<%= i + 1 %>. <%= r.titulo %></p>
+        <% if (r.link) { %><p class="rel-item-link">Link: <%= r.link %></p><% } %>
+        <% if (r.imagemUrl) { %><img class="rel-item-img" src="<%= r.imagemUrl %>" alt="<%= r.titulo %>"><% } %>
+    </div>
+    <% }) %>
+    <% } %>
+</div>
+
+<div class="rel-secao">
+    <p class="rel-secao-h">4. RESULTADOS E EVIDÊNCIAS</p>
+    <ul class="rel-body">
+        <% resultadosEvidencias.split('\n').filter(function(l){ return l.trim(); }).forEach(function(linha) { %>
+        <li><%= linha %></li>
+        <% }) %>
+    </ul>
+</div>
+
+<div class="rel-secao">
+    <p class="rel-secao-h">5. PRÓXIMAS ETAPAS</p>
+    <p class="rel-body"><%= proximasEtapas %></p>
+</div>
+
+<p class="rel-assinatura"><%= cidadeAssinatura %>, <%= dataAssinaturaFmt %></p>
