@@ -160,3 +160,32 @@ export function uploadPdfRegulamento(req: any, res: any, done: (err?: any) => vo
     done();
   });
 }
+
+const multerImagens = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      cb(null, getUploadDir());
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `doc-${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_MIME.has(file.mimetype) && ALLOWED_EXT.has(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas: JPEG, PNG, GIF ou WebP'));
+    }
+  },
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB por imagem
+}).array('imagens', 12);
+
+/** Upload de várias imagens (documentos multipágina), campo `imagens` (até 12). */
+export function uploadImagens(req: any, res: any, done: (err?: any) => void) {
+  multerImagens(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}

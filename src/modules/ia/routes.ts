@@ -10,6 +10,7 @@ router.post('/perfil', onlyAdmin, IaController.savePerfil);
 router.post('/testar-modelo', onlyAdmin, IaController.testarModelo);
 
 router.post('/sugerir-descricao', IaController.sugerirDescricao);
+router.post('/sugerir-titulo', IaController.sugerirTitulo);
 router.post('/corrigir-texto', IaController.corrigirTexto);
 router.post('/estruturar-chamado', IaController.estruturarChamado);
 router.post('/variacoes-redes-sociais', IaController.variacoesRedesSociais);

@@ -6,13 +6,22 @@
             <h1 class="text-xl font-bold text-gray-900">Planejamento</h1>
             <p class="text-sm text-gray-500 mt-0.5">Planos de ação e metas das secretarias.</p>
         </div>
-        <a href="/planejamento/novo"
-           class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-            </svg>
-            Novo Plano
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="/planejamento/importar"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:border-blue-400 hover:text-blue-700 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Importar documento
+            </a>
+            <a href="/planejamento/novo"
+               class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                Novo Plano
+            </a>
+        </div>
     </div>
 
     <!-- Lista de Planos -->
@@ -44,10 +53,10 @@
             const dtInicio = new Date(plano.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
             const dtFim = new Date(plano.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
         %>
-        <a href="/planejamento/<%= plano.id %>"
-           class="bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition p-5 flex flex-col gap-3 group">
+        <div class="relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition p-5 flex flex-col gap-3 group">
+            <a href="/planejamento/<%= plano.id %>" class="absolute inset-0 rounded-xl" aria-label="Abrir plano"></a>
             <div class="flex items-start justify-between gap-3">
-                <h3 class="font-semibold text-gray-900 text-sm leading-snug group-hover:text-indigo-700 transition flex-1"><%= plano.titulo %></h3>
+                <h3 class="font-semibold text-gray-900 text-sm leading-snug group-hover:text-blue-700 transition flex-1"><%= plano.titulo %></h3>
                 <span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full <%= corStatus %>"><%= labelStatus %></span>
             </div>
 
@@ -74,12 +83,31 @@
             <!-- Footer -->
             <div class="flex items-center justify-between pt-1 border-t border-gray-100">
                 <span class="text-xs text-gray-400"><%= total %> ação<%= total !== 1 ? 'ões' : '' %> · <%= indicadores.length %> indicador<%= indicadores.length !== 1 ? 'es' : '' %></span>
-                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+                <div class="relative z-10 flex items-center gap-1">
+                    <button type="button" onclick="excluirPlano(<%= plano.id %>, '<%= String(plano.titulo).replace(/'/g, "\\'") %>')" title="Excluir plano"
+                        class="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                    <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
             </div>
-        </a>
+        </div>
         <% }); %>
     </div>
     <% } %>
+
+    <script>
+    function excluirPlano(id, titulo) {
+        if (!confirm('Excluir o plano "' + titulo + '"?\n\nAs ações e indicadores vinculados também serão removidos. Esta ação não pode ser desfeita.')) return;
+        fetch('/planejamento/' + id + '/excluir', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.ok) { window.location.reload(); }
+                else { alert('Não foi possível excluir o plano.'); }
+            })
+            .catch(function () { alert('Não foi possível excluir o plano.'); });
+    }
+    </script>
 </div>

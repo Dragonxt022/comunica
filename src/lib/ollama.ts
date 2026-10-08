@@ -31,6 +31,42 @@ export async function ollamaGenerate(prompt: string, system?: string, model?: st
   }
 }
 
+const VISION_TIMEOUT_MS = 180_000;
+
+/**
+ * Geração com uma ou mais imagens (modelos de visão, ex.: gemma3/gemma4, llava, qwen-vl).
+ * As imagens devem ser enviadas em base64 (sem o prefixo data:).
+ */
+export async function ollamaGenerateImages(prompt: string, images: string[], system?: string, model?: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || OLLAMA_MODEL,
+        prompt,
+        system,
+        images,
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(body?.error || `Ollama respondeu ${res.status}`);
+    }
+
+    const data = await res.json() as { response?: string };
+    return (data.response || '').trim();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 export async function ollamaChat(mensagens: ChatMessage[], model?: string): Promise<string> {

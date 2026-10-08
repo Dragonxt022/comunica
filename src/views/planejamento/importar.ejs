@@ -1,0 +1,266 @@
+<script>
+document.addEventListener('alpine:init', function () {
+    Alpine.data('importarIA', function () {
+        return {
+            plano_id: <%- presetPlanoId ? presetPlanoId : "''" %>,
+            files: [],
+            previews: [],
+            busy: false,
+            showReview: false,
+            erro: '',
+            modelo: '',
+            toast: '',
+            toastOk: true,
+            dados: { indicadores: [], acoes: [], eventos: [] },
+
+            showToast: function (msg, ok) {
+                var self = this;
+                this.toast = msg; this.toastOk = ok;
+                setTimeout(function () { self.toast = ''; }, 4000);
+            },
+            onFiles: function (e) {
+                var list = Array.prototype.slice.call(e.target.files || []);
+                var self = this;
+                list.forEach(function (f) {
+                    self.files.push(f);
+                    self.previews.push(URL.createObjectURL(f));
+                });
+                e.target.value = '';
+            },
+            remover: function (i) {
+                this.files.splice(i, 1);
+                this.previews.splice(i, 1);
+            },
+            get totalSelecionados() {
+                return this.dados.indicadores.filter(function (x) { return x.incluir; }).length
+                    + this.dados.acoes.filter(function (x) { return x.incluir; }).length
+                    + this.dados.eventos.filter(function (x) { return x.incluir; }).length;
+            },
+            analisar: async function () {
+                if (!this.plano_id) { this.showToast('Selecione o plano de destino.', false); return; }
+                if (this.files.length === 0) { this.showToast('Envie ao menos uma imagem do documento.', false); return; }
+                this.busy = true; this.erro = '';
+                try {
+                    var fd = new FormData();
+                    fd.append('plano_id', this.plano_id);
+                    this.files.forEach(function (f) { fd.append('imagens', f); });
+                    var res = await fetch('/planejamento/importar/analisar', { method: 'POST', body: fd });
+                    var data = await res.json();
+                    if (!res.ok || !data.ok) throw new Error(data.error || 'Falha ao analisar o documento.');
+                    var flag = function (arr) { return (arr || []).map(function (x) { x.incluir = true; return x; }); };
+                    this.dados = {
+                        indicadores: flag(data.dados.indicadores),
+                        acoes: flag(data.dados.acoes),
+                        eventos: flag(data.dados.eventos),
+                    };
+                    this.modelo = data.modelo || '';
+                    this.showReview = true;
+                } catch (err) {
+                    this.erro = err.message || 'Falha ao analisar o documento.';
+                    this.showToast(this.erro, false);
+                } finally {
+                    this.busy = false;
+                }
+            },
+            confirmar: async function () {
+                if (this.totalSelecionados === 0) { this.showToast('Selecione ao menos um item para cadastrar.', false); return; }
+                this.busy = true;
+                try {
+                    var payload = {
+                        plano_id: this.plano_id,
+                        indicadores: this.dados.indicadores.filter(function (x) { return x.incluir; }),
+                        acoes: this.dados.acoes.filter(function (x) { return x.incluir; }),
+                        eventos: this.dados.eventos.filter(function (x) { return x.incluir; }),
+                    };
+                    var res = await fetch('/planejamento/importar/confirmar', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+                    });
+                    var data = await res.json();
+                    if (!res.ok || !data.ok) throw new Error(data.error || 'Falha ao cadastrar os itens.');
+                    window.location.href = '/planejamento/' + this.plano_id;
+                } catch (err) {
+                    this.showToast(err.message || 'Falha ao cadastrar.', false);
+                } finally {
+                    this.busy = false;
+                }
+            },
+        };
+    });
+});
+</script>
+
+<div class="max-w-4xl mx-auto space-y-5" x-data="importarIA">
+
+    <%- include('../partials/form-header', {
+        backHref: '/planejamento',
+        title: 'Importar documento (IA)',
+        subtitle: 'Envie uma ou mais fotos de um documento e a IA extrai indicadores, ações sugeridas e eventos para você revisar.'
+    }) %>
+
+    <form @submit.prevent="analisar()" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+
+        <div class="p-6 space-y-5">
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Plano de destino <span class="text-red-500">*</span></label>
+                <select x-model="plano_id" required
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                    <option value="">Selecione o plano...</option>
+                    <% planos.forEach(function(p) { %>
+                        <option value="<%= p.id %>"><%= p.titulo %><%= p.secretaria ? ' — ' + p.secretaria.nome : '' %></option>
+                    <% }); %>
+                </select>
+            </div>
+
+            <!-- Upload múltiplo -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Páginas do documento <span class="text-red-500">*</span></label>
+                <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
+                    @click="$refs.input.click()" @dragover.prevent
+                    @drop.prevent="onFiles({ target: { files: $event.dataTransfer.files } })">
+                    <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <p class="text-sm text-gray-500">Clique ou arraste as fotos aqui (pode enviar várias páginas)</p>
+                    <p class="text-xs text-gray-400 mt-1">JPG, PNG ou WebP — até 12 imagens</p>
+                </div>
+                <input type="file" x-ref="input" accept="image/*" multiple @change="onFiles($event)" class="hidden">
+
+                <div x-show="previews.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
+                    <template x-for="(p, i) in previews" :key="i">
+                        <div class="relative rounded-lg overflow-hidden border border-gray-200 group">
+                            <img :src="p" class="w-full h-20 object-cover">
+                            <button type="button" @click="remover(i)"
+                                class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-black/50 hover:bg-red-600 text-white rounded-full transition" title="Remover">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-100 flex flex-wrap justify-between items-center gap-3 bg-gray-50 rounded-b-xl">
+            <p class="text-xs text-gray-400 order-2 sm:order-1">A IA sugere; você revisa antes de cadastrar.</p>
+            <div class="flex items-center gap-3 order-1 sm:order-2 ml-auto">
+                <a href="/planejamento" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
+                <button type="submit" :disabled="busy"
+                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2 text-sm disabled:opacity-60 disabled:cursor-wait">
+                    <svg x-show="!busy" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    <svg x-show="busy" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="busy ? 'Analisando…' : 'Analisar com IA'"></span>
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Modal de revisão -->
+    <div x-show="showReview" x-cloak style="display:none;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px)"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900">Revisão da importação</h3>
+                    <p class="text-xs text-gray-400">
+                        Confira e ajuste antes de cadastrar.
+                        <span x-show="modelo" x-text="'Modelo: ' + modelo"></span>
+                    </p>
+                </div>
+                <button type="button" @click="showReview = false" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+
+                <!-- Indicadores -->
+                <section>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Indicadores <span x-text="'(' + dados.indicadores.length + ')'"></span></h4>
+                    <p x-show="dados.indicadores.length === 0" class="text-sm text-gray-400 italic">Nenhum indicador identificado.</p>
+                    <div class="space-y-2">
+                        <template x-for="(it, i) in dados.indicadores" :key="'i'+i">
+                            <div class="border border-gray-200 rounded-lg p-3" :class="it.incluir ? '' : 'opacity-50'">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input type="checkbox" x-model="it.incluir" class="rounded border-gray-300 text-blue-600">
+                                    <input type="text" x-model="it.indicador" placeholder="Indicador" class="flex-1 px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <input type="number" x-model="it.valor_meta" placeholder="Meta" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                    <input type="number" x-model="it.valor_atual" placeholder="Atual" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                    <input type="text" x-model="it.unidade" placeholder="Unidade" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </section>
+
+                <!-- Ações sugeridas -->
+                <section>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ações sugeridas <span x-text="'(' + dados.acoes.length + ')'"></span></h4>
+                    <p x-show="dados.acoes.length === 0" class="text-sm text-gray-400 italic">Nenhuma ação sugerida identificada.</p>
+                    <div class="space-y-2">
+                        <template x-for="(it, i) in dados.acoes" :key="'a'+i">
+                            <div class="border border-gray-200 rounded-lg p-3" :class="it.incluir ? '' : 'opacity-50'">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input type="checkbox" x-model="it.incluir" class="rounded border-gray-300 text-blue-600">
+                                    <input type="text" x-model="it.titulo" placeholder="Título da ação" class="flex-1 px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="text" x-model="it.responsavel_nome" placeholder="Responsável" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                    <input type="date" x-model="it.prazo" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <select x-model="it.prioridade" class="w-full px-3 py-1.5 rounded border border-gray-300 text-sm mb-2">
+                                    <option value="baixa">Baixa</option>
+                                    <option value="media">Média</option>
+                                    <option value="alta">Alta</option>
+                                </select>
+                                <textarea x-model="it.descricao" rows="2" placeholder="Descrição" class="w-full px-3 py-1.5 rounded border border-gray-300 text-sm"></textarea>
+                            </div>
+                        </template>
+                    </div>
+                </section>
+
+                <!-- Eventos -->
+                <section>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Eventos <span x-text="'(' + dados.eventos.length + ')'"></span></h4>
+                    <p x-show="dados.eventos.length === 0" class="text-sm text-gray-400 italic">Nenhum evento identificado.</p>
+                    <div class="space-y-2">
+                        <template x-for="(it, i) in dados.eventos" :key="'e'+i">
+                            <div class="border border-gray-200 rounded-lg p-3" :class="it.incluir ? '' : 'opacity-50'">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input type="checkbox" x-model="it.incluir" class="rounded border-gray-300 text-blue-600">
+                                    <input type="text" x-model="it.titulo" placeholder="Título do evento" class="flex-1 px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="datetime-local" x-model="it.data_inicio" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                    <input type="datetime-local" x-model="it.data_fim" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="text" x-model="it.local" placeholder="Local" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                    <input type="text" x-model="it.tipo" placeholder="Tipo" class="px-3 py-1.5 rounded border border-gray-300 text-sm">
+                                </div>
+                                <textarea x-model="it.descricao" rows="2" placeholder="Descrição" class="w-full px-3 py-1.5 rounded border border-gray-300 text-sm"></textarea>
+                            </div>
+                        </template>
+                    </div>
+                </section>
+
+            </div>
+
+            <div class="border-t border-gray-100 px-5 py-4 flex items-center justify-between bg-gray-50 rounded-b-2xl">
+                <span class="text-xs text-gray-400"><span x-text="totalSelecionados"></span> item(ns) selecionado(s)</span>
+                <div class="flex items-center gap-3">
+                    <button type="button" @click="showReview = false" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-white transition">Voltar</button>
+                    <button type="button" @click="confirmar()" :disabled="busy"
+                        class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm disabled:opacity-60">
+                        <span x-text="busy ? 'Cadastrando…' : 'Cadastrar selecionados'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div x-show="toast !== ''" x-transition
+        class="fixed bottom-6 right-6 z-[60] px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white"
+        :class="toastOk ? 'bg-green-600' : 'bg-red-600'" x-text="toast"></div>
+</div>

@@ -10,10 +10,22 @@ function stripHtml(html: string): string {
   return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/** Remove marcações de markdown que os modelos costumam inserir (**negrito**, _itálico_, # títulos). */
+function stripMarkdownEnfase(s: string): string {
+  return (s || '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/(?<!\*)\*(?!\*)([^*\n]+?)\*(?!\*)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\r/g, '')
+    .trim();
+}
+
 const DEFAULT_PROMPT = 'Você é um assistente de comunicação de uma prefeitura municipal. Responda sempre em português do Brasil, de forma clara, objetiva e profissional.';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'gemma3:1b';
 
-async function getIaConfig(): Promise<{ systemPrompt: string; modelo: string }> {
+export async function getIaConfig(): Promise<{ systemPrompt: string; modelo: string }> {
   const perfil = await IaPerfil.findOne({ where: { id: 1 } });
   if (!perfil || !perfil.ativo) return { systemPrompt: DEFAULT_PROMPT, modelo: DEFAULT_MODEL };
   return { systemPrompt: perfil.system_prompt || DEFAULT_PROMPT, modelo: perfil.modelo || DEFAULT_MODEL };
@@ -145,11 +157,27 @@ export const corrigirTexto = async (req: Request, res: Response) => {
     if (!texto) return res.status(400).json({ error: 'Não há texto para corrigir.' });
 
     const { systemPrompt, modelo } = await getIaConfig();
-    const prompt = `Corrija a ortografia, gramática e clareza do texto abaixo, mantendo o mesmo sentido e tamanho aproximado. Responda apenas com o texto corrigido, sem comentários, introduções ou aspas.\n\nTexto:\n"""${texto}"""`;
+    const prompt = `Corrija a ortografia, gramática e clareza do texto abaixo, mantendo o mesmo sentido e tamanho aproximado. Responda apenas com o texto corrigido em TEXTO SIMPLES: não use markdown, asteriscos (**texto**), underscores, cerquilha (#), crases nem aspas ao redor. Sem comentários nem introduções.\n\nTexto:\n"""${texto}"""`;
     const { texto: corrigido, usouFallback } = await gerarComFallback(prompt, systemPrompt, modelo);
-    res.json({ texto: corrigido, usouFallback });
+    res.json({ texto: stripMarkdownEnfase(corrigido), usouFallback });
   } catch (error) {
     console.error('Erro IA corrigir-texto:', error);
+    res.status(503).json({ error: 'Assistente de IA indisponível no momento.' });
+  }
+};
+
+export const sugerirTitulo = async (req: Request, res: Response) => {
+  try {
+    const texto = stripHtml(String(req.body.texto || '')).trim();
+    if (!texto) return res.status(400).json({ error: 'Sem texto para gerar título.' });
+
+    const { systemPrompt, modelo } = await getIaConfig();
+    const prompt = `Com base no texto abaixo, crie um TÍTULO curto e objetivo (no máximo 8 palavras) que resuma o pedido. Responda apenas com o título, em texto simples, sem aspas, sem markdown e sem ponto final.\n\nTexto:\n"""${texto.slice(0, 2000)}"""`;
+    const { texto: titulo, usouFallback } = await gerarComFallback(prompt, systemPrompt, modelo);
+    const limpo = stripMarkdownEnfase(titulo).replace(/["\r\n]+/g, ' ').replace(/\s+/g, ' ').replace(/[.,;:!?]+$/, '').trim();
+    res.json({ titulo: limpo, usouFallback });
+  } catch (error) {
+    console.error('Erro IA sugerir-titulo:', error);
     res.status(503).json({ error: 'Assistente de IA indisponível no momento.' });
   }
 };
