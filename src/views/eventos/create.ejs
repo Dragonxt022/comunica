@@ -21,15 +21,12 @@ document.addEventListener('alpine:init', function() {
 </script>
 
 <div class="max-w-6xl mx-auto space-y-5" x-data="eventoCreateForm">
-    <div class="flex items-center gap-3">
-        <a href="/eventos" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </a>
-        <div>
-            <h1 class="text-xl font-bold text-gray-900">Agendar Evento</h1>
-            <p class="text-sm text-gray-500 mt-0.5">Preencha os dados para registrar um novo evento institucional.</p>
-        </div>
-    </div>
+
+    <%- include('../partials/form-header', {
+        backHref: '/eventos',
+        title: 'Agendar Evento',
+        subtitle: 'Preencha os dados para registrar um novo evento institucional.'
+    }) %>
 
     <form action="/eventos" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
@@ -37,7 +34,7 @@ document.addEventListener('alpine:init', function() {
         <input type="hidden" name="acao_id" value="<%= prefill.acao_id %>">
         <input type="hidden" name="plano_id" value="<%= prefill.plano_id %>">
         <div class="px-6 pt-5">
-            <div class="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-700 font-medium">
+            <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 font-medium">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 Este evento será vinculado a uma ação do Planejamento. Após salvar, você voltará ao plano automaticamente.
             </div>
@@ -52,17 +49,22 @@ document.addEventListener('alpine:init', function() {
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título do Evento <span class="text-red-500">*</span></label>
-                    <input type="text" name="titulo" required
+                    <input type="text" name="titulo" id="titulo-evento" required
                         value="<%= typeof prefill !== 'undefined' ? prefill.titulo : '' %>"
                         placeholder="Ex: Abertura do ano letivo 2025"
                         class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Descrição <span class="text-red-500">*</span></label>
-                    <textarea name="descricao" required rows="8"
-                        placeholder="Descreva o evento com detalhes: objetivo, público, programação, informações relevantes..."
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-y min-h-[180px]"><%= typeof prefill !== 'undefined' ? prefill.descricao : '' %></textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
+                    <%- include('../partials/quill-ia-field', {
+                        editorId: 'ed-evento',
+                        inputName: 'descricao',
+                        titleInputId: 'titulo-evento',
+                        placeholder: 'Descreva o evento com detalhes: objetivo, público, programação, informações relevantes...',
+                        initialHtml: typeof prefill !== 'undefined' ? prefill.descricao : '',
+                        required: true
+                    }) %>
                 </div>
 
                 <div>
@@ -154,7 +156,7 @@ document.addEventListener('alpine:init', function() {
                         </select>
                     </div>
 
-                    <% if(user.role === 'admin' || user.role === 'secom') { %>
+                    <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
                     <!-- Secretaria -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
@@ -201,12 +203,9 @@ document.addEventListener('alpine:init', function() {
 
         </div>
 
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 rounded-b-xl">
-            <a href="/eventos" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
-            <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Salvar Evento
-            </button>
-        </div>
+        <%- include('../partials/form-footer', {
+            cancelHref: '/eventos',
+            submitLabel: 'Salvar Evento'
+        }) %>
     </form>
 </div>

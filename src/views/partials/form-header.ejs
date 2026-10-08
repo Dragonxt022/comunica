@@ -1,0 +1,27 @@
+<%
+/* =============================================================================
+   Partial: cabeçalho padrão de formulário (voltar + título + subtítulo).
+   Parâmetros do include: backHref, title, subtitle (HTML permitido),
+   backTitle e headerRight (bloco HTML à direita, opcional).
+   ============================================================================= */
+var __backHref  = typeof backHref  !== 'undefined' ? backHref  : '/';
+var __title     = typeof title     !== 'undefined' ? title     : '';
+var __subtitle  = typeof subtitle  !== 'undefined' ? subtitle  : '';
+var __backTitle = typeof backTitle !== 'undefined' ? backTitle : 'Voltar';
+var __right     = typeof headerRight !== 'undefined' ? headerRight : '';
+%>
+<div class="flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-3">
+        <a href="<%= __backHref %>" title="<%= __backTitle %>"
+           class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="min-w-0">
+            <h1 class="text-xl font-bold text-gray-900"><%= __title %></h1>
+            <% if (__subtitle) { %><p class="text-sm text-gray-500 mt-0.5"><%- __subtitle %></p><% } %>
+        </div>
+    </div>
+    <% if (__right) { %><div><%- __right %></div><% } %>
+</div>

@@ -20,218 +20,214 @@ document.addEventListener('alpine:init', function() {
 });
 </script>
 
-<div class="space-y-6" x-data="eventoEditForm">
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-3">
-            <a href="/eventos" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            </a>
-            <div>
-                <h2 class="text-xl font-bold text-gray-900">Editar Evento</h2>
-                <p class="text-gray-500 text-sm">Atualize as informações do evento institucional.</p>
-            </div>
-        </div>
-        <!-- Adicionar ao Calendário -->
-        <div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">
-            <button @click.stop="calOpen = !calOpen"
-                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition shadow-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Adicionar ao Calendário
-            </button>
-            <div x-show="calOpen" style="display:none"
-                class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-56">
-                <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Adicionar ao Calendário</div>
-                <a id="edit-gcal-link" href="#" target="_blank" rel="noopener" @click="calOpen = false"
-                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">
-                    <span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded flex items-center justify-center shrink-0">G</span>
-                    Google Calendar
-                </a>
-                <div class="h-px bg-gray-100 mx-3"></div>
-                <button onclick="editIcsDownload()"
-                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
-                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Apple / iCal (.ics)
-                </button>
-            </div>
-        </div>
-    </div>
+<%
+    var fmtDT = function(d) {
+        if (!d) return '';
+        var dt = new Date(d);
+        var pad = function(n) { return String(n).padStart(2,'0'); };
+        return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate())
+             + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+    };
+    var calendarioMenu = '' +
+        '<div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">' +
+        '  <button type="button" @click.stop="calOpen = !calOpen" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition shadow-sm">' +
+        '    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' +
+        '    Adicionar ao Calendário' +
+        '  </button>' +
+        '  <div x-show="calOpen" style="display:none" class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-56">' +
+        '    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Publicar em</div>' +
+        '    <a id="edit-gcal-link" href="#" target="_blank" rel="noopener" @click="calOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">' +
+        '      <span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded flex items-center justify-center shrink-0">G</span>Google Calendar' +
+        '    </a>' +
+        '    <div class="h-px bg-gray-100 mx-3"></div>' +
+        '    <button type="button" onclick="editIcsDownload()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">' +
+        '      <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Apple / iCal (.ics)' +
+        '    </button>' +
+        '  </div>' +
+        '</div>';
+%>
 
-    <%
-        var fmtDT = function(d) {
-            if (!d) return '';
-            var dt = new Date(d);
-            var pad = function(n) { return String(n).padStart(2,'0'); };
-            return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate())
-                 + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
-        };
-    %>
+<div class="max-w-6xl mx-auto space-y-6" x-data="eventoEditForm">
 
-    <form action="/eventos/<%= evento.id %>" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+    <%- include('../partials/form-header', {
+        backHref: '/eventos',
+        title: 'Editar Evento',
+        subtitle: 'Atualize as informações do evento institucional.',
+        headerRight: calendarioMenu
+    }) %>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Título do Evento <span class="text-red-500">*</span></label>
-            <input type="text" name="titulo" required value="<%= evento.titulo %>"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-        </div>
+    <form action="/eventos/<%= evento.id %>" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
-            <textarea name="descricao" required rows="3"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition resize-none"><%= evento.descricao %></textarea>
-        </div>
+        <!-- 2-column grid -->
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-8 gap-y-5">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Local <span class="text-red-500">*</span></label>
-            <input type="text" name="local" required value="<%= evento.local %>"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-        </div>
+            <!-- ─── Coluna esquerda: dados principais ─── -->
+            <div class="space-y-5">
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Início <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_inicio" required value="<%= fmtDT(evento.data_inicio) %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Data e Hora de Fim <span class="text-red-500">*</span></label>
-                <input type="datetime-local" name="data_fim" required value="<%= fmtDT(evento.data_fim) %>"
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Evento <span class="text-red-500">*</span></label>
-            <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                <option value="">Selecione...</option>
-                <% ['Coletiva de Imprensa','Inauguração','Cerimônia','Reunião','Evento Cultural','Ação Social','Outros'].forEach(function(t) { %>
-                    <option value="<%= t %>" <%= evento.tipo === t ? 'selected' : '' %>><%= t %></option>
-                <% }) %>
-            </select>
-        </div>
-
-        <% if(user.role === 'admin' || user.role === 'secom') { %>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
-            <select name="secretaria_id" required
-                @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                <option value="">Selecione...</option>
-                <% secretarias.forEach(function(s) { %>
-                    <option value="<%= s.id %>" <%= evento.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
-                <% }) %>
-            </select>
-        </div>
-        <% } %>
-
-        <!-- Responsáveis -->
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Responsáveis pelo Evento</label>
-
-            <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
-                <template x-for="u in filteredUsers" :key="u.id">
-                    <button type="button" @click="toggle(u.id)"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
-                        :class="isSelected(u.id)
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
-                            :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'"
-                            x-text="u.nome.charAt(0)"></span>
-                        <span x-text="u.nome"></span>
-                    </button>
-                </template>
-            </div>
-
-            <p x-show="!selectedSec" class="text-sm text-gray-400 italic">
-                Selecione uma secretaria para ver os responsáveis disponíveis.
-            </p>
-            <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-gray-400 italic">
-                Nenhum usuário cadastrado para esta secretaria.
-            </p>
-
-            <template x-for="id in responsaveis" :key="id">
-                <input type="hidden" name="responsaveis[]" :value="id">
-            </template>
-        </div>
-
-        <!-- Imagem de Capa -->
-        <div x-data="{
-            preview: null,
-            fileName: '',
-            currentCapa: '<%= evento.imagem_capa || '' %>',
-            removida: false,
-            onChange(e) {
-                var f = e.target.files[0];
-                if (!f) return;
-                this.fileName = f.name;
-                this.removida = false;
-                var reader = new FileReader();
-                reader.onload = (ev) => { this.preview = ev.target.result; };
-                reader.readAsDataURL(f);
-            },
-            clear() { this.preview = null; this.fileName = ''; this.$refs.input.value = ''; },
-            async removerAtual() {
-                if (!confirm('Remover a imagem de capa atual?')) return;
-                const r = await fetch('/eventos/<%= evento.id %>/remover-capa', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                const d = await r.json();
-                if (d.ok) { this.currentCapa = ''; this.removida = true; }
-            }
-        }">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
-
-            <!-- Capa atual (quando existe e não foi substituída por preview) -->
-            <div x-show="currentCapa && !preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-3">
-                <img :src="currentCapa" class="w-full h-48 object-cover">
-                <div class="absolute inset-0 bg-black/30 flex items-end p-3">
-                    <span class="text-white text-xs font-medium flex-1">Capa atual</span>
-                    <button type="button" @click.prevent="removerAtual()"
-                        class="ml-2 px-2.5 py-1 bg-red-500/80 hover:bg-red-600 rounded-lg text-white text-xs font-medium transition">
-                        Remover
-                    </button>
-                    <button type="button" @click.prevent="$refs.input.click()"
-                        class="ml-2 px-2.5 py-1 bg-white/80 hover:bg-white rounded-lg text-gray-700 text-xs font-medium transition">
-                        Trocar
-                    </button>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título do Evento <span class="text-red-500">*</span></label>
+                    <input type="text" name="titulo" id="titulo-evento" required value="<%= evento.titulo %>"
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
-            </div>
 
-            <!-- Zona de upload (quando não há capa atual ou foi removida) -->
-            <div x-show="!currentCapa && !preview"
-                class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
-                @click="$refs.input.click()"
-                @dragover.prevent
-                @drop.prevent="onChange({ target: { files: $event.dataTransfer.files } })">
-                <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <p class="text-sm text-gray-500">Clique ou arraste uma imagem aqui</p>
-                <p class="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
-            </div>
-
-            <!-- Preview da nova imagem selecionada -->
-            <div x-show="preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                <img :src="preview" class="w-full h-48 object-cover">
-                <div class="absolute inset-0 bg-black/30 flex items-end p-3">
-                    <span class="text-white text-xs font-medium truncate flex-1" x-text="fileName"></span>
-                    <button type="button" @click.stop="clear()"
-                        class="ml-2 w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition text-white shrink-0" title="Cancelar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
+                    <%- include('../partials/quill-ia-field', {
+                        editorId: 'ed-evento',
+                        inputName: 'descricao',
+                        titleInputId: 'titulo-evento',
+                        placeholder: 'Descreva o evento com detalhes: objetivo, público, programação...',
+                        initialHtml: evento.descricao || '',
+                        required: true
+                    }) %>
                 </div>
-                <button type="button" @click="$refs.input.click()"
-                    class="absolute top-2 right-10 bg-white/80 hover:bg-white text-gray-700 text-xs px-2 py-1 rounded-lg shadow transition">
-                    Trocar
-                </button>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Local <span class="text-red-500">*</span></label>
+                    <input type="text" name="local" required value="<%= evento.local %>"
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                </div>
+
+                <!-- Imagem de Capa -->
+                <div x-data="{
+                    preview: null,
+                    fileName: '',
+                    currentCapa: '<%= evento.imagem_capa || '' %>',
+                    removida: false,
+                    onChange(e) {
+                        var f = e.target.files[0];
+                        if (!f) return;
+                        this.fileName = f.name;
+                        this.removida = false;
+                        var reader = new FileReader();
+                        reader.onload = (ev) => { this.preview = ev.target.result; };
+                        reader.readAsDataURL(f);
+                    },
+                    clear() { this.preview = null; this.fileName = ''; this.$refs.input.value = ''; },
+                    async removerAtual() {
+                        if (!confirm('Remover a imagem de capa atual?')) return;
+                        const r = await fetch('/eventos/<%= evento.id %>/remover-capa', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                        const d = await r.json();
+                        if (d.ok) { this.currentCapa = ''; this.removida = true; }
+                    }
+                }">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
+
+                    <div x-show="currentCapa && !preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-3">
+                        <img :src="currentCapa" class="w-full h-48 object-cover">
+                        <div class="absolute inset-0 bg-black/30 flex items-end p-3">
+                            <span class="text-white text-xs font-medium flex-1">Capa atual</span>
+                            <button type="button" @click.prevent="removerAtual()"
+                                class="ml-2 px-2.5 py-1 bg-red-500/80 hover:bg-red-600 rounded-lg text-white text-xs font-medium transition">Remover</button>
+                            <button type="button" @click.prevent="$refs.input.click()"
+                                class="ml-2 px-2.5 py-1 bg-white/80 hover:bg-white rounded-lg text-gray-700 text-xs font-medium transition">Trocar</button>
+                        </div>
+                    </div>
+
+                    <div x-show="!currentCapa && !preview"
+                        class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
+                        @click="$refs.input.click()"
+                        @dragover.prevent
+                        @drop.prevent="onChange({ target: { files: $event.dataTransfer.files } })">
+                        <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-sm text-gray-500">Clique ou arraste uma imagem aqui</p>
+                        <p class="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
+                    </div>
+
+                    <div x-show="preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                        <img :src="preview" class="w-full h-48 object-cover">
+                        <div class="absolute inset-0 bg-black/30 flex items-end p-3">
+                            <span class="text-white text-xs font-medium truncate flex-1" x-text="fileName"></span>
+                            <button type="button" @click.stop="clear()"
+                                class="ml-2 w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition text-white shrink-0" title="Cancelar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <button type="button" @click="$refs.input.click()"
+                            class="absolute top-2 right-10 bg-white/80 hover:bg-white text-gray-700 text-xs px-2 py-1 rounded-lg shadow transition">Trocar</button>
+                    </div>
+
+                    <input type="file" name="capa" accept="image/*" x-ref="input" @change="onChange($event)" class="hidden">
+                </div>
+
             </div>
 
-            <input type="file" name="capa" accept="image/*" x-ref="input" @change="onChange($event)" class="hidden">
+            <!-- ─── Coluna direita: metadados ─── -->
+            <div class="space-y-5">
+
+                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-5">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Dados do Evento</p>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Início <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" name="data_inicio" required value="<%= fmtDT(evento.data_inicio) %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Fim <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" name="data_fim" required value="<%= fmtDT(evento.data_fim) %>"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Evento <span class="text-red-500">*</span></label>
+                        <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <option value="">Selecione...</option>
+                            <% ['Coletiva de Imprensa','Inauguração','Cerimônia','Reunião','Evento Cultural','Ação Social','Outros'].forEach(function(t) { %>
+                                <option value="<%= t %>" <%= evento.tipo === t ? 'selected' : '' %>><%= t %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
+                        <select name="secretaria_id" required
+                            @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <option value="">Selecione...</option>
+                            <% secretarias.forEach(function(s) { %>
+                                <option value="<%= s.id %>" <%= evento.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <% } %>
+
+                    <!-- Responsáveis -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Responsáveis pelo Evento</label>
+                        <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
+                            <template x-for="u in filteredUsers" :key="u.id">
+                                <button type="button" @click="toggle(u.id)"
+                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
+                                    :class="isSelected(u.id) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
+                                        :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'"
+                                        x-text="u.nome.charAt(0)"></span>
+                                    <span x-text="u.nome"></span>
+                                </button>
+                            </template>
+                        </div>
+                        <p x-show="!selectedSec" class="text-sm text-gray-400 italic">
+                            Selecione uma secretaria para ver os responsáveis disponíveis.
+                        </p>
+                        <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-gray-400 italic">
+                            Nenhum usuário cadastrado para esta secretaria.
+                        </p>
+                        <template x-for="id in responsaveis" :key="id">
+                            <input type="hidden" name="responsaveis[]" :value="id">
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="pt-2 flex justify-end gap-3">
-            <a href="/eventos" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition">Cancelar</a>
-            <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Salvar Alterações
-            </button>
-        </div>
+        <%- include('../partials/form-footer', {
+            cancelHref: '/eventos',
+            submitLabel: 'Salvar Alterações'
+        }) %>
     </form>
 </div>
 

@@ -6,39 +6,16 @@ const formAction = isEdit
     : '/planejamento/' + plano.id + '/acoes';
 const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
 %>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
-<style>
-.ql-toolbar.ql-snow { border: 1px solid #d1d5db; border-bottom: none; border-radius: 0.5rem 0.5rem 0 0; background: #f9fafb; padding: 6px 10px; }
-.ql-container.ql-snow { border: 1px solid #d1d5db; border-radius: 0 0 0.5rem 0.5rem; font-size: 0.875rem; font-family: inherit; }
-.ql-editor { min-height: 380px; padding: 14px 16px; }
-.ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
-.ql-toolbar.ql-snow .ql-formats { margin-right: 6px; }
-.rich-preview h2,.rich-preview h3{font-weight:700;margin-bottom:4px}
-.rich-preview strong{font-weight:600}
-.rich-preview ul,.rich-preview ol{padding-left:1.25rem;margin:4px 0}
-</style>
-
 <div class="max-w-6xl mx-auto space-y-5">
 
-    <!-- Header -->
-    <div class="flex items-center gap-3">
-        <a href="/planejamento/<%= plano.id %>"
-           class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition shrink-0"
-           title="Voltar ao plano">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-        </a>
-        <div class="min-w-0">
-            <h1 class="text-xl font-bold text-gray-900"><%= pageTitle %></h1>
-            <p class="text-sm text-gray-500 mt-0.5">
-                Plano: <a href="/planejamento/<%= plano.id %>" class="font-medium text-indigo-600 hover:underline"><%= plano.titulo %></a>
-            </p>
-        </div>
-    </div>
+    <%- include('../partials/form-header', {
+        backHref: '/planejamento/' + plano.id,
+        backTitle: 'Voltar ao plano',
+        title: pageTitle,
+        subtitle: 'Plano: <a href="/planejamento/' + plano.id + '" class="font-medium text-blue-600 hover:underline">' + plano.titulo + '</a>'
+    }) %>
 
-    <!-- Form -->
-    <form action="<%= formAction %>" method="POST" id="form-acao"
+    <form action="<%= formAction %>" method="POST"
           class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
         <!-- 2-column grid -->
@@ -52,10 +29,10 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">
                         Título <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="titulo" required
+                    <input type="text" name="titulo" id="titulo-acao" required
                         value="<%= acaoEdit ? acaoEdit.titulo : '' %>"
                         placeholder="Descreva a ação de forma objetiva..."
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                 </div>
 
                 <!-- Objetivo -->
@@ -63,17 +40,22 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Objetivo</label>
                     <textarea name="objetivo" rows="3"
                         placeholder="O que se pretende alcançar com esta ação?"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm resize-none"><%= acaoEdit ? (acaoEdit.objetivo || '') : '' %></textarea>
+                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm resize-none"><%= acaoEdit ? (acaoEdit.objetivo || '') : '' %></textarea>
                 </div>
 
-                <!-- Descrição Quill — ocupa o restante da coluna esquerda -->
+                <!-- Descrição / Detalhes (Quill + IA) -->
                 <div class="flex-1">
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="block text-sm font-semibold text-gray-700">Descrição / Detalhes</label>
                         <span class="text-xs text-gray-400">Suporta formatação rica</span>
                     </div>
-                    <div id="quill-acao-editor"></div>
-                    <input type="hidden" name="descricao" id="input-acao-descricao">
+                    <%- include('../partials/quill-ia-field', {
+                        editorId: 'ed-acao',
+                        inputName: 'descricao',
+                        titleInputId: 'titulo-acao',
+                        placeholder: 'Detalhe os procedimentos, recursos necessários, contexto...',
+                        initialHtml: acaoEdit ? (acaoEdit.descricao || '') : ''
+                    }) %>
                 </div>
 
             </div>
@@ -90,7 +72,7 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
                         <input type="text" name="responsavel_nome"
                             value="<%= acaoEdit ? (acaoEdit.responsavel_nome || '') : '' %>"
                             placeholder="Nome do responsável"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                     </div>
 
                     <!-- Prazo -->
@@ -98,14 +80,14 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Prazo</label>
                         <input type="date" name="prazo"
                             value="<%= acaoEdit && acaoEdit.prazo ? String(acaoEdit.prazo).slice(0, 10) : '' %>"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                     </div>
 
                     <!-- Prioridade -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Prioridade</label>
                         <select name="prioridade"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="baixa" <%= acaoEdit && acaoEdit.prioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
                             <option value="media" <%= !acaoEdit || acaoEdit.prioridade === 'media' ? 'selected' : '' %>>Média</option>
                             <option value="alta" <%= acaoEdit && acaoEdit.prioridade === 'alta' ? 'selected' : '' %>>Alta</option>
@@ -116,7 +98,7 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
                         <select name="status"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="nao_iniciado" <%= !acaoEdit || acaoEdit.status === 'nao_iniciado' ? 'selected' : '' %>>Não iniciado</option>
                             <option value="em_andamento" <%= acaoEdit && acaoEdit.status === 'em_andamento' ? 'selected' : '' %>>Em andamento</option>
                             <option value="concluido" <%= acaoEdit && acaoEdit.status === 'concluido' ? 'selected' : '' %>>Concluído</option>
@@ -129,46 +111,9 @@ const pageTitle = isEdit ? 'Editar Ação' : 'Nova Ação';
 
         </div>
 
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50 rounded-b-xl">
-            <a href="/planejamento/<%= plano.id %>"
-               class="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-white transition">
-                Cancelar
-            </a>
-            <button type="submit"
-                class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition shadow-sm">
-                <%= isEdit ? 'Salvar Alterações' : 'Criar Ação' %>
-            </button>
-        </div>
+        <%- include('../partials/form-footer', {
+            cancelHref: '/planejamento/' + plano.id,
+            submitLabel: isEdit ? 'Salvar Alterações' : 'Criar Ação'
+        }) %>
     </form>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-<script>
-(function() {
-    var quill = new Quill('#quill-acao-editor', {
-        theme: 'snow',
-        placeholder: 'Detalhe os procedimentos, recursos necessários, contexto...',
-        modules: {
-            toolbar: [
-                [{ header: [2, 3, false] }],
-                ['bold', 'italic', 'underline'],
-                [{ color: [] }],
-                [{ align: [] }],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                [{ indent: '-1' }, { indent: '+1' }],
-                ['clean']
-            ]
-        }
-    });
-
-    <% if (acaoEdit && acaoEdit.descricao) { %>
-    quill.root.innerHTML = <%- JSON.stringify(acaoEdit.descricao) %>;
-    <% } %>
-
-    document.getElementById('form-acao').addEventListener('submit', function() {
-        var html = quill.root.innerHTML;
-        document.getElementById('input-acao-descricao').value = html === '<p><br></p>' ? '' : html;
-    });
-}());
-</script>
