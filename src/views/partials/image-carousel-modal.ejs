@@ -20,9 +20,9 @@
 
         <!-- Imagem + setas + swipe -->
         <div class="relative w-full flex items-center justify-center"
-             x-data="{ tX: 0 }"
+             x-data="{ tX: 0, swipeEnd(e) { var dx = e.changedTouches[0].clientX - this.tX; if (Math.abs(dx) > 50) { dx < 0 ? $store.carousel.next() : $store.carousel.prev(); } } }"
              @touchstart.passive="tX = $event.touches[0].clientX"
-             @touchend.passive="var dx = $event.changedTouches[0].clientX - tX; if (Math.abs(dx) > 50) { dx < 0 ? $store.carousel.next() : $store.carousel.prev(); }">
+             @touchend.passive="swipeEnd($event)">
             <img :src="$store.carousel.current().url" :alt="$store.carousel.current().titulo"
                  class="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl select-none">
 
