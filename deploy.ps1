@@ -8,10 +8,13 @@
     preciso) e pm2 restart do processo.
 
 .PARAMETER Vps
-    Host ou alias SSH da VPS. Padrão: srv1285015
+    Host ou IP da VPS. Padrão: 187.77.251.231
 
 .PARAMETER User
     Usuário SSH. Padrão: root
+
+.PARAMETER Identity
+    Arquivo de chave SSH privada. Padrão: ~\.ssh\kivo_vps_deploy
 
 .PARAMETER AppPath
     Caminho do projeto na VPS.
@@ -24,11 +27,12 @@
     .\deploy.ps1
 
 .EXAMPLE
-    .\deploy.ps1 -Vps 1.2.3.4 -User root -AppName comunica
+    .\deploy.ps1 -Vps 187.77.251.231 -User root -AppName comunica
 #>
 param(
-    [string]$Vps      = "srv1285015",
+    [string]$Vps      = "187.77.251.231",
     [string]$User     = "root",
+    [string]$Identity = "$env:USERPROFILE\.ssh\kivo_vps_deploy",
     [string]$AppPath  = "/home/buscamais-comunica/htdocs/comunica.buscamais.org",
     [string]$AppName  = ""
 )
@@ -54,7 +58,14 @@ if (-not $ssh) {
     exit 1
 }
 
+if ($Identity -and -not (Test-Path -LiteralPath $Identity)) {
+    Write-Fail "Chave SSH não encontrada: $Identity"
+    Write-Host "        Informe com: .\deploy.ps1 -Identity C:\caminho\para\chave"
+    exit 1
+}
+
 $target = "$User@$Vps"
+$sshArgs = @("-i", $Identity, "-o", "IdentitiesOnly=yes")
 
 # ── Monta o comando remoto ────────────────────────────────────────────────────
 $appEnv = if ($AppName) { "COMUNICA_APP_NAME='$AppName' " } else { "" }
@@ -62,7 +73,7 @@ $remoteCmd = "cd '$AppPath' && ${appEnv}bash update.sh"
 
 # ── Testa conexão SSH ─────────────────────────────────────────────────────────
 Write-Info "Testando conexão SSH..."
-& ssh -o ConnectTimeout=10 -o BatchMode=no "$target" "echo ok" | Out-Null
+& ssh @sshArgs -o ConnectTimeout=10 -o BatchMode=no "$target" "echo ok" | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Fail "Não foi possível conectar em $target."
     Write-Host "        Verifique a chave SSH (ou use -User correto) e tente de novo."
@@ -75,7 +86,7 @@ Write-Host ""
 # ── Executa o update.sh na VPS (com TTY, pois o script pode pedir confirmação) ─
 Write-Info "Executando update.sh na VPS..."
 Write-Host ""
-& ssh -t "$target" $remoteCmd
+& ssh @sshArgs -t "$target" $remoteCmd
 $code = $LASTEXITCODE
 Write-Host ""
 
