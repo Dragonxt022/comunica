@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <% if (user && (user.role === 'admin' || user.role === 'secom')) { %>
+        <% if (user && ['admin', 'secom', 'super_admin'].includes(user.role)) { %>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
             <select name="secretaria_id" required

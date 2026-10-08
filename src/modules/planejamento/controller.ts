@@ -37,7 +37,10 @@ export const store = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
     const { titulo, descricao, periodo_inicio, periodo_fim, secretaria_id } = req.body;
-    const secId = ['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id;
+    const secId = (['admin', 'secom', 'super_admin'].includes(user.role) ? secretaria_id : user.secretaria_id) || user.secretaria_id;
+    if (!secId) {
+      return res.status(400).send('Selecione uma secretaria para criar o plano.');
+    }
     const plano = await Repo.createPlano({ titulo, descricao, periodo_inicio, periodo_fim, secretaria_id: secId, municipio_id: user.municipio_id, criado_por: user.id });
     res.redirect(`/planejamento/${(plano as any).id}`);
   } catch (err) {
