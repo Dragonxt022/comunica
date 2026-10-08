@@ -94,8 +94,14 @@ async function broadcastToSuperAdmins(eventName: string, data: Record<string, an
  * conectar" no celular se já não for mais válida do lado do servidor deles. Reconexão automática
  * de sessão ainda válida (ex.: depois de uma queda de rede) é tratada à parte, pelo retry do
  * handler de `connection.update`, sem precisar do botão.
+ * @param resuming Usado só pelo retry interno do handler de `connection.update` (ver abaixo).
+ * Pula a checagem de `state.creds.registered`. Necessário porque o WhatsApp fecha a conexão de
+ * propósito com "restart required" logo após um pareamento bem-sucedido — nesse instante
+ * `registered` ainda pode estar `false` em disco (o `me` já veio preenchido, mas o handshake só
+ * é confirmado de fato na reconexão seguinte). Sem isso, esse retry se autobloqueia igual ao guard
+ * do boot, o QR nunca fecha o ciclo e o celular acaba mostrando "Não foi possível conectar".
  */
-export async function startWhatsapp(force = false): Promise<void> {
+export async function startWhatsapp(force = false, resuming = false): Promise<void> {
   if (connecting || sock?.user) return;
 
   if (force) {
@@ -104,7 +110,7 @@ export async function startWhatsapp(force = false): Promise<void> {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
 
-  if (!force && !state.creds.registered) return;
+  if (!force && !resuming && !state.creds.registered) return;
 
   connecting = true;
   // Trava de segurança: se `connection.update` nunca disparar open/close por algum motivo,
@@ -159,11 +165,12 @@ async function handleConnectionUpdate(update: Partial<{ connection: string; last
 
     // `restartRequired` é esperado logo após um pareamento bem-sucedido — reconectar
     // automaticamente é o comportamento normal, não um erro.
+    console.error('WhatsApp connection.update close — statusCode:', statusCode, 'reason:', lastDisconnect?.error?.message || lastDisconnect?.error);
     await Configuracao.update({ whatsapp_conectado: false } as any, { where: { id: 1 } });
     bustConfigCache();
     await broadcastToSuperAdmins('whatsapp:status', { conectado: false, numero: null, reconectando: true });
     sock = null;
-    setTimeout(() => { startWhatsapp().catch((e) => console.error('Erro ao reconectar WhatsApp:', e)); }, 5_000);
+    setTimeout(() => { startWhatsapp(false, true).catch((e) => console.error('Erro ao reconectar WhatsApp:', e)); }, 5_000);
   }
 }
 
