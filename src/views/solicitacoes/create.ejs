@@ -183,7 +183,7 @@ document.addEventListener('alpine:init', function() {
                 var box = this.$refs.chatBox;
                 this.$nextTick(function() { if (box) box.scrollTop = box.scrollHeight; });
             },
-            adicionarAoFormulario: function() {
+            adicionarAoFormulario: async function() {
                 var ultima = null;
                 for (var i = this.chatMensagens.length - 1; i >= 0; i--) {
                     if (this.chatMensagens[i].role === 'assistant') { ultima = this.chatMensagens[i]; break; }
@@ -192,6 +192,19 @@ document.addEventListener('alpine:init', function() {
                 this.setQuillText(ultima.texto);
                 this.chatOpen = false;
                 this.showToast('Texto estruturado adicionado ao formulário — revise antes de enviar.', true);
+
+                // Preenche o título automaticamente, se ainda estiver vazio
+                var tituloInput = this.$refs.tituloInput;
+                if (tituloInput && !tituloInput.value.trim()) {
+                    try {
+                        var res = await fetch('/ia/sugerir-titulo', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ texto: ultima.texto }),
+                        });
+                        var data = await res.json();
+                        if (res.ok && data.titulo) tituloInput.value = data.titulo;
+                    } catch (err) { /* título é opcional */ }
+                }
             },
         };
     });

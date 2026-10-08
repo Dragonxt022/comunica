@@ -1,0 +1,37 @@
+<script>
+/**
+ * Habilita arrastar-e-soltar e colar imagens dentro de um editor Quill.
+ * Uso:  enableQuillImageInput(quill, '/releases/upload-imagem')
+ *       enableQuillImageInput(quill, '/solicitacoes/upload-imagem')
+ * O endpoint deve aceitar POST multipart (campo `imagem`) e responder { ok: true, url }.
+ */
+window.enableQuillImageInput = window.enableQuillImageInput || function (quill, endpoint, fieldName) {
+    fieldName = fieldName || 'imagem';
+
+    function inserirArquivos(files) {
+        Array.prototype.forEach.call(files, function (file) {
+            if (!file || !file.type || file.type.indexOf('image/') !== 0) return;
+            var fd = new FormData();
+            fd.append(fieldName, file);
+            fetch(endpoint, { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.ok) { alert(data.error || 'Falha ao enviar a imagem.'); return; }
+                    var range = quill.getSelection(true) || { index: quill.getLength() };
+                    quill.insertEmbed(range.index, 'image', data.url, 'user');
+                    quill.setSelection(range.index + 1);
+                })
+                .catch(function () { alert('Falha ao enviar a imagem.'); });
+        });
+    }
+
+    quill.root.addEventListener('drop', function (e) {
+        var dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length) { e.preventDefault(); inserirArquivos(dt.files); }
+    });
+    quill.root.addEventListener('paste', function (e) {
+        var cd = e.clipboardData;
+        if (cd && cd.files && cd.files.length) { e.preventDefault(); inserirArquivos(cd.files); }
+    });
+};
+</script>

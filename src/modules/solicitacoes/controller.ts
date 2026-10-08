@@ -163,6 +163,13 @@ export const show = async (req: Request, res: Response) => {
       order: [['createdAt', 'ASC']],
     });
 
+    // Renderiza texto rico (permite imagens locais) dos comentários do usuário
+    comentarios.forEach((c: any) => {
+      if (c.tipo === 'comentario' || c.tipo === 'anexo') {
+        c.textoHtml = normalizeDescricao(c.texto || '');
+      }
+    });
+
     res.render('solicitacoes/show', { title: `Solicitação #${sol.id}`, sol, comentarios });
   } catch (error) {
     console.error('Error showing solicitacao:', error);
@@ -403,7 +410,12 @@ export const addComentario = async (req: Request, res: Response) => {
     const { texto } = req.body;
     const file = (req as any).file;
 
-    if (!texto?.trim() && !file) {
+    const textoRaw = String(texto || '').trim();
+    const temImagem = /<img[\s>]/i.test(textoRaw);
+    const textoSemTags = textoRaw.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const temTexto = textoSemTags.length > 0;
+
+    if (!temTexto && !temImagem && !file) {
       return res.redirect(`/solicitacoes/${id}#feed`);
     }
 
@@ -413,7 +425,7 @@ export const addComentario = async (req: Request, res: Response) => {
       solicitacao_id: id,
       autor_id: user.id,
       tipo: file ? 'anexo' : 'comentario',
-      texto: texto?.trim() || null,
+      texto: (temTexto || temImagem) ? normalizeDescricao(textoRaw) : null,
       arquivo_url: file ? `/uploads/solicitacoes/${file.filename}` : null,
       arquivo_nome: file ? file.originalname : null,
     });
@@ -426,7 +438,8 @@ export const addComentario = async (req: Request, res: Response) => {
     });
 
     const tituloSol = sol?.titulo || `#${id}`;
-    const corpoNotif = `${user.nome}: "${texto?.trim()?.substring(0, 60) || (file ? file.originalname : '')}"`;
+    const resumoComentario = textoSemTags.substring(0, 60) || (file ? file.originalname : 'imagem');
+    const corpoNotif = `${user.nome}: "${resumoComentario}"`;
 
     if (user.role === 'secretaria') {
       notificarRole(['admin', 'secom'], {
@@ -448,6 +461,17 @@ export const addComentario = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error adding comentario:', error);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+export const uploadInlineImagem = async (req: Request, res: Response) => {
+  try {
+    const file = (req as any).file;
+    if (!file) return res.status(400).json({ ok: false, error: 'Nenhuma imagem enviada.' });
+    return res.json({ ok: true, url: `/uploads/solicitacoes/${file.filename}` });
+  } catch (err) {
+    console.error('Erro upload inline imagem:', err);
+    return res.status(500).json({ ok: false, error: 'Falha ao enviar a imagem.' });
   }
 };
 

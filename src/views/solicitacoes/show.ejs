@@ -234,7 +234,7 @@
                                 <span class="text-[10px] text-blue-400"><%= fmtDate %></span>
                             </div>
                             <% if(c.texto) { %>
-                            <p class="text-sm text-blue-800 whitespace-pre-wrap"><%= c.texto %></p>
+                            <div class="text-sm text-blue-800 comment-rich"><%- c.textoHtml || '' %></div>
                             <% } %>
                             <a href="<%= c.arquivo_url %>" target="_blank"
                                class="flex items-center gap-3 p-3 bg-white border border-blue-100 hover:border-blue-300 rounded-lg transition group">
@@ -293,7 +293,7 @@
                                 <span class="font-semibold text-sm text-gray-800"><%= c.autor ? c.autor.nome : '' %></span>
                                 <span class="text-[10px] text-gray-400"><%= fmtDate %></span>
                             </div>
-                            <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed"><%= c.texto %></p>
+                            <div class="text-sm text-gray-700 leading-relaxed comment-rich"><%- c.textoHtml || '' %></div>
                         </div>
                     </div>
                 </div>
@@ -346,15 +346,15 @@
             <!-- ═══ Formulário de comentário ═══ -->
             <% if(sol.status !== 'finalizado' && sol.status !== 'cancelado') { %>
             <div class="pt-2 border-t border-gray-100">
-                <form action="/solicitacoes/<%= sol.id %>/comentarios" method="POST" enctype="multipart/form-data">
+                <form action="/solicitacoes/<%= sol.id %>/comentarios" method="POST" enctype="multipart/form-data" id="comment-form">
                     <div class="flex gap-3">
                         <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center bg-blue-600 text-white text-xs font-black">
                             <% if(user.avatar) { %><img src="<%= user.avatar %>" alt="" class="w-full h-full object-cover"><% } else { %><%= user.nome ? user.nome.charAt(0).toUpperCase() : 'U' %><% } %>
                         </div>
                         <div class="flex-1 space-y-2">
-                            <textarea name="texto" rows="2" id="comment-textarea"
-                                placeholder="Adicionar comentário, instrução ou informação..."
-                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none transition"></textarea>
+                            <div id="comment-editor"></div>
+                            <input type="hidden" name="texto" id="comment-input">
+                            <p class="text-[11px] text-gray-400">Dica: arraste ou cole uma imagem aqui dentro para anexá-la ao comentário.</p>
 
                             <!-- File preview -->
                             <div id="file-preview" class="hidden flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-700">
@@ -1104,4 +1104,71 @@
         });
     }());
 }());
+</script>
+
+<style>
+#comment-editor .ql-toolbar.ql-snow { border: 1px solid #e5e7eb; border-bottom: none; border-radius: 0.75rem 0.75rem 0 0; background: #f9fafb; padding: 6px 8px; }
+#comment-editor .ql-container.ql-snow { border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; font-size: 0.875rem; font-family: inherit; }
+#comment-editor .ql-editor { min-height: 68px; max-height: 240px; overflow-y: auto; padding: 10px 12px; }
+#comment-editor .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+.comment-rich img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
+.comment-rich p { margin: 0; }
+.comment-rich ul, .comment-rich ol { padding-left: 1.25rem; margin: 2px 0; }
+</style>
+
+<%- include('../partials/quill-image-input.ejs') %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+(function () {
+    var el = document.getElementById('comment-editor');
+    if (!el || typeof Quill === 'undefined') return;
+
+    var quill = new Quill(el, {
+        theme: 'snow',
+        placeholder: 'Adicionar comentário, instrução ou informação...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
+
+    function upload(file) {
+        if (!file) return;
+        var fd = new FormData();
+        fd.append('imagem', file);
+        fetch('/solicitacoes/upload-imagem', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d.ok) { alert(d.error || 'Falha ao enviar a imagem.'); return; }
+                var range = quill.getSelection(true) || { index: quill.getLength() };
+                quill.insertEmbed(range.index, 'image', d.url, 'user');
+                quill.setSelection(range.index + 1);
+            })
+            .catch(function () { alert('Falha ao enviar a imagem.'); });
+    }
+
+    quill.getModule('toolbar').addHandler('image', function () {
+        var inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'image/*';
+        inp.onchange = function () { upload(inp.files[0]); };
+        inp.click();
+    });
+
+    if (window.enableQuillImageInput) enableQuillImageInput(quill, '/solicitacoes/upload-imagem');
+
+    var form = document.getElementById('comment-form');
+    var input = document.getElementById('comment-input');
+    if (form && input) {
+        form.addEventListener('submit', function () {
+            var html = quill.root.innerHTML;
+            input.value = (html === '<p><br></p>') ? '' : html;
+        });
+    }
+})();
 </script>
