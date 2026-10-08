@@ -20,15 +20,33 @@ info()  { echo -e "${CYAN}  →${RESET}  $*"; }
 step()  { echo -e "\n${BOLD}── $* ${RESET}"; }
 die()   { echo -e "\n${RED}  ✘  ERRO: $*${RESET}\n" >&2; exit 1; }
 
-APP_NAME="comunica"
-
 # ── Detecta o diretório do projeto automaticamente ────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# ── Nome do processo no PM2 ───────────────────────────────────────────────────
+# Pode ser forçado via variável de ambiente:
+#   COMUNICA_APP_NAME=buscamais bash update.sh
+# Sem isso, o script detecta o processo PM2 cujo diretório de trabalho é este.
+APP_NAME="${COMUNICA_APP_NAME:-comunica}"
+if [ -z "${COMUNICA_APP_NAME:-}" ] && command -v pm2 >/dev/null 2>&1; then
+  DETECTED_APP="$(pm2 jlist 2>/dev/null | node -e '
+    try {
+      const apps = JSON.parse(require("fs").readFileSync("/dev/stdin", "utf8"));
+      const dir = process.argv[1];
+      const hit = apps.find(p => p && p.pm2_env && p.pm2_env.pm_cwd === dir);
+      if (hit) process.stdout.write(hit.name);
+    } catch (e) {}
+  ' "$SCRIPT_DIR" 2>/dev/null || true)"
+  if [ -n "$DETECTED_APP" ]; then
+    APP_NAME="$DETECTED_APP"
+  fi
+fi
+
 echo ""
 echo -e "${BOLD}${CYAN}  Comunica — Atualização${RESET}  ($(date '+%d/%m/%Y %H:%M:%S'))"
 echo -e "  Diretório: ${SCRIPT_DIR}"
+echo -e "  Processo PM2: ${BOLD}${APP_NAME}${RESET}"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -136,12 +154,23 @@ step "5/5  Reiniciando aplicação"
 
 if pm2 describe "$APP_NAME" &>/dev/null; then
   pm2 restart "$APP_NAME" --silent
-  ok "Aplicação reiniciada via PM2."
+  ok "Aplicação reiniciada via PM2 (${APP_NAME})."
+elif [ "$APP_NAME" != "comunica" ] && pm2 describe comunica &>/dev/null; then
+  APP_NAME="comunica"
+  pm2 restart "$APP_NAME" --silent
+  ok "Aplicação reiniciada via PM2 (${APP_NAME})."
 else
-  warn "Processo '${APP_NAME}' não encontrado no PM2. Iniciando..."
-  pm2 start ecosystem.config.cjs --env production --silent
-  pm2 save --force &>/dev/null
-  ok "Aplicação iniciada."
+  warn "Processo '${APP_NAME}' não encontrado no PM2."
+  echo -en "${YELLOW}  Iniciar um novo processo a partir do ecosystem.config.cjs? [s/N]: ${RESET}"
+  read -r START_NEW
+  if [[ "$START_NEW" =~ ^[sS]$ ]]; then
+    pm2 start ecosystem.config.cjs --env production --silent
+    pm2 save --force &>/dev/null
+    ok "Aplicação iniciada."
+  else
+    warn "Nenhum processo iniciado. Confira o nome com: pm2 status"
+    warn "Você pode forçar o nome com: COMUNICA_APP_NAME=<nome> bash update.sh"
+  fi
 fi
 
 # Aguarda a aplicação subir
