@@ -71,6 +71,8 @@ export interface ElImagem extends ElementoBase {
   raio?: number;
   editavel?: boolean;
   placeholder?: string;
+  /** Cor para tingir a imagem (usa o alfa como máscara — ideal p/ ícones/silhuetas). */
+  cor?: CorRef;
 }
 
 export interface ElTexto extends ElementoBase {

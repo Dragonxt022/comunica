@@ -84,7 +84,16 @@ function renderImagem(el: ElImagem, input: ComposicaoInput): string {
   const clip = el.raio
     ? `<clipPath id="${clipId}"><rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="${el.raio}" ry="${el.raio}"/></clipPath>`
     : `<clipPath id="${clipId}"><rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"/></clipPath>`;
-  return `<defs>${clip}</defs><image href="${dataUri}" x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" preserveAspectRatio="${preserve}" clip-path="url(#${clipId})" opacity="${op}"/>`;
+  // Tinge a imagem usando o alfa como máscara (PNG preto → qualquer cor).
+  let filterDef = '';
+  let filterAttr = '';
+  if (el.cor) {
+    const fId = `tint-${el.id}`;
+    const cor = resolverCor(el.cor, input.paleta);
+    filterDef = `<filter id="${fId}" x="0" y="0" width="100%" height="100%"><feFlood flood-color="${cor}"/><feComposite in2="SourceGraphic" operator="in"/></filter>`;
+    filterAttr = ` filter="url(#${fId})"`;
+  }
+  return `<defs>${clip}${filterDef}</defs><image href="${dataUri}" x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" preserveAspectRatio="${preserve}" clip-path="url(#${clipId})"${filterAttr} opacity="${op}"/>`;
 }
 
 function renderElemento(el: Elemento, input: ComposicaoInput, diag: DiagnosticoTexto[]): string {
