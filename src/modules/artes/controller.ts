@@ -280,10 +280,35 @@ export const modeloStore = async (req: Request, res: Response) => {
     if (!ehGestor(user)) return res.status(403).json({ ok: false });
     const mid = escopoMid(user, req);
     const { nome, descricao, categoria, paleta_id } = req.body;
-    const formatos: string[] = Array.isArray(req.body.formatos) ? req.body.formatos : (req.body.formatos ? [req.body.formatos] : ['9:16']);
     const carrossel = req.body.carrossel === 'on' || req.body.carrossel === '1' || req.body.carrossel === true;
+    const formatosReq: string[] = Array.isArray(req.body.formatos) ? req.body.formatos : (req.body.formatos ? [req.body.formatos] : ['9:16']);
+    const camposBase = parseJson<Campo[]>(req.body.campos_json, []);
+    const variantesJson = parseJson<any[]>(req.body.variantes_json, null);
 
-    const campos = parseJson<Campo[]>(req.body.campos_json, []);
+    let variantes: any[] = [];
+    let formatos: string[] = formatosReq;
+    if (Array.isArray(variantesJson) && variantesJson.length) {
+      // Vem do editor visual — preserva tudo o que foi montado (evita perder o trabalho).
+      variantes = variantesJson.map((v) => ({
+        chave: String(v.chave || '9:16'),
+        papel: String(v.papel || 'principal'),
+        nome: String(v.nome || v.chave || 'Variante'),
+        largura: Number(v.largura) || 1080,
+        altura: Number(v.altura) || 1920,
+        config: JSON.stringify({ elementos: Array.isArray(v.elementos) ? v.elementos : [], fundo: v.fundo || undefined }),
+      }));
+      const derivados = Array.from(new Set(variantes.map((v) => v.chave).filter((c) => c === '9:16' || c === '3:4')));
+      if (derivados.length) formatos = derivados;
+    } else {
+      if (formatosReq.includes('9:16')) variantes.push(montarVariante('9:16', 'principal', 'Vertical 9:16', 1080, 1920));
+      if (formatosReq.includes('3:4')) variantes.push(montarVariante('3:4', 'principal', 'Retrato 3:4', 1080, 1440));
+      if (carrossel) {
+        if (!variantes.some((v) => v.chave === '3:4')) variantes.push(montarVariante('3:4', 'principal', 'Retrato 3:4', 1080, 1440));
+        variantes.push(montarVariante('capa', 'capa', 'Capa do carrossel', 1080, 1440));
+        variantes.push(montarVariante('interna', 'interna', 'Página interna', 1080, 1440));
+      }
+    }
+    const campos = camposEfetivos(camposBase, variantes);
 
     const tpl = await ArteTemplate.create({
       municipio_id: mid ?? user.municipio_id,
@@ -300,14 +325,6 @@ export const modeloStore = async (req: Request, res: Response) => {
       autor_id: user.id,
     } as any);
 
-    const variantes = [];
-    if (formatos.includes('9:16')) variantes.push(montarVariante('9:16', 'principal', 'Vertical 9:16', 1080, 1920));
-    if (formatos.includes('3:4')) variantes.push(montarVariante('3:4', 'principal', 'Retrato 3:4', 1080, 1440));
-    if (carrossel) {
-      if (!variantes.some((v) => v.chave === '3:4')) variantes.push(montarVariante('3:4', 'principal', 'Retrato 3:4', 1080, 1440));
-      variantes.push(montarVariante('capa', 'capa', 'Capa do carrossel', 1080, 1440));
-      variantes.push(montarVariante('interna', 'interna', 'Página interna', 1080, 1440));
-    }
     await ArteTemplateVariante.bulkCreate(variantes.map((v) => ({ ...v, template_id: tpl.id })) as any);
 
     res.redirect(`/artes/modelos/${tpl.id}/editar`);

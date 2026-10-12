@@ -222,6 +222,11 @@
                     <option value="<%= s.id %>">#<%= s.id %> — <%= s.titulo %></option>
                     <% }); %>
                 </select>
+                <span class="flex-1"></span>
+                <button type="button" id="ed-zoom-out" class="c-btn c-btn-secondary c-btn-sm" title="Diminuir">−</button>
+                <span id="ed-zoom-val" class="text-[11px] text-gray-500" style="min-width:40px;text-align:center">100%</span>
+                <button type="button" id="ed-zoom-in" class="c-btn c-btn-secondary c-btn-sm" title="Aumentar">+</button>
+                <button type="button" id="ed-zoom-fit" class="c-btn c-btn-ghost c-btn-sm" title="Ajustar à tela">Ajustar</button>
             </div>
             <div id="ed-canvas-wrap" class="p-4">
                 <div id="ed-canvas-spacer" style="position: relative;">
@@ -343,10 +348,23 @@
     state.amostra = sol ? dadosDeSolicitacao(sol) : null;
     renderCanvas(); renderProps();
   });
+
+  // Zoom do canvas
+  var zIn = document.getElementById('ed-zoom-in'), zOut = document.getElementById('ed-zoom-out'), zFit = document.getElementById('ed-zoom-fit');
+  if (zIn) zIn.addEventListener('click', function(){ zoom = Math.min(4, zoom * 1.25); renderCanvas(); });
+  if (zOut) zOut.addEventListener('click', function(){ zoom = Math.max(0.2, zoom / 1.25); renderCanvas(); });
+  if (zFit) zFit.addEventListener('click', function(){ zoom = 1; renderCanvas(); });
+  wrap.addEventListener('wheel', function(e){
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    zoom = Math.max(0.2, Math.min(4, zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
+    renderCanvas();
+  }, { passive: false });
   function interpolar(t, d){ return String(t||'').replace(/\{\{\s*([\w.]+)\s*\}\}/g, function(m,k){ return d[k]!==undefined?d[k]:''; }); }
   function uid(){ return 'el-'+Math.random().toString(36).slice(2,9); }
   function proxCamada(){ var v=varAtual(); return v.elementos.reduce(function(m,e){return Math.max(m,e.camada||0);},0)+1; }
-  function escala(){ return Math.min((wrap.clientWidth-32)/varAtual().largura, (wrap.clientHeight-32)/varAtual().altura, 1); }
+  var zoom = 1;
+  function escala(){ var fit = Math.min((wrap.clientWidth-32)/varAtual().largura, (wrap.clientHeight-32)/varAtual().altura, 1); return fit * zoom; }
   var CORES = Object.assign({ primary:'#17365D', secondary:'#2878B5', accent:'#F2B544', background:'#F3F5F7', surface:'#FFFFFF', text:'#202833', mutedText:'#5B6673', border:'#D8DEE5', success:'#1F9D55', warning:'#D97706', danger:'#DC2626' }, <%- JSON.stringify(typeof paletaCores !== 'undefined' && paletaCores ? paletaCores : {}) %>);
   var SVGI = function(d){ return '<svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + d + '</svg>'; };
   var ICON = {
@@ -382,10 +400,13 @@
     fundoColor.addEventListener('change', function(){ pushHistory(); });
   }
 
-  // ── Histórico (desfazer/refazer) ─────────────────────────────────────────
-  var hist = [], histIdx = -1, restoring = false;
+  // ── Histórico (desfazer/refazer) + rascunho local ────────────────────────
+  var hist = [], histIdx = -1, restoring = false, edIniciado = false;
+  var DRAFT_KEY = 'ed_rascunho_' + (MODELO_ID || 'novo');
+  function limparRascunho(){ try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+  function salvarRascunho(){ try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ variantes: state.variantes, campos: state.campos })); } catch (e) {} }
   function snapshot(){ return JSON.stringify({ variantes: state.variantes, campos: state.campos, atual: state.atual }); }
-  function pushHistory(){ if (restoring) return; var s = snapshot(); if (hist[histIdx] === s) return; hist = hist.slice(0, histIdx + 1); hist.push(s); histIdx = hist.length - 1; if (hist.length > 60) { hist.shift(); histIdx--; } }
+  function pushHistory(){ if (restoring) return; var s = snapshot(); if (hist[histIdx] === s) return; hist = hist.slice(0, histIdx + 1); hist.push(s); histIdx = hist.length - 1; if (hist.length > 60) { hist.shift(); histIdx--; } if (edIniciado) salvarRascunho(); }
   function restore(s){ restoring = true; var o = JSON.parse(s); state.variantes = o.variantes; state.campos = o.campos; state.atual = o.atual || 0; state.sel = []; renderAll(); restoring = false; }
   document.getElementById('btn-undo').addEventListener('click', function(){ if (histIdx > 0) { histIdx--; restore(hist[histIdx]); } });
   document.getElementById('btn-redo').addEventListener('click', function(){ if (histIdx < hist.length - 1) { histIdx++; restore(hist[histIdx]); } });
@@ -555,7 +576,9 @@
       });
       inner.appendChild(div);
     });
+    atualizarZoom();
   }
+  function atualizarZoom(){ var z = document.getElementById('ed-zoom-val'); if (z) z.textContent = Math.round(escala() * 100) + '%'; }
   function alinharSelecao(modo){
     var els = selEls(); if (els.length < 2) return;
     var bs = els.map(function(en){ return { en:en, b:bounds(en) }; });
@@ -736,6 +759,21 @@
       if (state.sel.indexOf(id) < 0) { state.sel = [id]; renderCanvas(); renderProps(); renderLayers(); }
       var v = varAtual(); var el = v.elementos.find(function(x){ return x.id === id; });
       if (el && el.bloqueado) { e.preventDefault(); return; }
+      if (state.sel.length > 1) {
+        // Redimensiona o grupo: caixa delimitadora de todos os selecionados.
+        var b0 = bounds(el);
+        var gl = b0.l, gt = b0.t, gr = b0.l + b0.w, gb = b0.t + b0.h;
+        var orig = [];
+        state.sel.forEach(function(sid){
+          var en = v.elementos.find(function(x){ return x.id === sid; }); if (!en) return;
+          var bb = bounds(en);
+          gl = Math.min(gl, bb.l); gt = Math.min(gt, bb.t); gr = Math.max(gr, bb.l + bb.w); gb = Math.max(gb, bb.t + bb.h);
+          orig.push({ id: sid, b: bb });
+        });
+        drag = { mode:'gresize', handle:handle.dataset.handle, sx:e.clientX, sy:e.clientY, scale:s, box:{ l:gl, t:gt, w:Math.max(1, gr - gl), h:Math.max(1, gb - gt) }, orig:orig };
+        e.preventDefault();
+        return;
+      }
       drag = { mode:'resize', id:id, handle:handle.dataset.handle, sx:e.clientX, sy:e.clientY, el:JSON.parse(JSON.stringify(el)), scale:s };
       e.preventDefault();
       return;
@@ -793,6 +831,25 @@
         else { en.x = Math.round(o.x + fdx); en.y = Math.round(o.y + fdy); }
       });
       renderCanvas(); renderProps();
+      return;
+    }
+
+    if (drag.mode === 'gresize') {
+      var dxg = (e.clientX - drag.sx) / drag.scale, dyg = (e.clientY - drag.sy) / drag.scale;
+      var box = drag.box; var L = box.l, T = box.t, R = box.l + box.w, B = box.t + box.h; var gh = drag.handle;
+      if (gh.indexOf('w') >= 0) L = box.l + dxg; if (gh.indexOf('e') >= 0) R = box.l + box.w + dxg;
+      if (gh.indexOf('n') >= 0) T = box.t + dyg; if (gh.indexOf('s') >= 0) B = box.t + box.h + dyg;
+      var nw = Math.max(10, R - L), nh = Math.max(10, B - T);
+      var sxg = nw / box.w, syg = nh / box.h;
+      drag.orig.forEach(function(o){
+        var en = v.elementos.find(function(x){ return x.id === o.id; }); if (!en || en.bloqueado) return;
+        var nl = L + (o.b.l - box.l) * sxg, nt = T + (o.b.t - box.t) * syg, nwl = o.b.w * sxg, nhl = o.b.h * syg;
+        if (en.tipo === 'retangulo' || en.tipo === 'imagem') { en.x = Math.round(nl); en.y = Math.round(nt); en.w = Math.round(Math.max(10, nwl)); en.h = Math.round(Math.max(10, nhl)); }
+        else if (en.tipo === 'circulo') { var rr = Math.max(10, o.b.w * sxg / 2, o.b.h * syg / 2); en.cx = Math.round(nl + o.b.w * sxg / 2); en.cy = Math.round(nt + o.b.h * syg / 2); en.r = Math.round(rr); }
+        else if (en.tipo === 'linha') { en.x1 = Math.round(nl); en.y1 = Math.round(nt); en.x2 = Math.round(nl + nwl); en.y2 = Math.round(nt + nhl); }
+        else { en.x = Math.round(nl); en.y = Math.round(nt); en.w = Math.round(Math.max(20, nwl)); }
+      });
+      limparGuias(); renderCanvas(); renderProps();
       return;
     }
 
@@ -982,7 +1039,32 @@
 
   fetch('/artes/ativos.json', { headers: { 'Accept':'application/json' } }).then(function(r){return r.json();}).then(function(d){ ATIVOS=d||[]; }).catch(function(){});
 
+  // Restauração de rascunho não salvo (caso a página recarregue sem salvar).
+  function verificarRascunho(){
+    if (document.getElementById('ed-draft-bar')) return;
+    var raw = null; try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { return; }
+    if (!raw) return;
+    var d = null; try { d = JSON.parse(raw); } catch (e) { limparRascunho(); return; }
+    if (!d || !d.variantes) { limparRascunho(); return; }
+    if (JSON.stringify(d.variantes) === JSON.stringify(state.variantes)) { limparRascunho(); return; }
+    var bar = document.createElement('div');
+    bar.id = 'ed-draft-bar';
+    bar.className = 'c-card p-3 text-sm text-amber-800 bg-amber-50 border-amber-200 mb-3 flex flex-wrap items-center gap-3';
+    bar.innerHTML = '<span>Você tem um <b>rascunho não salvo</b> deste modelo.</span><span class="flex-1"></span>'
+      + '<button type="button" class="c-btn c-btn-primary c-btn-sm" id="ed-draft-restaurar">Restaurar</button>'
+      + '<button type="button" class="c-btn c-btn-ghost c-btn-sm" id="ed-draft-descartar">Descartar</button>';
+    var form = document.getElementById('form-modelo');
+    if (form && form.parentNode) form.parentNode.insertBefore(bar, form);
+    document.getElementById('ed-draft-restaurar').addEventListener('click', function(){
+      state.variantes = d.variantes; state.campos = Array.isArray(d.campos) ? d.campos : state.campos; state.atual = 0; state.sel = [];
+      bar.remove(); renderAll(); pushHistory();
+    });
+    document.getElementById('ed-draft-descartar').addEventListener('click', function(){ limparRascunho(); bar.remove(); });
+  }
+
   renderAll();
   pushHistory();
+  verificarRascunho();
+  edIniciado = true;
 })();
 </script>
