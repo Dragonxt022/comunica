@@ -235,13 +235,17 @@ export const reordenar = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     if (!['secom', 'super_admin'].includes(user.role)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
 
-    const { status, ids } = req.body as { status?: string; ids?: number[] };
+    const { status, ids, todos } = req.body as { status?: string; ids?: number[]; todos?: boolean };
     const idsNum = Array.isArray(ids) ? ids.map(Number).filter(Boolean) : [];
-    if (!status || idsNum.length === 0) return res.status(400).json({ ok: false, error: 'Dados inválidos' });
+    if (idsNum.length === 0) return res.status(400).json({ ok: false, error: 'Dados inválidos' });
+    if (!todos && !status) return res.status(400).json({ ok: false, error: 'Dados inválidos' });
 
     const { Op } = await import('sequelize');
     const mid = getActiveMid(req);
-    const where = secretariaWhere(user, { id: { [Op.in]: idsNum }, status }, mid);
+    // Reordenação global (fila priorizada): aceita a lista completa, sem filtrar por status.
+    const where = todos
+      ? secretariaWhere(user, { id: { [Op.in]: idsNum } }, mid)
+      : secretariaWhere(user, { id: { [Op.in]: idsNum }, status }, mid);
     const count = await Solicitacao.count({ where });
     if (count !== idsNum.length) return res.status(400).json({ ok: false, error: 'Solicitações inválidas para reordenar' });
 

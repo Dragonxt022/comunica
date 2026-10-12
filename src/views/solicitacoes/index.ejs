@@ -175,25 +175,23 @@ document.addEventListener('alpine:init', function() {
                 this.iaFilaAplicando = true;
                 var snapshot = this.solicitacoes.slice();
                 try {
+                    // Fila priorizada no topo; o restante mantém a ordem atual.
+                    var jaSugeridos = this.iaFilaOrdem;
+                    var restantes = this.solicitacoes.map(function(s) { return s.id; })
+                        .filter(function(id) { return jaSugeridos.indexOf(id) < 0; });
+                    var ordemCompleta = jaSugeridos.concat(restantes);
                     var r = await fetch('/solicitacoes/reordenar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'pendente', ids: this.iaFilaOrdem })
+                        body: JSON.stringify({ todos: true, ids: ordemCompleta })
                     });
                     var data = await r.json();
                     if (data.ok) {
-                        // Sort estável: itens sugeridos vêm primeiro, na ordem sugerida; o resto mantém a posição relativa.
-                        var ordem = this.iaFilaOrdem;
-                        this.solicitacoes.sort(function(a, b) {
-                            var ia = ordem.indexOf(a.id);
-                            var ib = ordem.indexOf(b.id);
-                            if (ia === -1 && ib === -1) return 0;
-                            if (ia === -1) return 1;
-                            if (ib === -1) return -1;
-                            return ia - ib;
-                        });
-                        this.showToast('Prioridade da fila atualizada!', true);
                         this.iaFilaOpen = false;
+                        this.iaFilaAplicando = false;
+                        // A view Lista é renderizada no servidor — recarrega para refletir a nova ordem.
+                        window.location.reload();
+                        return;
                     } else {
                         this.solicitacoes = snapshot;
                         this.showToast(data.error || 'Sem permissão para reordenar', false);
