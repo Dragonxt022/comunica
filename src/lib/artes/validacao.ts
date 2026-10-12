@@ -75,7 +75,7 @@ export function validarComposicao(entrada: ValidacaoEntrada): ResultadoValidacao
   // 5. Diagnósticos de texto + contraste
   const diagPorId = new Map(composicao.textoDiagnostico.map((d) => [d.elementoId, d]));
   for (const el of variante.elementos) {
-    if (el.tipo !== 'texto') continue;
+    if (el.tipo !== 'texto' || el.oculto) continue;
     const t = el as ElTexto;
     const d = diagPorId.get(t.id);
 
@@ -120,7 +120,7 @@ export function validarComposicao(entrada: ValidacaoEntrada): ResultadoValidacao
 export function validarImagens(elementos: Variante['elementos'], imagensResolvidas: Record<string, string>): Problema[] {
   const problemas: Problema[] = [];
   for (const el of elementos) {
-    if (el.tipo !== 'imagem') continue;
+    if (el.tipo !== 'imagem' || el.oculto) continue;
     const img = el as ElImagem;
     if (!imagensResolvidas[img.id]) {
       const ref = img.placeholder || img.url || (img.ativoId ? `ativo #${img.ativoId}` : 'imagem');

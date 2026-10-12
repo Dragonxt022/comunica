@@ -28,6 +28,7 @@ export interface ElementoBase {
   nome?: string;
   camada: number;
   bloqueado?: boolean;
+  oculto?: boolean;
   institucional?: boolean;
   opacidade?: number;
 }
@@ -83,6 +84,7 @@ export interface Variante {
   nome: string;
   largura: number;
   altura: number;
+  fundo?: CorRef;
   elementos: Elemento[];
 }
 

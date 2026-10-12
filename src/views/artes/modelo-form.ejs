@@ -10,6 +10,7 @@
   .ed-el.sel { outline: 2px solid #2563eb; outline-offset: 0; }
   .ed-el .ed-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid #2563eb; border-radius: 2px; display: none; }
   .ed-el.sel .ed-handle { display: block; }
+  .ed-el.locked { cursor: default; }
   .ed-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
   .ed-tab { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .ed-tab.active { background: #2563eb; color: #fff; }
@@ -19,7 +20,35 @@
   #ed-guides { position:absolute; inset:0; pointer-events:none; z-index:5; }
   .ed-guide-v { position:absolute; top:0; bottom:0; width:1px; background:#ec4899; }
   .ed-guide-h { position:absolute; left:0; right:0; height:1px; background:#ec4899; }
+  /* Barra de ferramentas (rail) */
+  .ed-rail { display:flex; flex-direction:column; gap:3px; padding:6px 0; align-items:center; }
+  .ed-rail button { width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:9px; color:#475569; }
+  .ed-rail button:hover { background:#f1f5f9; color:#0f172a; }
+  .ed-rail button.active { background:#2563eb; color:#fff; }
+  .ed-rail .ed-rail-sep { width:22px; height:1px; background:#e2e8f0; margin:4px 0; }
+  .ed-ico { width:18px; height:18px; }
+  /* Acordeão de seções */
+  .ed-sec-head { display:flex; align-items:center; gap:8px; padding:10px 12px; cursor:pointer; font-size:12px; font-weight:700; color:#334155; user-select:none; }
+  .ed-sec-head .ed-chev { margin-left:auto; transition: transform .15s; color:#94a3b8; }
+  .ed-sec.collapsed .ed-chev { transform: rotate(-90deg); }
+  .ed-sec.collapsed .ed-sec-body { display:none; }
+  .ed-sec-body { padding:0 12px 12px; }
+  /* Camadas */
+  .ed-layer { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:8px; font-size:12px; color:#334155; cursor:pointer; border:1px solid transparent; }
+  .ed-layer:hover { background:#f8fafc; }
+  .ed-layer.active { background:#eff6ff; border-color:#bfdbfe; }
+  .ed-layer.drop-before { box-shadow: inset 0 2px 0 #2563eb; }
+  .ed-layer.drop-after { box-shadow: inset 0 -2px 0 #2563eb; }
+  .ed-layer.dragging { opacity:.5; }
+  .ed-drag { cursor:grab; color:#cbd5e1; flex:none; }
+  .ed-drag:active { cursor:grabbing; }
+  .ed-layer-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ed-layer-btn { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:6px; color:#94a3b8; flex:none; }
+  .ed-layer-btn:hover { background:#f1f5f9; color:#334155; }
+  .ed-layer-btn.off { color:#cbd5e1; }
+  .ed-layer-btn.on { color:#dc2626; }
   @media (min-width: 1280px) {
+    .ed-rail { position: sticky; top: 1rem; align-self: start; }
     .ed-col-canvas { position: sticky; top: 1rem; align-self: start; }
     .ed-col-props  { position: sticky; top: 1rem; align-self: start; max-height: calc(100vh - 6rem); overflow: auto; }
   }
@@ -28,7 +57,7 @@
 <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-            <a href="/artes/modelos" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+            <a href="/artes/modelos" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Voltar">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </a>
             <div>
@@ -41,68 +70,125 @@
         </div>
     </div>
 
-    <form id="form-modelo" method="POST" action="<%= action %>" class="grid grid-cols-1 xl:grid-cols-[260px_1fr_300px] gap-4 items-start">
+    <form id="form-modelo" method="POST" action="<%= action %>" class="grid grid-cols-1 xl:grid-cols-[52px_250px_1fr_320px] gap-3 items-start">
         <input type="hidden" name="variantes_json" id="variantes_json">
         <input type="hidden" name="campos_json" id="campos_json">
 
-        <!-- Coluna esquerda: metadados + variantes + ferramentas -->
-        <div class="space-y-4">
-            <div class="ed-panel p-4 space-y-3">
-                <div class="ed-field"><label>Nome do modelo</label><input name="nome" id="f-nome" value="<%= __tpl ? __tpl.nome : '' %>" required></div>
-                <div class="ed-field"><label>Categoria</label><input name="categoria" id="f-categoria" value="<%= __tpl ? __tpl.categoria : 'Institucional' %>"></div>
-                <div class="ed-field"><label>Descrição</label><textarea name="descricao" rows="2"><%= __tpl ? (__tpl.descricao || '') : '' %></textarea></div>
-                <div class="ed-field">
-                    <label>Paleta</label>
-                    <select name="paleta_id" id="f-paleta">
-                        <option value="">Paleta padrão</option>
-                        <% paletas.forEach(function(p){ %>
-                        <option value="<%= p.id %>" <%= __tpl && __tpl.paleta_id === p.id ? 'selected' : '' %>><%= p.nome %></option>
-                        <% }); %>
-                    </select>
-                </div>
-            </div>
+        <!-- Barra de ferramentas -->
+        <div class="ed-panel ed-rail">
+            <button type="button" id="tool-select" class="active" title="Selecionar (V)">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M4 3l7.5 17 2.4-6.6L20.5 11z"/></svg>
+            </button>
+            <button type="button" data-add="retangulo" title="Retângulo">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg>
+            </button>
+            <button type="button" data-add="circulo" title="Elipse">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+            <button type="button" data-add="linha" title="Linha">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M5 19L19 5"/></svg>
+            </button>
+            <button type="button" data-add="texto" title="Texto">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6h12M12 6v13"/></svg>
+            </button>
+            <button type="button" data-add="imagem" title="Imagem">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path stroke-linecap="round" d="M4 16l4-4 5 5 3-3 4 4"/></svg>
+            </button>
+            <button type="button" id="btn-upload-img" title="Enviar imagem">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M5 20h14"/></svg>
+            </button>
+            <input type="file" id="ed-upload-input" accept="image/*" class="hidden">
+            <div class="ed-rail-sep"></div>
+            <button type="button" id="btn-undo" title="Desfazer (Ctrl+Z)">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3"/></svg>
+            </button>
+            <button type="button" id="btn-redo" title="Refazer (Ctrl+Y)">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7l5 5-5 5M20 12H9a5 5 0 000 10h3"/></svg>
+            </button>
+            <div class="ed-rail-sep"></div>
+            <button type="button" id="btn-copiar" title="Copiar (Ctrl+C)">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+            </button>
+            <button type="button" id="btn-duplicar" title="Duplicar (Ctrl+D)">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" rx="2"/><path stroke-linecap="round" d="M12 19h6a2 2 0 002-2v-6"/></svg>
+            </button>
+            <button type="button" id="btn-excluir" title="Excluir (Delete)" style="color:#dc2626">
+                <svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-1 0v12a2 2 0 01-2 2h-4a2 2 0 01-2-2V7"/></svg>
+            </button>
+        </div>
 
-            <div class="ed-panel p-4">
-                <p class="text-xs font-bold text-gray-700 mb-2">Variantes / formatos</p>
-                <div id="ed-tabs" class="flex flex-wrap gap-1.5 mb-3"></div>
-                <div class="flex gap-2">
-                    <button type="button" id="btn-add-var" class="c-btn c-btn-secondary c-btn-sm">+ Variante</button>
-                    <button type="button" id="btn-del-var" class="c-btn c-btn-ghost c-btn-sm text-red-500">Remover</button>
-                </div>
-            </div>
-
-            <div class="ed-panel p-4">
-                <p class="text-xs font-bold text-gray-700 mb-2">Adicionar elemento</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-add="retangulo">Retângulo</button>
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-add="circulo">Círculo</button>
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-add="linha">Linha</button>
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-add="texto">Texto</button>
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-add="imagem">Imagem</button>
-                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" id="btn-upload-img">Enviar imagem</button>
-                </div>
-                <input type="file" id="ed-upload-input" accept="image/*" class="hidden">
-                <p class="text-[10px] text-gray-400 mt-2">Dica: clique em "Enviar imagem" para subir um arquivo direto para a biblioteca e já aplicá-lo ao elemento selecionado.</p>
-            </div>
-
-            <div class="ed-panel p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-bold text-gray-700">Camadas</p>
-                    <div class="flex gap-1">
-                        <button type="button" id="btn-undo" class="c-btn c-btn-ghost c-btn-sm" title="Desfazer (Ctrl+Z)">↶</button>
-                        <button type="button" id="btn-redo" class="c-btn c-btn-ghost c-btn-sm" title="Refazer (Ctrl+Y)">↷</button>
+        <!-- Painéis (acordeão) -->
+        <div class="space-y-3">
+            <section class="ed-panel ed-sec collapsed" data-sec="modelo">
+                <header class="ed-sec-head">
+                    <svg class="ed-ico text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 00-2-1.2l-.4-2.6h-4l-.4 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 007 12a7 7 0 00.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 002 1.2l.4 2.6h4l.4-2.6a7 7 0 002-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0019 12z"/></svg>
+                    Modelo
+                    <svg class="ed-ico ed-chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                </header>
+                <div class="ed-sec-body space-y-3">
+                    <div class="ed-field"><label>Nome do modelo</label><input name="nome" id="f-nome" value="<%= __tpl ? __tpl.nome : '' %>" required></div>
+                    <div class="ed-field"><label>Categoria</label><input name="categoria" id="f-categoria" value="<%= __tpl ? __tpl.categoria : 'Institucional' %>"></div>
+                    <div class="ed-field"><label>Descrição</label><textarea name="descricao" rows="2"><%= __tpl ? (__tpl.descricao || '') : '' %></textarea></div>
+                    <div class="ed-field">
+                        <label>Paleta</label>
+                        <select name="paleta_id" id="f-paleta">
+                            <option value="">Paleta padrão</option>
+                            <% paletas.forEach(function(p){ %>
+                            <option value="<%= p.id %>" <%= __tpl && __tpl.paleta_id === p.id ? 'selected' : '' %>><%= p.nome %></option>
+                            <% }); %>
+                        </select>
                     </div>
                 </div>
-                <div id="ed-layers" class="space-y-1"></div>
-            </div>
+            </section>
 
-            <div class="ed-panel p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-bold text-gray-700">Campos dinâmicos</p>
-                    <button type="button" id="btn-add-campo" class="text-xs text-blue-600 font-semibold">+ campo</button>
+            <section class="ed-panel ed-sec" data-sec="variantes">
+                <header class="ed-sec-head">
+                    <svg class="ed-ico text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+                    Variantes e fundo
+                    <svg class="ed-ico ed-chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                </header>
+                <div class="ed-sec-body">
+                    <div id="ed-tabs" class="flex flex-wrap gap-1.5 mb-3"></div>
+                    <div class="flex gap-2 mb-3">
+                        <button type="button" id="btn-add-var" class="c-btn c-btn-secondary c-btn-sm">+ Variante</button>
+                        <button type="button" id="btn-del-var" class="c-btn c-btn-ghost c-btn-sm text-red-500">Remover</button>
+                    </div>
+                    <div class="ed-field">
+                        <label>Cor de fundo</label>
+                        <div style="display:flex;gap:6px">
+                            <select id="ed-fundo-select">
+                                <% Object.keys(paletaCores || {}).forEach(function(k){ %><option value="<%= k %>"><%= k %></option><% }); %>
+                                <option value="#FFFFFF">branco</option>
+                            </select>
+                            <input type="color" id="ed-fundo-color" value="#FFFFFF" style="width:40px;padding:2px">
+                        </div>
+                    </div>
                 </div>
-                <div id="ed-campos" class="space-y-2"></div>
-            </div>
+            </section>
+
+            <section class="ed-panel ed-sec" data-sec="camadas">
+                <header class="ed-sec-head">
+                    <svg class="ed-ico text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M12 3l9 5-9 5-9-5 9-5z"/><path stroke-linejoin="round" d="M3 13l9 5 9-5"/></svg>
+                    Camadas
+                    <svg class="ed-ico ed-chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                </header>
+                <div class="ed-sec-body">
+                    <p class="text-[10px] text-gray-400 mb-2">Arraste para reordenar. Use o olho e o cadeado por camada.</p>
+                    <div id="ed-layers" class="space-y-1"></div>
+                </div>
+            </section>
+
+            <section class="ed-panel ed-sec collapsed" data-sec="campos">
+                <header class="ed-sec-head">
+                    <svg class="ed-ico text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></svg>
+                    Campos dinâmicos
+                    <svg class="ed-ico ed-chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                </header>
+                <div class="ed-sec-body">
+                    <div id="ed-campos" class="space-y-2 mb-2"></div>
+                    <button type="button" id="btn-add-campo" class="c-btn c-btn-secondary c-btn-sm w-full">+ campo</button>
+                </div>
+            </section>
         </div>
 
         <!-- Canvas -->
@@ -130,7 +216,7 @@
   var SVG_ESTILOS = <%- JSON.stringify(typeof estilos !== 'undefined' && estilos ? estilos : []) %>;
   var ATIVOS = [];
 
-  var state = { variantes: VAR_INICIAL.map(function(v){ return { id:v.id, chave:v.chave, papel:v.papel, nome:v.nome, largura:v.largura, altura:v.altura, elementos:(v.elementos||[]).slice() }; }), atual:0, sel:[], campos: Array.isArray(CAMPOS_INICIAL) ? CAMPOS_INICIAL : [] };
+  var state = { variantes: VAR_INICIAL.map(function(v){ return { id:v.id, chave:v.chave, papel:v.papel, nome:v.nome, largura:v.largura, altura:v.altura, fundo:v.fundo, elementos:(v.elementos||[]).slice() }; }), atual:0, sel:[], campos: Array.isArray(CAMPOS_INICIAL) ? CAMPOS_INICIAL : [] };
   if (!state.variantes.length) state.variantes.push({ chave:'9:16', papel:'principal', nome:'Vertical 9:16', largura:1080, altura:1920, elementos:[] });
 
   var wrap = document.getElementById('ed-canvas-wrap');
@@ -153,11 +239,35 @@
   function proxCamada(){ var v=varAtual(); return v.elementos.reduce(function(m,e){return Math.max(m,e.camada||0);},0)+1; }
   function escala(){ return Math.min((wrap.clientWidth-32)/varAtual().largura, (wrap.clientHeight-32)/varAtual().altura, 1); }
   var CORES = Object.assign({ primary:'#17365D', secondary:'#2878B5', accent:'#F2B544', background:'#F3F5F7', surface:'#FFFFFF', text:'#202833', mutedText:'#5B6673', border:'#D8DEE5', success:'#1F9D55', warning:'#D97706', danger:'#DC2626' }, <%- JSON.stringify(typeof paletaCores !== 'undefined' && paletaCores ? paletaCores : {}) %>);
+  var SVGI = function(d){ return '<svg class="ed-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + d + '</svg>'; };
+  var ICON = {
+    retangulo: SVGI('<rect x="4" y="5" width="16" height="14" rx="2"/>'),
+    circulo: SVGI('<circle cx="12" cy="12" r="8"/>'),
+    linha: SVGI('<path stroke-linecap="round" d="M5 19L19 5"/>'),
+    texto: SVGI('<path stroke-linecap="round" d="M6 6h12M12 6v13"/>'),
+    imagem: SVGI('<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/>'),
+    drag: SVGI('<path stroke-linecap="round" d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>'),
+    eye: SVGI('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'),
+    eyeOff: SVGI('<path stroke-linecap="round" d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.4 5.3A9.6 9.6 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.5A16.6 16.6 0 002 12s3.5 7 10 7a9.7 9.7 0 004.1-.9"/>'),
+    lock: SVGI('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'),
+    unlock: SVGI('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 017-2.6"/>'),
+  };
   function cor(c){ if(!c) return '#000'; if(c[0]==='#') return c; return CORES[c]||'#000'; }
 
   var guidesEl = document.getElementById('ed-guides');
   var layersEl = document.getElementById('ed-layers');
   var uploadInput = document.getElementById('ed-upload-input');
+  var fundoSelect = document.getElementById('ed-fundo-select');
+  var fundoColor = document.getElementById('ed-fundo-color');
+
+  // Acordeão das seções
+  document.querySelectorAll('.ed-sec-head').forEach(function(h){ h.addEventListener('click', function(){ h.closest('.ed-sec').classList.toggle('collapsed'); }); });
+  // Cor de fundo da variante
+  if (fundoSelect) fundoSelect.addEventListener('change', function(){ varAtual().fundo = fundoSelect.value; pushHistory(); renderCanvas(); });
+  if (fundoColor) {
+    fundoColor.addEventListener('input', function(){ varAtual().fundo = fundoColor.value.toUpperCase(); renderCanvas(); });
+    fundoColor.addEventListener('change', function(){ pushHistory(); });
+  }
 
   // ── Histórico (desfazer/refazer) ─────────────────────────────────────────
   var hist = [], histIdx = -1, restoring = false;
@@ -166,6 +276,10 @@
   function restore(s){ restoring = true; var o = JSON.parse(s); state.variantes = o.variantes; state.campos = o.campos; state.atual = o.atual || 0; state.sel = []; renderAll(); restoring = false; }
   document.getElementById('btn-undo').addEventListener('click', function(){ if (histIdx > 0) { histIdx--; restore(hist[histIdx]); } });
   document.getElementById('btn-redo').addEventListener('click', function(){ if (histIdx < hist.length - 1) { histIdx++; restore(hist[histIdx]); } });
+  document.getElementById('btn-copiar').addEventListener('click', function(){ copiarSelecionado(); });
+  document.getElementById('btn-duplicar').addEventListener('click', function(){ duplicarSelecionado(); });
+  document.getElementById('btn-excluir').addEventListener('click', function(){ excluirSelecionado(); });
+  document.getElementById('tool-select').addEventListener('click', function(){ document.querySelectorAll('.ed-rail button').forEach(function(b){ b.classList.remove('active'); }); this.classList.add('active'); });
 
   // ── Copiar / colar / duplicar / excluir ──────────────────────────────────
   var clipboard = null;
@@ -199,30 +313,61 @@
     else if (k === 'delete' || k === 'backspace') { if (state.sel.length) { e.preventDefault(); excluirSelecionado(); } }
   });
 
+  function nomeTipo(t){ return { retangulo:'Retângulo', circulo:'Círculo', linha:'Linha', imagem:'Imagem', texto:'Texto' }[t] || t; }
   function renderLayers(){
     var v = varAtual();
     var els = v.elementos.slice().sort(function(a,b){ return (b.camada||0) - (a.camada||0); });
     layersEl.innerHTML = els.map(function(e){
-      var nome = e.nome || ({ retangulo:'Retângulo', circulo:'Círculo', linha:'Linha', imagem:'Imagem', texto:'Texto' }[e.tipo] || e.tipo);
-      return '<div class="flex items-center gap-1 px-2 py-1 rounded cursor-pointer '+(state.sel.indexOf(e.id)>=0?'bg-blue-50':'hover:bg-gray-50')+'" data-layer="'+e.id+'">'
-        + '<span class="text-xs text-gray-700 flex-1 truncate">'+nome+(e.bloqueado?' 🔒':'')+'</span>'
-        + '<button type="button" class="text-xs text-gray-400 hover:text-gray-700 px-1" data-layer-up="'+e.id+'" title="Trazer para frente">↑</button>'
-        + '<button type="button" class="text-xs text-gray-400 hover:text-gray-700 px-1" data-layer-down="'+e.id+'" title="Enviar para trás">↓</button>'
+      var nome = e.nome || nomeTipo(e.tipo);
+      return '<div class="ed-layer '+(state.sel.indexOf(e.id)>=0?'active':'')+'" draggable="true" data-layer="'+e.id+'">'
+        + '<span class="ed-drag" title="Arrastar para reordenar">'+ICON.drag+'</span>'
+        + '<span style="flex:none;color:#64748b">'+(ICON[e.tipo]||'')+'</span>'
+        + '<span class="ed-layer-name">'+nome+'</span>'
+        + '<button type="button" class="ed-layer-btn '+(e.oculto?'off':'')+'" data-layer-eye="'+e.id+'" title="'+(e.oculto?'Mostrar':'Ocultar')+'">'+(e.oculto?ICON.eyeOff:ICON.eye)+'</button>'
+        + '<button type="button" class="ed-layer-btn '+(e.bloqueado?'on':'')+'" data-layer-lock="'+e.id+'" title="'+(e.bloqueado?'Desbloquear':'Bloquear')+'">'+(e.bloqueado?ICON.lock:ICON.unlock)+'</button>'
         + '</div>';
     }).join('') || '<p class="text-[11px] text-gray-400">Sem elementos.</p>';
   }
   layersEl.addEventListener('click', function(e){
-    var up = e.target.dataset.layerUp, down = e.target.dataset.layerDown, lay = e.target.dataset.layer;
-    if (up || down) {
-      var el = varAtual().elementos.find(function(x){ return x.id === (up||down); });
-      if (el) { el.camada = (el.camada||0) + (up?1:-1); pushHistory(); renderCanvas(); renderLayers(); }
-      return;
-    }
-    if (lay) {
-      if (e.shiftKey || e.ctrlKey || e.metaKey) { var i = state.sel.indexOf(lay); if (i >= 0) state.sel.splice(i,1); else state.sel.push(lay); }
-      else state.sel = [lay];
-      renderCanvas(); renderProps(); renderLayers();
-    }
+    var eye = e.target.closest('[data-layer-eye]'), lock = e.target.closest('[data-layer-lock]'), row = e.target.closest('[data-layer]');
+    if (eye) { var el1 = varAtual().elementos.find(function(x){ return x.id === eye.dataset.layerEye; }); if (el1) { el1.oculto = !el1.oculto; pushHistory(); renderCanvas(); renderLayers(); } return; }
+    if (lock) { var el2 = varAtual().elementos.find(function(x){ return x.id === lock.dataset.layerLock; }); if (el2) { el2.bloqueado = !el2.bloqueado; pushHistory(); renderCanvas(); renderLayers(); } return; }
+    if (!row) return;
+    var lay = row.dataset.layer;
+    if (e.shiftKey || e.ctrlKey || e.metaKey) { var i = state.sel.indexOf(lay); if (i >= 0) state.sel.splice(i, 1); else state.sel.push(lay); }
+    else state.sel = [lay];
+    renderCanvas(); renderProps(); renderLayers();
+  });
+  // Reordenar camadas por arrastar
+  var dragLayerId = null;
+  layersEl.addEventListener('dragstart', function(e){
+    var row = e.target.closest('[data-layer]'); if (!row) return;
+    dragLayerId = row.dataset.layer; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', dragLayerId); } catch (_) {}
+  });
+  layersEl.addEventListener('dragover', function(e){
+    if (!dragLayerId) return; e.preventDefault();
+    var row = e.target.closest('[data-layer]'); if (!row || row.dataset.layer === dragLayerId) return;
+    layersEl.querySelectorAll('.drop-before,.drop-after').forEach(function(r){ r.classList.remove('drop-before','drop-after'); });
+    var rect = row.getBoundingClientRect();
+    row.classList.add((e.clientY - rect.top) < rect.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  layersEl.addEventListener('drop', function(e){
+    e.preventDefault();
+    var row = e.target.closest('[data-layer]'); if (!row || !dragLayerId || row.dataset.layer === dragLayerId) { dragLayerId = null; return; }
+    var v = varAtual();
+    var rect = row.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    var order = v.elementos.slice().sort(function(a,b){ return (b.camada||0)-(a.camada||0); }).map(function(x){ return x.id; });
+    order = order.filter(function(id){ return id !== dragLayerId; });
+    var idx = order.indexOf(row.dataset.layer);
+    order.splice(before ? idx : idx + 1, 0, dragLayerId);
+    order.forEach(function(id, i){ var el = v.elementos.find(function(x){ return x.id === id; }); if (el) el.camada = order.length - i; });
+    dragLayerId = null; pushHistory(); renderCanvas(); renderLayers();
+  });
+  layersEl.addEventListener('dragend', function(){
+    dragLayerId = null;
+    layersEl.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(function(r){ r.classList.remove('dragging','drop-before','drop-after'); });
   });
 
   // ── Upload de imagem direto para a biblioteca ────────────────────────────
@@ -271,13 +416,15 @@
     var v = varAtual(); var s = escala();
     canvas.style.width = v.largura+'px'; canvas.style.height = v.altura+'px';
     canvas.style.transform = 'scale('+s+')';
+    canvas.style.background = cor(v.fundo || 'background');
     spacer.style.width = Math.round(v.largura*s)+'px';
     spacer.style.height = Math.round(v.altura*s)+'px';
     inner.innerHTML = '';
     var d = dadosAmostra();
     v.elementos.slice().sort(function(a,b){return (a.camada||0)-(b.camada||0);}).forEach(function(el){
+      if (el.oculto) return;
       var div = document.createElement('div');
-      div.className = 'ed-el' + (state.sel.indexOf(el.id)>=0?' sel':'');
+      div.className = 'ed-el' + (state.sel.indexOf(el.id)>=0?' sel':'') + (el.bloqueado?' locked':'');
       div.dataset.id = el.id;
       var st = el.estilo||{};
       if (el.tipo==='retangulo'){ div.style.left=el.x+'px'; div.style.top=el.y+'px'; div.style.width=el.w+'px'; div.style.height=el.h+'px'; div.style.background=cor(el.fill); div.style.opacity=el.opacidade!=null?el.opacidade:1; if(el.raio) div.style.borderRadius=el.raio+'px'; }
@@ -364,7 +511,15 @@
         + '<label class="flex items-center gap-1"><input type="checkbox" data-campo="fatoSensivel" data-i="'+i+'" '+(c.fatoSensivel?'checked':'')+'> sensível</label></div></div>';
     }).join('') || '<p class="text-[11px] text-gray-400">Nenhum campo.</p>';
   }
-  function renderAll(){ renderTabs(); renderCanvas(); renderProps(); renderCampos(); renderLayers(); }
+  function renderAll(){ renderTabs(); renderCanvas(); renderProps(); renderCampos(); renderLayers(); renderFundo(); }
+  function renderFundo(){
+    var f = varAtual().fundo || 'background';
+    if (typeof f === 'string' && f[0] === '#') { if (fundoSelect) fundoSelect.value = ''; if (fundoColor) fundoColor.value = f; }
+    else {
+      if (fundoSelect && Array.prototype.some.call(fundoSelect.options, function(o){ return o.value === f; })) fundoSelect.value = f;
+      if (fundoColor) fundoColor.value = cor(f);
+    }
+  }
 
   // ── Eventos ───────────────────────────────────────────────────────────────
   document.getElementById('btn-add-var').addEventListener('click', function(){
@@ -426,6 +581,7 @@
     if (handle) {
       if (state.sel.indexOf(id) < 0) { state.sel = [id]; renderCanvas(); renderProps(); renderLayers(); }
       var v = varAtual(); var el = v.elementos.find(function(x){ return x.id === id; });
+      if (el && el.bloqueado) { e.preventDefault(); return; }
       drag = { mode:'resize', id:id, handle:handle.dataset.handle, sx:e.clientX, sy:e.clientY, el:JSON.parse(JSON.stringify(el)), scale:s };
       e.preventDefault();
       return;
@@ -440,6 +596,8 @@
     }
     renderCanvas(); renderProps(); renderLayers();
 
+    var grabbedEl = varAtual().elementos.find(function(x){ return x.id === id; });
+    if (grabbedEl && grabbedEl.bloqueado) { e.preventDefault(); return; }
     var v2 = varAtual(); var orig = {};
     state.sel.forEach(function(sid){ var en = v2.elementos.find(function(x){ return x.id === sid; }); if (en) orig[sid] = JSON.parse(JSON.stringify(en)); });
     drag = { mode:'move', id:id, ids: state.sel.slice(), orig:orig, sx:e.clientX, sy:e.clientY, scale:s };
@@ -475,7 +633,7 @@
         aplicarGuias(guias);
       } else { limparGuias(); }
       drag.ids.forEach(function(sid){
-        var en = v.elementos.find(function(x){ return x.id === sid; }); var o = drag.orig[sid]; if (!en || !o) return;
+        var en = v.elementos.find(function(x){ return x.id === sid; }); var o = drag.orig[sid]; if (!en || !o || en.bloqueado) return;
         if (en.tipo === 'circulo') { en.cx = Math.round(o.cx + fdx); en.cy = Math.round(o.cy + fdy); }
         else if (en.tipo === 'linha') { en.x1 = Math.round(o.x1 + fdx); en.y1 = Math.round(o.y1 + fdy); en.x2 = Math.round(o.x2 + fdx); en.y2 = Math.round(o.y2 + fdy); }
         else { en.x = Math.round(o.x + fdx); en.y = Math.round(o.y + fdy); }

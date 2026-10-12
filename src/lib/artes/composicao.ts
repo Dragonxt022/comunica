@@ -120,7 +120,7 @@ export function compor(input: ComposicaoInput): ResultadoComposicao {
   const altura = variante.altura;
   const diag: DiagnosticoTexto[] = [];
 
-  const fundo = resolverCor('background', paleta);
+  const fundo = resolverCor(variante.fundo || 'background', paleta);
   const partes: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${largura}" height="${altura}" viewBox="0 0 ${largura} ${altura}">`,
     `<rect x="0" y="0" width="${largura}" height="${altura}" fill="${fundo}"/>`,
@@ -128,6 +128,7 @@ export function compor(input: ComposicaoInput): ResultadoComposicao {
 
   const ordenados = [...variante.elementos].sort((a, b) => (a.camada - b.camada));
   for (const el of ordenados) {
+    if (el.oculto) continue;
     const svg = renderElemento(el, input, diag);
     if (svg) partes.push(svg);
   }

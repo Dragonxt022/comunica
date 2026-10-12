@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Dados padrão do gerador de artes: paleta ilustrativa, estilos tipográficos
  * e um modelo inicial determinístico (9:16 e 3:4) para o município.
  */
@@ -125,7 +125,7 @@ async function garantirTemplateAviso(mun: any, paleta: any): Promise<void> {
   ] as any);
 }
 
-function elementosAviso(w: number, h: number): Elemento[] {
+export function elementosAviso(w: number, h: number): Elemento[] {
   const fam = 'Arial, Helvetica, sans-serif';
   const est = (over: Partial<EstiloTexto> = {}): Partial<EstiloTexto> => ({
     familia: fam, peso: 700, tamanho: 40, tamanhoMin: 24, alturaLinha: 1.2, espacamentoLetras: 0,
@@ -160,17 +160,17 @@ function elementosAviso(w: number, h: number): Elemento[] {
   els.push({ id: 'banner-texto', tipo: 'texto', x: cardX + 30, y: bannerY + 9, w: cardW - 60, valor: 'ATENÇÃO  -  ATENÇÃO  -  ATENÇÃO  -  ATENÇÃO', camada: 7, fixo: true, estilo: est({ tamanho: 26, peso: 700, cor: 'primary', limiteLinhas: 1 }) });
 
   els.push({ id: 'titulo', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.30), w: cardW - 40, valor: '{{titulo}}', variavel: 'titulo', camada: 6, editavel: true, estilo: est({ tamanho: 50, peso: 800, cor: 'primary', limiteLinhas: 3 }) });
-  els.push({ id: 'chamada', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.52), w: cardW - 40, valor: '{{chamada}}', variavel: 'chamada', camada: 6, editavel: true, estilo: est({ tamanho: 34, peso: 700, cor: 'secondary', limiteLinhas: 2 }) });
+  els.push({ id: 'chamada', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.49), w: cardW - 40, valor: '{{chamada}}', variavel: 'chamada', camada: 6, editavel: true, estilo: est({ tamanho: 34, peso: 700, cor: 'secondary', limiteLinhas: 2 }) });
 
-  const perY = cardY + Math.round(cardH * 0.60);
+  const perY = cardY + Math.round(cardH * 0.565);
   const perX = cardX + 60, perW = cardW - 120, perH = Math.round(h * 0.075);
   els.push({ id: 'periodo-pill', tipo: 'retangulo', x: perX, y: perY, w: perW, h: perH, fill: 'accent', raio: Math.round(perH / 2), camada: 6, bloqueado: true });
   els.push({ id: 'periodo-label', tipo: 'texto', x: perX, y: perY + 12, w: perW, valor: '{{periodo_label}}', variavel: 'periodo_label', camada: 7, editavel: true, estilo: est({ tamanho: 26, peso: 800, cor: 'primary', limiteLinhas: 1 }) });
   els.push({ id: 'periodo-valor', tipo: 'texto', x: perX, y: perY + Math.round(perH * 0.4), w: perW, valor: '{{periodo_valor}}', variavel: 'periodo_valor', camada: 7, editavel: true, estilo: est({ tamanho: 52, peso: 800, cor: 'primary', limiteLinhas: 1 }) });
 
-  els.push({ id: 'destaque', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.71), w: cardW - 40, valor: '{{destaque}}', variavel: 'destaque', camada: 6, editavel: true, estilo: est({ tamanho: 38, peso: 800, cor: 'primary', limiteLinhas: 3 }) });
-  els.push({ id: 'texto', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.84), w: cardW - 40, valor: '{{texto}}', variavel: 'texto', camada: 6, editavel: true, estilo: est({ tamanho: 34, peso: 600, cor: 'secondary', limiteLinhas: 5 }) });
-  els.push({ id: 'despedida', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.96), w: cardW - 40, valor: '{{despedida}}', variavel: 'despedida', camada: 6, editavel: true, estilo: est({ tamanho: 34, peso: 700, cor: 'secondary', limiteLinhas: 2 }) });
+  els.push({ id: 'destaque', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.66), w: cardW - 40, valor: '{{destaque}}', variavel: 'destaque', camada: 6, editavel: true, estilo: est({ tamanho: 38, peso: 800, cor: 'primary', limiteLinhas: 3 }) });
+  els.push({ id: 'texto', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.78), w: cardW - 40, valor: '{{texto}}', variavel: 'texto', camada: 6, editavel: true, estilo: est({ tamanho: 32, peso: 600, cor: 'secondary', limiteLinhas: 4 }) });
+  els.push({ id: 'despedida', tipo: 'texto', x: cardX + 20, y: cardY + Math.round(cardH * 0.92), w: cardW - 40, valor: '{{despedida}}', variavel: 'despedida', camada: 6, editavel: true, estilo: est({ tamanho: 34, peso: 700, cor: 'secondary', limiteLinhas: 2 }) });
   els.push({ id: 'rodape', tipo: 'texto', x: Math.round(w * 0.2), y: h - Math.round(h * 0.055), w: Math.round(w * 0.6), valor: 'PREFEITURA MUNICIPAL', camada: 6, fixo: true, estilo: est({ tamanho: 26, peso: 800, cor: 'primary', limiteLinhas: 1 }) });
 
   return els;

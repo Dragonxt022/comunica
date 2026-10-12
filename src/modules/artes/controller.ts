@@ -66,13 +66,14 @@ function estilosParaMap(rows: ArteEstilo[]): Record<number, EstiloTexto> {
 }
 
 function varianteDaRow(row: any): Variante {
-  const cfg = parseJson<{ elementos: Elemento[] }>(row.config, { elementos: [] });
+  const cfg = parseJson<{ elementos: Elemento[]; fundo?: string }>(row.config, { elementos: [] });
   return {
     chave: row.chave,
     papel: row.papel,
     nome: row.nome,
     largura: row.largura,
     altura: row.altura,
+    fundo: cfg.fundo,
     elementos: Array.isArray(cfg.elementos) ? cfg.elementos : [],
   };
 }
@@ -294,6 +295,7 @@ export const modeloEditar = async (req: Request, res: Response) => {
       template: tpl,
       variantesJson: JSON.stringify((tpl.variantes || []).map((v: any) => ({
         id: v.id, chave: v.chave, papel: v.papel, nome: v.nome, largura: v.largura, altura: v.altura,
+        fundo: parseJson<any>(v.config, {}).fundo,
         elementos: parseJson<any>(v.config, { elementos: [] }).elementos || [],
       }))),
       paletas,
@@ -335,7 +337,7 @@ export const modeloUpdate = async (req: Request, res: Response) => {
           nome: String(v.nome || v.chave || 'Variante'),
           largura: Number(v.largura) || 1080,
           altura: Number(v.altura) || 1920,
-          config: JSON.stringify({ elementos: Array.isArray(v.elementos) ? v.elementos : [] }),
+          config: JSON.stringify({ elementos: Array.isArray(v.elementos) ? v.elementos : [], fundo: v.fundo || undefined }),
         };
         if (v.id) {
           const row = await ArteTemplateVariante.findOne({ where: { id: Number(v.id), template_id: tpl.id } });
