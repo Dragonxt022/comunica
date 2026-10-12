@@ -1,27 +1,27 @@
 <div class="max-w-2xl mx-auto px-4 py-8">
   <div class="flex items-center gap-3 mb-6">
-    <a href="/eventos" class="text-gray-500 hover:text-gray-700 transition">
+    <a href="/eventos" class="text-slate-500 hover:text-slate-700 transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
     </a>
     <div>
-      <h1 class="text-xl font-bold text-gray-900">Configurar Inscrições</h1>
-      <p class="text-sm text-gray-500"><%= evento.titulo %></p>
+      <h1 class="text-xl font-bold text-slate-900">Configurar Inscrições</h1>
+      <p class="text-sm text-slate-500"><%= evento.titulo %></p>
     </div>
   </div>
 
   <form action="/eventos/<%= evento.id %>/inscricoes/config" method="POST" enctype="multipart/form-data" x-data="{ aceita: <%= evento.aceita_inscricoes ? 'true' : 'false' %>, abertas: <%= evento.inscricoes_abertas !== false ? 'true' : 'false' %> }">
-    <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
 
       <!-- Ativar inscrições -->
       <div class="p-5">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h3 class="font-semibold text-gray-900">Aceitar inscrições</h3>
-            <p class="text-sm text-gray-500 mt-0.5">Habilita formulário público de inscrição para este evento</p>
+            <h3 class="font-semibold text-slate-900">Aceitar inscrições</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Habilita formulário público de inscrição para este evento</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
             <input type="checkbox" name="aceita_inscricoes" value="on" x-model="aceita" class="sr-only peer">
-            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
         </div>
       </div>
@@ -31,14 +31,14 @@
 
         <!-- Template do formulário -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Template de formulário</label>
-          <select name="formulario_template_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Template de formulário</label>
+          <select name="formulario_template_id" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">— Somente nome, e-mail e telefone —</option>
             <% templates.forEach(function(tpl) { %>
             <option value="<%= tpl.id %>" <%= evento.formulario_template_id == tpl.id ? 'selected' : '' %>><%= tpl.nome %></option>
             <% }) %>
           </select>
-          <p class="text-xs text-gray-400 mt-1.5">
+          <p class="text-xs text-slate-400 mt-1.5">
             Sem template, o formulário terá apenas nome, e-mail e telefone.
             <a href="/formularios/novo" target="_blank" class="text-blue-500 hover:underline">Criar novo template →</a>
           </p>
@@ -46,37 +46,37 @@
 
         <!-- Limite de vagas -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Limite de inscrições</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Limite de inscrições</label>
           <div class="flex gap-3 items-center">
             <input type="number" name="max_inscricoes" min="1"
               value="<%= evento.max_inscricoes || '' %>"
               placeholder="Sem limite"
-              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <span class="text-sm text-gray-500">vagas</span>
+              class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <span class="text-sm text-slate-500">vagas</span>
           </div>
-          <p class="text-xs text-gray-400 mt-1.5">Deixe em branco para aceitar inscrições ilimitadas</p>
+          <p class="text-xs text-slate-400 mt-1.5">Deixe em branco para aceitar inscrições ilimitadas</p>
         </div>
 
         <!-- Inscrições abertas/fechadas -->
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h3 class="font-medium text-gray-900">Inscrições abertas</h3>
-            <p class="text-sm text-gray-500 mt-0.5">Desative para pausar temporariamente sem remover o link</p>
+            <h3 class="font-medium text-slate-900">Inscrições abertas</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Desative para pausar temporariamente sem remover o link</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
             <input type="checkbox" name="inscricoes_abertas" value="on" x-model="abertas" class="sr-only peer">
-            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
           </label>
         </div>
 
         <!-- PDF do Regulamento -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">PDF do regulamento</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">PDF do regulamento</label>
           <% if (evento.pdf_regulamento) { %>
           <div class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
             <svg class="w-8 h-8 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-800 truncate">Regulamento anexado</p>
+              <p class="text-sm font-medium text-slate-800 truncate">Regulamento anexado</p>
               <a href="<%= evento.pdf_regulamento %>" target="_blank" class="text-xs text-blue-600 hover:underline">Visualizar PDF →</a>
             </div>
             <form action="/eventos/<%= evento.id %>/inscricoes/config/remover-pdf" method="POST" onsubmit="return confirm('Remover o PDF do regulamento?')">
@@ -85,11 +85,11 @@
               </button>
             </form>
           </div>
-          <p class="text-xs text-gray-400 mt-1.5">Para substituir, faça upload de um novo PDF abaixo.</p>
+          <p class="text-xs text-slate-400 mt-1.5">Para substituir, faça upload de um novo PDF abaixo.</p>
           <% } %>
           <input type="file" name="pdf_regulamento" accept=".pdf,application/pdf"
-            class="mt-2 block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
-          <p class="text-xs text-gray-400 mt-1">Máximo 20 MB. O PDF ficará disponível para download no formulário público.</p>
+            class="mt-2 block w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+          <p class="text-xs text-slate-400 mt-1">Máximo 20 MB. O PDF ficará disponível para download no formulário público.</p>
         </div>
 
         <!-- Link de inscrição -->
@@ -121,11 +121,11 @@
           Salvar configurações
         </button>
         <% if (evento.aceita_inscricoes) { %>
-        <a href="/eventos/<%= evento.id %>/inscricoes" class="px-5 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition">
+        <a href="/eventos/<%= evento.id %>/inscricoes" class="px-5 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition">
           Ver inscritos
         </a>
         <% } %>
-        <a href="/eventos" class="px-5 py-2.5 text-gray-500 text-sm font-medium hover:text-gray-700 transition">
+        <a href="/eventos" class="px-5 py-2.5 text-slate-500 text-sm font-medium hover:text-slate-700 transition">
           Voltar
         </a>
       </div>

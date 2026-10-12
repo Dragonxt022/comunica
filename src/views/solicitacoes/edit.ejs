@@ -107,16 +107,16 @@ document.addEventListener('alpine:init', function() {
 
 <div class="max-w-6xl mx-auto space-y-5" x-data="solEditForm">
     <div class="flex items-center gap-3">
-        <a href="/solicitacoes/<%= sol.id %>" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <a href="/solicitacoes/<%= sol.id %>" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
-            <h1 class="text-xl font-bold text-gray-900">Editar Solicitação <span class="text-gray-400 font-normal">#<%= sol.id %></span></h1>
-            <p class="text-sm text-gray-500 mt-0.5">Atualize as informações do chamado.</p>
+            <h1 class="text-xl font-bold text-slate-900">Editar Solicitação <span class="text-slate-400 font-normal">#<%= sol.id %></span></h1>
+            <p class="text-sm text-slate-500 mt-0.5">Atualize as informações do chamado.</p>
         </div>
     </div>
 
-    <form action="/solicitacoes/<%= sol.id %>/editar" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm" @submit="prepararSubmit($event)">
+    <form action="/solicitacoes/<%= sol.id %>/editar" method="POST" class="bg-white rounded-xl border border-slate-200 shadow-sm" @submit="prepararSubmit($event)">
 
         <!-- 2-column grid -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-8 gap-y-5">
@@ -125,14 +125,14 @@ document.addEventListener('alpine:init', function() {
             <div class="space-y-5">
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Título <span class="text-red-500">*</span></label>
                     <input type="text" name="titulo" x-ref="tituloInput" required value="<%= sol.titulo %>"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <div class="flex-1">
                     <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-sm font-semibold text-gray-700">Descrição / Briefing <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700">Descrição / Briefing <span class="text-red-500">*</span></label>
                         <div class="flex items-center gap-1.5">
                             <button type="button" @click="sugerirDescricao()" :disabled="iaLoadingSugestao"
                                 title="Sugerir descrição a partir do título (IA — beta)"
@@ -152,7 +152,7 @@ document.addEventListener('alpine:init', function() {
                     </div>
                     <div x-ref="quillEditor"></div>
                     <input type="hidden" name="descricao" x-ref="descricaoInput">
-                    <p class="text-xs text-gray-400 mt-1">Quanto mais detalhes, melhor o resultado da produção. Sugestões de IA estão em fase de teste — revise sempre antes de enviar.</p>
+                    <p class="text-xs text-slate-400 mt-1">Quanto mais detalhes, melhor o resultado da produção. Sugestões de IA estão em fase de teste — revise sempre antes de enviar.</p>
                 </div>
 
             </div>
@@ -160,13 +160,13 @@ document.addEventListener('alpine:init', function() {
             <!-- ─── Coluna direita ─── -->
             <div class="space-y-5">
 
-                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-5">
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5 space-y-5">
 
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações do Chamado</p>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Configurações do Chamado</p>
 
                     <!-- Tipo de Mídia -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
                             Tipo de Mídia <span class="text-red-500">*</span>
                         </label>
                         <div class="flex flex-wrap gap-2">
@@ -175,7 +175,7 @@ document.addEventListener('alpine:init', function() {
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
                                 :class="tipoSelecionado === '<%= tipo %>'
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+                                    : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600'">
                                 <svg x-show="tipoSelecionado === '<%= tipo %>'" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                                 <%= tipo %>
                             </button>
@@ -187,27 +187,27 @@ document.addEventListener('alpine:init', function() {
                     <!-- Prioridade + Prazo -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Prioridade <span class="text-red-500">*</span></label>
-                            <select name="prioridade" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Prioridade <span class="text-red-500">*</span></label>
+                            <select name="prioridade" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                                 <option value="baixa" <%= sol.prioridade === 'baixa' ? 'selected' : '' %>>Baixa</option>
                                 <option value="media" <%= sol.prioridade === 'media' ? 'selected' : '' %>>Média</option>
                                 <option value="alta"  <%= sol.prioridade === 'alta'  ? 'selected' : '' %>>Alta — Urgente</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                 Prazo de Entrega
-                                <span class="text-gray-400 font-normal">(opcional)</span>
+                                <span class="text-slate-400 font-normal">(opcional)</span>
                             </label>
                             <input type="date" name="prazo"
                                 value="<%= sol.prazo ? String(sol.prazo).slice(0, 10) : '' %>"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-sm">
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-sm">
                             <% if(sol.prazo) {
                                 var hoje = new Date().toISOString().slice(0,10);
                                 var pStr = String(sol.prazo).slice(0,10);
                                 var atrasado = pStr < hoje && !['finalizado','cancelado'].includes(sol.status);
                             %>
-                            <p class="text-xs mt-1 <%= atrasado ? 'text-red-500 font-semibold' : 'text-gray-400' %>">
+                            <p class="text-xs mt-1 <%= atrasado ? 'text-red-500 font-semibold' : 'text-slate-400' %>">
                                 <%= atrasado ? '⚠️ Prazo vencido!' : 'Prazo configurado' %>
                             </p>
                             <% } %>
@@ -216,9 +216,9 @@ document.addEventListener('alpine:init', function() {
 
                     <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
                         <select name="secretaria_id" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="">Selecione...</option>
                             <% secretarias.forEach(function(s) { %>
                                 <option value="<%= s.id %>" <%= sol.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
@@ -233,8 +233,8 @@ document.addEventListener('alpine:init', function() {
 
         </div>
 
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 rounded-b-xl">
-            <a href="/solicitacoes/<%= sol.id %>" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-between items-center bg-slate-50 rounded-b-xl">
+            <a href="/solicitacoes/<%= sol.id %>" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
             <button type="submit"
                 class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2 text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>

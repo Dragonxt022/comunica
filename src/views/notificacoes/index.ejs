@@ -28,8 +28,8 @@ function timeAgo(date) {
 
     <div class="flex items-center justify-between gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Notificações</h2>
-            <p class="text-sm text-gray-500 mt-0.5">
+            <h2 class="text-2xl font-bold text-slate-900">Notificações</h2>
+            <p class="text-sm text-slate-500 mt-0.5">
                 <span x-text="total"></span> no total ·
                 <span x-text="unread" class="font-semibold text-blue-600"></span> não lidas
             </p>
@@ -40,7 +40,7 @@ function timeAgo(date) {
                 Marcar todas como lidas
             </button>
             <button @click="excluirLidas()"
-                class="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                class="px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
                 Excluir lidas
             </button>
         </div>
@@ -49,7 +49,7 @@ function timeAgo(date) {
     <!-- Lista -->
     <div class="space-y-2">
         <template x-if="items.length === 0">
-            <div class="text-center py-16 text-gray-400 text-sm">
+            <div class="text-center py-16 text-slate-400 text-sm">
                 <div class="text-4xl mb-3">🔔</div>
                 Nenhuma notificação.
             </div>
@@ -57,7 +57,7 @@ function timeAgo(date) {
 
         <template x-for="n in items" :key="n.id">
             <div class="bg-white border rounded-xl p-4 flex items-start gap-3 transition-all duration-200"
-                 :class="n.lida ? 'border-gray-100 opacity-70' : 'border-blue-100 shadow-sm'">
+                 :class="n.lida ? 'border-slate-100 opacity-70' : 'border-blue-100 shadow-sm'">
 
                 <!-- Indicador não-lida -->
                 <div class="shrink-0 mt-1">
@@ -72,9 +72,9 @@ function timeAgo(date) {
 
                 <!-- Conteúdo -->
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-800" x-text="n.titulo"></p>
-                    <p x-show="n.corpo" class="text-xs text-gray-500 mt-0.5 leading-relaxed" x-text="n.corpo"></p>
-                    <p class="text-[10px] text-gray-400 mt-1" x-text="fmtDate(n.createdAt)"></p>
+                    <p class="text-sm font-semibold text-slate-800" x-text="n.titulo"></p>
+                    <p x-show="n.corpo" class="text-xs text-slate-500 mt-0.5 leading-relaxed" x-text="n.corpo"></p>
+                    <p class="text-[10px] text-slate-400 mt-1" x-text="fmtDate(n.createdAt)"></p>
                 </div>
 
                 <!-- Ações -->
@@ -86,11 +86,11 @@ function timeAgo(date) {
                         </a>
                     </template>
                     <template x-if="!n.lida">
-                        <button @click="marcarLida(n)" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition" title="Marcar como lida">
+                        <button @click="marcarLida(n)" class="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition" title="Marcar como lida">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         </button>
                     </template>
-                    <button @click="excluir(n)" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition" title="Excluir">
+                    <button @click="excluir(n)" class="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition" title="Excluir">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </div>
@@ -138,7 +138,7 @@ function notifPage() {
         init() {},
 
         tipoIcon(tipo) { return ICONS[tipo] || '🔔'; },
-        tipoClass(tipo) { return BG[tipo] || 'bg-gray-100'; },
+        tipoClass(tipo) { return BG[tipo] || 'bg-slate-100'; },
 
         fmtDate(dateStr) {
             var d = new Date(dateStr), now = new Date();

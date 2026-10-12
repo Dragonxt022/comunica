@@ -15,21 +15,21 @@
     <!-- Cabeçalho -->
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h2 class="text-xl font-semibold text-gray-900">Biblioteca de Artes</h2>
-            <p class="text-sm text-gray-400 mt-0.5">Acervo de todas as produções finalizadas</p>
+            <h2 class="text-xl font-semibold text-slate-900">Biblioteca de Artes</h2>
+            <p class="text-sm text-slate-400 mt-0.5">Acervo de todas as produções finalizadas</p>
         </div>
-        <span class="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+        <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
             <%= totalGeral %> arte<%= totalGeral !== 1 ? 's' : '' %>
         </span>
     </div>
 
     <!-- Filtros -->
-    <form method="GET" action="/biblioteca" class="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-end">
+    <form method="GET" action="/biblioteca" class="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
         <% if(user.role !== 'secretaria') { %>
         <div class="flex-1 min-w-[160px]">
-            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Secretaria</label>
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">Secretaria</label>
             <select name="secretaria_id"
-                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="">Todas as secretarias</option>
                 <% secretarias.forEach(function(s) { %>
                 <option value="<%= s.id %>" <%= filtros.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
@@ -39,9 +39,9 @@
         <% } %>
 
         <div class="flex-1 min-w-[160px]">
-            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Tipo de Mídia</label>
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">Tipo de Mídia</label>
             <select name="tipo_midia"
-                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="">Todos os tipos</option>
                 <% tipos.forEach(function(t) { %>
                 <option value="<%= t %>" <%= filtros.tipo_midia === t ? 'selected' : '' %>><%= t %></option>
@@ -50,9 +50,9 @@
         </div>
 
         <div class="min-w-[150px]">
-            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Mês</label>
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">Mês</label>
             <input type="month" name="mes" value="<%= filtros.mes %>"
-                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <button type="submit"
@@ -62,7 +62,7 @@
         </button>
 
         <% if (filtros.secretaria_id || filtros.tipo_midia || filtros.mes) { %>
-        <a href="/biblioteca" class="px-4 py-2 text-sm text-gray-400 hover:text-gray-700 transition font-medium">
+        <a href="/biblioteca" class="px-4 py-2 text-sm text-slate-400 hover:text-slate-700 transition font-medium">
             Limpar filtros
         </a>
         <% } %>
@@ -70,22 +70,22 @@
 
     <!-- Grade de artes -->
     <% if (artes.length === 0) { %>
-    <div class="bg-white rounded-xl border border-gray-200 py-20 text-center">
+    <div class="bg-white rounded-xl border border-slate-200 py-20 text-center">
         <svg class="w-12 h-12 mx-auto text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
-        <p class="text-gray-400 font-medium">Nenhuma arte encontrada</p>
-        <p class="text-sm text-gray-300 mt-1">Tente ajustar os filtros acima</p>
+        <p class="text-slate-400 font-medium">Nenhuma arte encontrada</p>
+        <p class="text-sm text-slate-300 mt-1">Tente ajustar os filtros acima</p>
     </div>
     <% } else { %>
 
     <!-- Visualização: grade ou lista -->
     <div class="flex items-center justify-end gap-2">
-        <button @click="view='grid'" :class="view==='grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'"
+        <button @click="view='grid'" :class="view==='grid' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'"
             class="p-2 rounded-lg transition" title="Grade">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zm8 0a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2h-2zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zm8 0a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"></path></svg>
         </button>
-        <button @click="view='list'" :class="view==='list' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'"
+        <button @click="view='list'" :class="view==='list' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600'"
             class="p-2 rounded-lg transition" title="Lista">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
@@ -100,7 +100,7 @@
                 : [{ url: arte.arte_final_url, titulo: arte.titulo }]).replace(/'/g, '&#39;');
             var metaAttr = JSON.stringify({ titulo: arte.titulo, link: arte.link_publicacao || '' }).replace(/'/g, '&#39;');
         %>
-        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
              @click='$store.carousel.showAt(<%- imgsAttr %>, 0, <%- metaAttr %>)'>
             <div class="aspect-square overflow-hidden relative img-skel">
                 <img src="<%= arte.arte_final_url %>" alt="<%= arte.titulo %>" loading="lazy"
@@ -108,25 +108,25 @@
                      style="opacity:0;transition:opacity .35s ease"
                      onload="this.style.opacity='1';this.parentElement.classList.remove('img-skel')"
                      onerror="this.style.display='none';this.parentElement.classList.remove('img-skel');this.nextElementSibling.style.display='flex'">
-                <div class="absolute inset-0 hidden items-center justify-center text-gray-300 bg-gray-50">
+                <div class="absolute inset-0 hidden items-center justify-center text-slate-300 bg-slate-50">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
                 </div>
                 <!-- Tipo badge -->
-                <span class="absolute top-2 left-2 bg-white/90 text-gray-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm truncate max-w-[80%]">
+                <span class="absolute top-2 left-2 bg-white/90 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm truncate max-w-[80%]">
                     <%= arte.tipo_midia %>
                 </span>
             </div>
             <div class="p-3 space-y-1.5">
-                <p class="text-xs font-semibold text-gray-900 line-clamp-2 leading-tight"><%= arte.titulo %></p>
+                <p class="text-xs font-semibold text-slate-900 line-clamp-2 leading-tight"><%= arte.titulo %></p>
                 <% if (arte.secretaria) { %>
                 <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-none"
                       style="background:<%= arte.secretaria.cor %>22;color:<%= arte.secretaria.cor %>">
                     <%= arte.secretaria.nome %>
                 </span>
                 <% } %>
-                <p class="text-[10px] text-gray-400">
+                <p class="text-[10px] text-slate-400">
                     <%= new Date(arte.updatedAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) %>
                 </p>
             </div>
@@ -137,32 +137,32 @@
 
     <!-- Modo lista -->
     <template x-if="view==='list'">
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-100">
+            <thead class="bg-slate-50 border-b border-slate-100">
                 <tr>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-16">Arte</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Título</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Secretaria</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Tipo</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Data</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-16">Arte</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Título</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Secretaria</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Tipo</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Data</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
+            <tbody class="divide-y divide-slate-50">
                 <% artes.forEach(function(arte) {
                     var imgsAttr = JSON.stringify((arte.imagens && arte.imagens.length)
                         ? arte.imagens.map(function(im){ return { url: im.url, titulo: arte.titulo }; })
                         : [{ url: arte.arte_final_url, titulo: arte.titulo }]).replace(/'/g, '&#39;');
                     var metaAttr = JSON.stringify({ titulo: arte.titulo, link: arte.link_publicacao || '' }).replace(/'/g, '&#39;');
                 %>
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3">
-                        <img src="<%= arte.arte_final_url %>" alt="" loading="lazy" class="w-12 h-12 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80"
+                        <img src="<%= arte.arte_final_url %>" alt="" loading="lazy" class="w-12 h-12 object-cover rounded-lg border border-slate-100 cursor-pointer hover:opacity-80"
                              @click='$store.carousel.showAt(<%- imgsAttr %>, 0, <%- metaAttr %>)'>
                     </td>
                     <td class="px-4 py-3">
-                        <p class="font-medium text-gray-900 line-clamp-1"><%= arte.titulo %></p>
+                        <p class="font-medium text-slate-900 line-clamp-1"><%= arte.titulo %></p>
                         <% if (arte.prioridade === 'alta') { %>
                         <span class="text-[10px] text-red-500 font-semibold">● Alta prioridade</span>
                         <% } %>
@@ -173,13 +173,13 @@
                               style="background:<%= arte.secretaria.cor %>22;color:<%= arte.secretaria.cor %>">
                             <%= arte.secretaria.nome %>
                         </span>
-                        <% } else { %><span class="text-gray-300">—</span><% } %>
+                        <% } else { %><span class="text-slate-300">—</span><% } %>
                     </td>
                     <td class="px-4 py-3 hidden lg:table-cell">
-                        <span class="text-xs text-gray-500"><%= arte.tipo_midia %></span>
+                        <span class="text-xs text-slate-500"><%= arte.tipo_midia %></span>
                     </td>
                     <td class="px-4 py-3 hidden lg:table-cell">
-                        <span class="text-xs text-gray-400">
+                        <span class="text-xs text-slate-400">
                             <%= new Date(arte.updatedAt).toLocaleDateString('pt-BR') %>
                         </span>
                     </td>
@@ -190,7 +190,7 @@
                                 Ver
                             </button>
                             <a href="<%= arte.arte_final_url %>" download target="_blank"
-                               class="text-xs text-gray-400 hover:text-gray-700 font-medium transition">
+                               class="text-xs text-slate-400 hover:text-slate-700 font-medium transition">
                                 Download
                             </a>
                             <% if (arte.link_publicacao) { %>
@@ -219,24 +219,24 @@
         };
     %>
     <div class="flex items-center justify-between flex-wrap gap-3">
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-slate-500">
             <strong><%= total %></strong> arte<%= total !== 1 ? 's' : '' %> encontrada<%= total !== 1 ? 's' : '' %>
         </p>
         <div class="flex items-center gap-1">
             <% if (currentPage > 1) { %>
             <a href="<%= qs(currentPage - 1) %>"
-               class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">← Anterior</a>
+               class="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition">← Anterior</a>
             <% } %>
             <% for (var p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) { %>
             <a href="<%= qs(p) %>"
                class="px-3 py-1.5 text-xs font-medium border rounded-lg transition
-                      <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50' %>">
+                      <%= p === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-300 text-slate-600 hover:bg-slate-50' %>">
                 <%= p %>
             </a>
             <% } %>
             <% if (currentPage < totalPages) { %>
             <a href="<%= qs(currentPage + 1) %>"
-               class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">Próxima →</a>
+               class="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition">Próxima →</a>
             <% } %>
         </div>
     </div>

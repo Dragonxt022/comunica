@@ -30,18 +30,18 @@ document.addEventListener('alpine:init', function() {
     };
     var calendarioMenu = '' +
         '<div class="relative" x-data="{ calOpen: false }" @click.outside="calOpen = false">' +
-        '  <button type="button" @click.stop="calOpen = !calOpen" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition shadow-sm">' +
+        '  <button type="button" @click.stop="calOpen = !calOpen" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition shadow-sm">' +
         '    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' +
         '    Adicionar ao Calendário' +
         '  </button>' +
-        '  <div x-show="calOpen" style="display:none" class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden w-56">' +
-        '    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Publicar em</div>' +
-        '    <a id="edit-gcal-link" href="#" target="_blank" rel="noopener" @click="calOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition">' +
+        '  <div x-show="calOpen" style="display:none" class="absolute right-0 top-full mt-1.5 z-30 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden w-56">' +
+        '    <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Publicar em</div>' +
+        '    <a id="edit-gcal-link" href="#" target="_blank" rel="noopener" @click="calOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition">' +
         '      <span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded flex items-center justify-center shrink-0">G</span>Google Calendar' +
         '    </a>' +
-        '    <div class="h-px bg-gray-100 mx-3"></div>' +
-        '    <button type="button" onclick="editIcsDownload()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">' +
-        '      <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Apple / iCal (.ics)' +
+        '    <div class="h-px bg-slate-100 mx-3"></div>' +
+        '    <button type="button" onclick="editIcsDownload()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition">' +
+        '      <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Apple / iCal (.ics)' +
         '    </button>' +
         '  </div>' +
         '</div>';
@@ -56,7 +56,7 @@ document.addEventListener('alpine:init', function() {
         headerRight: calendarioMenu
     }) %>
 
-    <form action="/eventos/<%= evento.id %>" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <form action="/eventos/<%= evento.id %>" method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-slate-200 shadow-sm">
 
         <!-- 2-column grid -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-8 gap-y-5">
@@ -65,13 +65,13 @@ document.addEventListener('alpine:init', function() {
             <div class="space-y-5">
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título do Evento <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Título do Evento <span class="text-red-500">*</span></label>
                     <input type="text" name="titulo" id="titulo-evento" required value="<%= evento.titulo %>"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Descrição <span class="text-red-500">*</span></label>
                     <%- include('../partials/quill-ia-field', {
                         editorId: 'ed-evento',
                         inputName: 'descricao',
@@ -83,9 +83,9 @@ document.addEventListener('alpine:init', function() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Local <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Local <span class="text-red-500">*</span></label>
                     <input type="text" name="local" required value="<%= evento.local %>"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <!-- Imagem de Capa -->
@@ -111,30 +111,30 @@ document.addEventListener('alpine:init', function() {
                         if (d.ok) { this.currentCapa = ''; this.removida = true; }
                     }
                 }">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Imagem de Capa <span class="text-slate-400 font-normal">(opcional)</span></label>
 
-                    <div x-show="currentCapa && !preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-3">
+                    <div x-show="currentCapa && !preview" class="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm mb-3">
                         <img :src="currentCapa" class="w-full h-48 object-cover">
                         <div class="absolute inset-0 bg-black/30 flex items-end p-3">
                             <span class="text-white text-xs font-medium flex-1">Capa atual</span>
                             <button type="button" @click.prevent="removerAtual()"
                                 class="ml-2 px-2.5 py-1 bg-red-500/80 hover:bg-red-600 rounded-lg text-white text-xs font-medium transition">Remover</button>
                             <button type="button" @click.prevent="$refs.input.click()"
-                                class="ml-2 px-2.5 py-1 bg-white/80 hover:bg-white rounded-lg text-gray-700 text-xs font-medium transition">Trocar</button>
+                                class="ml-2 px-2.5 py-1 bg-white/80 hover:bg-white rounded-lg text-slate-700 text-xs font-medium transition">Trocar</button>
                         </div>
                     </div>
 
                     <div x-show="!currentCapa && !preview"
-                        class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
+                        class="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition cursor-pointer"
                         @click="$refs.input.click()"
                         @dragover.prevent
                         @drop.prevent="onChange({ target: { files: $event.dataTransfer.files } })">
-                        <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-sm text-gray-500">Clique ou arraste uma imagem aqui</p>
-                        <p class="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
+                        <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-sm text-slate-500">Clique ou arraste uma imagem aqui</p>
+                        <p class="text-xs text-slate-400 mt-1">JPG, PNG, WebP — máx. 10 MB</p>
                     </div>
 
-                    <div x-show="preview" class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                    <div x-show="preview" class="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                         <img :src="preview" class="w-full h-48 object-cover">
                         <div class="absolute inset-0 bg-black/30 flex items-end p-3">
                             <span class="text-white text-xs font-medium truncate flex-1" x-text="fileName"></span>
@@ -144,7 +144,7 @@ document.addEventListener('alpine:init', function() {
                             </button>
                         </div>
                         <button type="button" @click="$refs.input.click()"
-                            class="absolute top-2 right-10 bg-white/80 hover:bg-white text-gray-700 text-xs px-2 py-1 rounded-lg shadow transition">Trocar</button>
+                            class="absolute top-2 right-10 bg-white/80 hover:bg-white text-slate-700 text-xs px-2 py-1 rounded-lg shadow transition">Trocar</button>
                     </div>
 
                     <input type="file" name="capa" accept="image/*" x-ref="input" @change="onChange($event)" class="hidden">
@@ -155,23 +155,23 @@ document.addEventListener('alpine:init', function() {
             <!-- ─── Coluna direita: metadados ─── -->
             <div class="space-y-5">
 
-                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-5">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Dados do Evento</p>
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5 space-y-5">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dados do Evento</p>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Início <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Data e Hora de Início <span class="text-red-500">*</span></label>
                         <input type="datetime-local" name="data_inicio" required value="<%= fmtDT(evento.data_inicio) %>"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Data e Hora de Fim <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Data e Hora de Fim <span class="text-red-500">*</span></label>
                         <input type="datetime-local" name="data_fim" required value="<%= fmtDT(evento.data_fim) %>"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Evento <span class="text-red-500">*</span></label>
-                        <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tipo de Evento <span class="text-red-500">*</span></label>
+                        <select name="tipo" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="">Selecione...</option>
                             <% ['Coletiva de Imprensa','Inauguração','Cerimônia','Reunião','Evento Cultural','Ação Social','Outros'].forEach(function(t) { %>
                                 <option value="<%= t %>" <%= evento.tipo === t ? 'selected' : '' %>><%= t %></option>
@@ -181,10 +181,10 @@ document.addEventListener('alpine:init', function() {
 
                     <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
                         <select name="secretaria_id" required
                             @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="">Selecione...</option>
                             <% secretarias.forEach(function(s) { %>
                                 <option value="<%= s.id %>" <%= evento.secretaria_id == s.id ? 'selected' : '' %>><%= s.nome %></option>
@@ -195,23 +195,23 @@ document.addEventListener('alpine:init', function() {
 
                     <!-- Responsáveis -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Responsáveis pelo Evento</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Responsáveis pelo Evento</label>
                         <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
                             <template x-for="u in filteredUsers" :key="u.id">
                                 <button type="button" @click="toggle(u.id)"
                                     class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
-                                    :class="isSelected(u.id) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+                                    :class="isSelected(u.id) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600'">
                                     <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
-                                        :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'"
+                                        :class="isSelected(u.id) ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'"
                                         x-text="u.nome.charAt(0)"></span>
                                     <span x-text="u.nome"></span>
                                 </button>
                             </template>
                         </div>
-                        <p x-show="!selectedSec" class="text-sm text-gray-400 italic">
+                        <p x-show="!selectedSec" class="text-sm text-slate-400 italic">
                             Selecione uma secretaria para ver os responsáveis disponíveis.
                         </p>
-                        <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-gray-400 italic">
+                        <p x-show="selectedSec && filteredUsers.length === 0" class="text-sm text-slate-400 italic">
                             Nenhum usuário cadastrado para esta secretaria.
                         </p>
                         <template x-for="id in responsaveis" :key="id">

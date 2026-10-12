@@ -213,16 +213,16 @@ document.addEventListener('alpine:init', function() {
 
 <div class="max-w-6xl mx-auto space-y-5" x-data="solCreateForm">
     <div class="flex items-center gap-3">
-        <a href="/solicitacoes" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <a href="/solicitacoes" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div>
-            <h1 class="text-xl font-bold text-gray-900">Abrir Chamado</h1>
-            <p class="text-sm text-gray-500 mt-0.5">Solicite produção de material à equipe de comunicação.</p>
+            <h1 class="text-xl font-bold text-slate-900">Abrir Chamado</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Solicite produção de material à equipe de comunicação.</p>
         </div>
     </div>
 
-    <form action="/solicitacoes" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm" @submit="prepararSubmit($event)">
+    <form action="/solicitacoes" method="POST" class="bg-white rounded-xl border border-slate-200 shadow-sm" @submit="prepararSubmit($event)">
 
         <!-- 2-column grid -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-8 gap-y-5">
@@ -231,14 +231,14 @@ document.addEventListener('alpine:init', function() {
             <div class="space-y-5">
 
                 <div id="tour-titulo">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Título <span class="text-red-500">*</span></label>
                     <input type="text" name="titulo" x-ref="tituloInput" required placeholder="Ex: Nota sobre abertura de inscrições"
-                        class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <div id="tour-descricao" class="flex-1">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição / Briefing <span class="text-red-500">*</span></label>
-                    <p class="text-xs text-gray-500 mb-2.5">Explique o que precisa: contexto, público-alvo, referências e informações importantes. Quanto mais detalhes, melhor o resultado.</p>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Descrição / Briefing <span class="text-red-500">*</span></label>
+                    <p class="text-xs text-slate-500 mb-2.5">Explique o que precisa: contexto, público-alvo, referências e informações importantes. Quanto mais detalhes, melhor o resultado.</p>
 
                     <!-- Ações de IA — "Conversar" é a opção recomendada, as demais são atalhos -->
                     <div class="flex flex-wrap items-center gap-2 mb-2.5">
@@ -250,14 +250,14 @@ document.addEventListener('alpine:init', function() {
                         </button>
                         <button type="button" @click="sugerirDescricao()" :disabled="iaLoadingSugestao"
                             title="Gerar uma descrição automaticamente a partir do título"
-                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-wait">
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-wait">
                             <svg x-show="!iaLoadingSugestao" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
                             <svg x-show="iaLoadingSugestao" class="w-4 h-4 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                             <span x-text="iaLoadingSugestao ? 'Gerando…' : 'Gerar a partir do título'"></span>
                         </button>
                         <button type="button" @click="corrigirDescricao()" :disabled="iaLoadingCorrecao"
                             title="Corrigir ortografia e clareza do texto já escrito"
-                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-wait">
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-wait">
                             <svg x-show="!iaLoadingCorrecao" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <svg x-show="iaLoadingCorrecao" class="w-4 h-4 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                             <span x-text="iaLoadingCorrecao ? 'Corrigindo…' : 'Corrigir texto'"></span>
@@ -266,7 +266,7 @@ document.addEventListener('alpine:init', function() {
 
                     <div x-ref="quillEditor"></div>
                     <input type="hidden" name="descricao" x-ref="descricaoInput">
-                    <p class="text-xs text-gray-400 mt-1">Sugestões de IA estão em fase de teste — revise sempre antes de enviar.</p>
+                    <p class="text-xs text-slate-400 mt-1">Sugestões de IA estão em fase de teste — revise sempre antes de enviar.</p>
                 </div>
 
             </div>
@@ -274,20 +274,20 @@ document.addEventListener('alpine:init', function() {
             <!-- ─── Coluna direita ─── -->
             <div class="space-y-5">
 
-                <div class="bg-gray-50 rounded-xl border border-gray-100 p-5 space-y-5">
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5 space-y-5">
 
                     <div class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 10.87V5a2 2 0 012-2z"></path></svg>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo e Prioridade</p>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo e Prioridade</p>
                     </div>
 
                     <!-- Tipos de Mídia -->
                     <div id="tour-tipos">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
                             <%= config && config.permitir_multiplos_tipos_midia ? 'Tipo(s) de Mídia' : 'Tipo de Mídia' %> <span class="text-red-500">*</span>
                         </label>
                         <% if (config && config.permitir_multiplos_tipos_midia) { %>
-                        <p class="text-xs text-gray-400 mb-2">Selecione um ou mais — cada tipo vira uma demanda separada.</p>
+                        <p class="text-xs text-slate-400 mb-2">Selecione um ou mais — cada tipo vira uma demanda separada.</p>
                         <% } %>
                         <div class="flex flex-wrap gap-2">
                             <% ['Nota','Release','Post para Redes Sociais','Arte Gráfica','Vídeo','Foto','Outros'].forEach(function(tipo) { %>
@@ -295,7 +295,7 @@ document.addEventListener('alpine:init', function() {
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
                                 :class="isTipo('<%= tipo %>')
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+                                    : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600'">
                                 <svg x-show="isTipo('<%= tipo %>')" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                                 <%= tipo %>
                             </button>
@@ -316,34 +316,34 @@ document.addEventListener('alpine:init', function() {
                     <!-- Prioridade + Prazo -->
                     <div id="tour-finalizar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Prioridade <span class="text-red-500">*</span></label>
-                            <select name="prioridade" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Prioridade <span class="text-red-500">*</span></label>
+                            <select name="prioridade" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                                 <option value="baixa">Baixa</option>
                                 <option value="media" selected>Média</option>
                                 <option value="alta">Alta — Urgente</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                 Prazo de Entrega
-                                <span class="text-gray-400 font-normal">(opcional)</span>
+                                <span class="text-slate-400 font-normal">(opcional)</span>
                             </label>
                             <input type="date" name="prazo"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-sm">
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-sm">
                         </div>
                     </div>
 
                     <% if(['admin', 'secom', 'super_admin'].includes(user.role)) { %>
-                    <div class="pt-4 border-t border-gray-200 space-y-4">
+                    <div class="pt-4 border-t border-slate-200 space-y-4">
                         <div class="flex items-center gap-1.5">
                             <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2M5 21h2m4-18v18m4-18v18M9 7h1m-1 4h1m4-4h1m-1 4h1"></path></svg>
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Destino do Chamado</p>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Destino do Chamado</p>
                         </div>
                     <% if(user.role === 'super_admin' && municipios && municipios.length > 0) { %>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Município <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Município <span class="text-red-500">*</span></label>
                         <select @change="changeMun($event.target.value)"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="">Todos os municípios</option>
                             <% municipios.forEach(function(m) { %>
                                 <option value="<%= m.id %>" <%= activeMunicipioId == m.id ? 'selected' : '' %>><%= m.nome %></option>
@@ -352,10 +352,10 @@ document.addEventListener('alpine:init', function() {
                     </div>
                     <% } %>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Secretaria <span class="text-red-500">*</span></label>
                         <select name="secretaria_id" required
                             @change="selectedSec = parseInt($event.target.value) || null; responsaveis = []"
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm">
                             <option value="">Selecione...</option>
                             <% if(user.role !== 'super_admin') { %>
                                 <% secretarias.forEach(function(s) { %>
@@ -374,44 +374,44 @@ document.addEventListener('alpine:init', function() {
                 </div>
 
                 <!-- Criar Evento Toggle -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
                     <button type="button" @click="criarEvento = !criarEvento"
                         class="w-full flex items-center gap-3 px-4 py-3 text-left transition"
-                        :class="criarEvento ? 'bg-purple-50 border-b border-purple-200' : 'bg-gray-50 hover:bg-gray-100'">
+                        :class="criarEvento ? 'bg-purple-50 border-b border-purple-200' : 'bg-slate-50 hover:bg-slate-100'">
                         <div class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition"
                             :class="criarEvento ? 'border-purple-600 bg-purple-600' : 'border-gray-400 bg-white'">
                             <svg x-show="criarEvento" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-800">Criar evento também</p>
-                            <p class="text-xs text-gray-500">Cadastrar um evento no calendário ao abrir este chamado.</p>
+                            <p class="text-sm font-semibold text-slate-800">Criar evento também</p>
+                            <p class="text-xs text-slate-500">Cadastrar um evento no calendário ao abrir este chamado.</p>
                         </div>
-                        <svg class="w-4 h-4 text-gray-400 transition-transform shrink-0" :class="criarEvento ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform shrink-0" :class="criarEvento ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <input type="hidden" name="criar_evento" :value="criarEvento ? '1' : '0'">
 
                     <div x-show="criarEvento" x-cloak class="p-4 space-y-4 bg-white">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Início <span class="text-red-500">*</span></label>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Início <span class="text-red-500">*</span></label>
                                 <input type="datetime-local" name="data_inicio" :required="criarEvento"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
+                                    class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Fim <span class="text-red-500">*</span></label>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Fim <span class="text-red-500">*</span></label>
                                 <input type="datetime-local" name="data_fim" :required="criarEvento"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
+                                    class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Local</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Local</label>
                             <input type="text" name="local" placeholder="Ex: Teatro Municipal"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Evento <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de Evento <span class="text-red-500">*</span></label>
                             <select name="tipo_evento" :required="criarEvento"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm">
                                 <option value="">Selecione...</option>
                                 <option value="Coletiva de Imprensa">Coletiva de Imprensa</option>
                                 <option value="Inauguração">Inauguração</option>
@@ -423,20 +423,20 @@ document.addEventListener('alpine:init', function() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Responsáveis pelo Evento</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Responsáveis pelo Evento</label>
                             <div x-show="filteredUsers.length > 0" class="flex flex-wrap gap-2">
                                 <template x-for="u in filteredUsers" :key="u.id">
                                     <button type="button" @click="toggleResp(u.id)"
                                         class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition select-none"
-                                        :class="isResp(u.id) ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'">
+                                        :class="isResp(u.id) ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:border-purple-400'">
                                         <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
-                                            :class="isResp(u.id) ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500'"
+                                            :class="isResp(u.id) ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-500'"
                                             x-text="u.nome.charAt(0)"></span>
                                         <span x-text="u.nome"></span>
                                     </button>
                                 </template>
                             </div>
-                            <p x-show="filteredUsers.length === 0" class="text-sm text-gray-400 italic">Nenhum usuário disponível.</p>
+                            <p x-show="filteredUsers.length === 0" class="text-sm text-slate-400 italic">Nenhum usuário disponível.</p>
                             <template x-for="id in responsaveis" :key="id">
                                 <input type="hidden" name="responsaveis[]" :value="id">
                             </template>
@@ -448,10 +448,10 @@ document.addEventListener('alpine:init', function() {
 
         </div>
 
-        <div class="px-6 py-4 border-t border-gray-100 flex flex-wrap justify-between items-center gap-3 bg-gray-50 rounded-b-xl">
-            <p class="text-xs text-gray-400 order-2 sm:order-1">Campos com <span class="text-red-500">*</span> são obrigatórios.</p>
+        <div class="px-6 py-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3 bg-slate-50 rounded-b-xl">
+            <p class="text-xs text-slate-400 order-2 sm:order-1">Campos com <span class="text-red-500">*</span> são obrigatórios.</p>
             <div class="flex items-center gap-3 order-1 sm:order-2 ml-auto">
-            <a href="/solicitacoes" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
+            <a href="/solicitacoes" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
             <button type="submit"
                 :disabled="tiposSelecionados.length === 0"
                 :class="tiposSelecionados.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
@@ -474,17 +474,17 @@ document.addEventListener('alpine:init', function() {
         x-transition:enter-end="opacity-100">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full h-[80vh] max-h-[700px] flex flex-col">
             <!-- Header -->
-            <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
+            <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-gray-900">Estruturar com IA</h3>
-                        <p class="text-xs text-gray-400">Descreva o que precisa — a IA organiza o briefing</p>
+                        <h3 class="text-sm font-bold text-slate-900">Estruturar com IA</h3>
+                        <p class="text-xs text-slate-400">Descreva o que precisa — a IA organiza o briefing</p>
                     </div>
                 </div>
-                <button type="button" @click="fecharChat()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <button type="button" @click="fecharChat()" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -497,8 +497,8 @@ document.addEventListener('alpine:init', function() {
                         <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center">
                             <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                         </div>
-                        <h4 class="text-base font-semibold text-gray-900">Vamos estruturar seu briefing</h4>
-                        <p class="text-sm text-gray-500 leading-relaxed max-w-sm" x-text="chatMensagens.length ? chatMensagens[0].texto : ''"></p>
+                        <h4 class="text-base font-semibold text-slate-900">Vamos estruturar seu briefing</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed max-w-sm" x-text="chatMensagens.length ? chatMensagens[0].texto : ''"></p>
                     </div>
                 </template>
 
@@ -517,7 +517,7 @@ document.addEventListener('alpine:init', function() {
                                         <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
                                             <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                                         </div>
-                                        <div class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap pt-0.5" x-text="msg.texto"></div>
+                                        <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap pt-0.5" x-text="msg.texto"></div>
                                     </div>
                                 </template>
                             </div>
@@ -537,15 +537,15 @@ document.addEventListener('alpine:init', function() {
             </div>
 
             <!-- Input -->
-            <div class="border-t border-gray-100 p-3 space-y-2">
-                <div class="flex items-end gap-1.5 rounded-2xl border border-gray-300 bg-white px-2 py-1.5 transition focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
+            <div class="border-t border-slate-100 p-3 space-y-2">
+                <div class="flex items-end gap-1.5 rounded-2xl border border-slate-300 bg-white px-2 py-1.5 transition focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
                     <textarea x-model="chatInput" rows="1" placeholder="Descreva o que precisa..."
                         @keydown.enter.exact.prevent="enviarChat()"
                         @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 128) + 'px'"
                         :disabled="chatLoading"
                         class="flex-1 px-2 py-1.5 outline-none text-sm resize-none bg-transparent disabled:opacity-60 max-h-32"></textarea>
                     <button type="button" @click="enviarChat()" :disabled="chatLoading || !chatInput.trim()"
-                        :class="(chatLoading || !chatInput.trim()) ? 'bg-gray-100 text-gray-300' : 'bg-purple-600 text-white hover:bg-purple-700'"
+                        :class="(chatLoading || !chatInput.trim()) ? 'bg-slate-100 text-slate-300' : 'bg-purple-600 text-white hover:bg-purple-700'"
                         class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full transition disabled:cursor-not-allowed">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6"></path></svg>
                     </button>

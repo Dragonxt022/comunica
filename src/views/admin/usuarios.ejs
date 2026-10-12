@@ -2,8 +2,8 @@
 
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Usuários</h2>
-            <p class="text-gray-500">Gerencie contas, permissões e acessos ao sistema.</p>
+            <h2 class="text-2xl font-bold text-slate-900">Usuários</h2>
+            <p class="text-slate-500">Gerencie contas, permissões e acessos ao sistema.</p>
         </div>
         <a href="/admin/usuarios/novo"
             class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
@@ -21,14 +21,14 @@
                         <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-gray-900">Excluir usuário?</h3>
-                        <p class="text-sm text-gray-500">Esta ação não pode ser desfeita.</p>
+                        <h3 class="text-base font-bold text-slate-900">Excluir usuário?</h3>
+                        <p class="text-sm text-slate-500">Esta ação não pode ser desfeita.</p>
                     </div>
                 </div>
                 <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800 font-medium" x-text="deleteName"></div>
                 <div class="flex gap-3">
                     <button @click="deleteId = null"
-                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition font-medium">
+                        class="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium">
                         Cancelar
                     </button>
                     <form :action="'/admin/usuarios/' + deleteId + '/excluir'" method="POST" class="flex-1">
@@ -45,11 +45,11 @@
     <!-- Busca e filtros -->
     <div class="flex flex-wrap items-center gap-3">
         <div class="relative flex-1 min-w-[200px] max-w-sm">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input id="usr-search" type="text" placeholder="Buscar por nome, e-mail ou secretaria..."
-                class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                class="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
         </div>
-        <select id="usr-role-filter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <select id="usr-role-filter" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
             <option value="">Todos os perfis</option>
             <option value="super_admin">Super Admin</option>
             <option value="admin">Admin</option>
@@ -57,7 +57,7 @@
             <option value="secretaria">Secretaria</option>
             <option value="imprensa">Imprensa</option>
         </select>
-        <select id="usr-status-filter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <select id="usr-status-filter" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
             <option value="">Todos os status</option>
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
@@ -65,30 +65,30 @@
     </div>
 
     <!-- Tabela -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <% if(usuarios.length === 0) { %>
             <div class="py-20 text-center">
-                <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <p class="text-gray-400 font-medium">Nenhum usuário cadastrado.</p>
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <p class="text-slate-400 font-medium">Nenhum usuário cadastrado.</p>
                 <a href="/admin/usuarios/novo" class="mt-2 inline-block text-blue-600 text-sm font-medium hover:underline">Criar o primeiro</a>
             </div>
         <% } else { %>
-        <table class="min-w-full divide-y divide-gray-100">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-slate-100">
+            <thead class="bg-slate-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Usuário</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Perfil</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Usuário</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Perfil</th>
                     <% if (user && user.role === 'super_admin') { %>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Município</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Município</th>
                     <% } %>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Secretaria</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Secretaria</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-sm">
+            <tbody class="divide-y divide-slate-100 text-sm">
                 <% usuarios.forEach(u => { %>
-                <tr class="hover:bg-gray-50/70 transition group"
+                <tr class="hover:bg-slate-50/70 transition group"
                     data-search="<%= (u.nome + ' ' + u.email + ' ' + (u.secretaria ? u.secretaria.nome : '') + ' ' + (u.municipio ? u.municipio.nome : '')).toLowerCase() %>"
                     data-role="<%= u.role %>"
                     data-status="<%= u.ativo ? 'ativo' : 'inativo' %>">
@@ -99,12 +99,12 @@
                                                      u.role === 'admin'   ? 'bg-purple-100 text-purple-700' :
                                                      u.role === 'secom'    ? 'bg-blue-100 text-blue-700' :
                                                      u.role === 'imprensa' ? 'bg-orange-100 text-orange-700' :
-                                                     'bg-gray-100 text-gray-600') %>">
+                                                     'bg-slate-100 text-slate-600') %>">
                                 <% if(u.avatar) { %><img src="<%= u.avatar %>" alt="" class="w-full h-full object-cover"><% } else { %><%= u.nome.charAt(0).toUpperCase() %><% } %>
                             </div>
                             <div>
-                                <div class="font-semibold text-gray-900 leading-tight"><%= u.nome %></div>
-                                <div class="text-xs text-gray-400 mt-0.5"><%= u.email %></div>
+                                <div class="font-semibold text-slate-900 leading-tight"><%= u.nome %></div>
+                                <div class="text-xs text-slate-400 mt-0.5"><%= u.email %></div>
                             </div>
                         </div>
                     </td>
@@ -114,21 +114,21 @@
                                u.role === 'admin'    ? 'bg-purple-100 text-purple-700' :
                                u.role === 'secom'     ? 'bg-blue-100 text-blue-700' :
                                u.role === 'imprensa'  ? 'bg-orange-100 text-orange-700' :
-                               'bg-gray-100 text-gray-600' %>">
+                               'bg-slate-100 text-slate-600' %>">
                             <%= u.role === 'super_admin' ? '★ Super Admin' : u.role === 'admin' ? '★ Admin' : u.role === 'secom' ? 'SECOM' : u.role === 'imprensa' ? 'Imprensa' : 'Secretaria' %>
                         </span>
                     </td>
                     <% if (user && user.role === 'super_admin') { %>
-                    <td class="px-6 py-4 text-gray-500 text-xs"><%= u.municipio ? u.municipio.nome : '—' %></td>
+                    <td class="px-6 py-4 text-slate-500 text-xs"><%= u.municipio ? u.municipio.nome : '—' %></td>
                     <% } %>
-                    <td class="px-6 py-4 text-gray-600">
+                    <td class="px-6 py-4 text-slate-600">
                         <% if(u.secretaria) { %>
                             <div class="flex items-center gap-1.5">
                                 <div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color:<%= u.secretaria.cor %>"></div>
                                 <%= u.secretaria.nome %>
                             </div>
                         <% } else { %>
-                            <span class="text-gray-400">—</span>
+                            <span class="text-slate-400">—</span>
                         <% } %>
                     </td>
                     <td class="px-6 py-4">
@@ -137,7 +137,7 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Ativo
                             </span>
                         <% } else { %>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-gray-100 text-gray-500 rounded-full">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-500 rounded-full">
                                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>Inativo
                             </span>
                         <% } %>
@@ -146,12 +146,12 @@
                         <div class="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition">
                             <a href="/admin/usuarios/<%= u.id %>/editar"
                                 title="Editar"
-                                class="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition">
+                                class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </a>
                             <form action="/admin/usuarios/<%= u.id %>/toggle" method="POST">
                                 <button type="submit" title="<%= u.ativo ? 'Desativar' : 'Ativar' %>"
-                                    class="p-1.5 rounded-lg transition <%= u.ativo ? 'text-gray-500 hover:text-yellow-600 hover:bg-yellow-50' : 'text-gray-500 hover:text-green-600 hover:bg-green-50' %>">
+                                    class="p-1.5 rounded-lg transition <%= u.ativo ? 'text-slate-500 hover:text-yellow-600 hover:bg-yellow-50' : 'text-slate-500 hover:text-green-600 hover:bg-green-50' %>">
                                     <% if(u.ativo) { %>
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
                                     <% } else { %>
@@ -162,7 +162,7 @@
                             <button
                                 @click="deleteId = <%= u.id %>; deleteName = '<%- u.nome.replace(/\\/g, '\\\\').replace(/'/g, "\\'") %> — <%= u.email %>'"
                                 title="Excluir"
-                                class="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition">
+                                class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
@@ -171,7 +171,7 @@
                 <% }) %>
             </tbody>
         </table>
-        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
+        <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400">
             <span id="usr-count"><%= usuarios.length %> usuário<%= usuarios.length !== 1 ? 's' : '' %> cadastrado<%= usuarios.length !== 1 ? 's' : '' %></span>
         </div>
         <% } %>

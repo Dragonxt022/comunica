@@ -4,19 +4,19 @@
 
     <!-- Cabeçalho -->
     <div class="flex items-center gap-3">
-        <a href="/solicitacoes" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition shrink-0">
+        <a href="/solicitacoes" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 truncate"><%= sol.titulo %></h2>
-                <span class="text-sm font-bold text-gray-400">#<%= sol.id %></span>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 truncate"><%= sol.titulo %></h2>
+                <span class="text-sm font-bold text-slate-400">#<%= sol.id %></span>
             </div>
-            <p class="text-sm text-gray-500 mt-0.5">Aberta em <%= new Date(sol.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) %></p>
+            <p class="text-sm text-slate-500 mt-0.5">Aberta em <%= new Date(sol.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) %></p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
             <a href="/solicitacoes/<%= sol.id %>/editar" title="Editar"
-               class="inline-flex items-center gap-2 p-2 sm:px-3 sm:py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+               class="inline-flex items-center gap-2 p-2 sm:px-3 sm:py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 <span class="hidden sm:inline">Editar</span>
             </a>
@@ -36,9 +36,9 @@
         <div class="lg:col-span-2 space-y-5">
 
             <!-- Descrição / Briefing -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-3">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-3">
                 <div class="flex items-center justify-between gap-2 flex-wrap">
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Briefing / Descrição</h3>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Briefing / Descrição</h3>
                     <button type="button" id="btn-variacoes-sociais" onclick="gerarVariacoesSociais()"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-md border border-purple-200 text-purple-600 hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-wait">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
@@ -46,7 +46,7 @@
                     </button>
                 </div>
                 <div class="relative">
-                    <div id="descricao-content" class="rich-content text-gray-700 leading-relaxed text-sm overflow-hidden" style="max-height:260px"><%- sol.descricao %></div>
+                    <div id="descricao-content" class="rich-content text-slate-700 leading-relaxed text-sm overflow-hidden" style="max-height:260px"><%- sol.descricao %></div>
                     <div id="descricao-fade" class="hidden absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
                 </div>
                 <button type="button" id="btn-descricao-toggle"
@@ -56,15 +56,15 @@
                 </button>
 
                 <!-- Painel de variações por rede social (IA) -->
-                <div id="painel-variacoes-sociais" class="hidden pt-3 border-t border-gray-100 space-y-3">
-                    <p class="text-xs text-gray-400">Sugestões geradas por IA — revise antes de publicar.</p>
+                <div id="painel-variacoes-sociais" class="hidden pt-3 border-t border-slate-100 space-y-3">
+                    <p class="text-xs text-slate-400">Sugestões geradas por IA — revise antes de publicar.</p>
                     <div id="variacoes-lista" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
                 </div>
             </div>
 
             <!-- Linha do tempo de status -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fluxo de Status</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fluxo de Status</h3>
                 <div class="flex items-center gap-0">
                     <%
                         var etapas = [
@@ -84,10 +84,10 @@
                     <div class="flex items-center flex-1">
                         <div class="flex flex-col items-center gap-1.5 flex-1 min-w-0">
                             <div id="tl-dot-<%= i %>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold border-2 transition
-                                <%= isCanceled ? 'border-gray-200 bg-gray-50 text-gray-300' :
+                                <%= isCanceled ? 'border-slate-200 bg-slate-50 text-slate-300' :
                                    isDone   ? 'border-green-500 bg-green-500 text-white' :
                                    isActive ? 'border-blue-500 bg-blue-500 text-white' :
-                                              'border-gray-200 bg-white text-gray-300' %>">
+                                              'border-slate-200 bg-white text-slate-300' %>">
                                 <% if(!isCanceled && isDone) { %>
                                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                                 <% } else { %>
@@ -95,16 +95,16 @@
                                 <% } %>
                             </div>
                             <span id="tl-label-<%= i %>" class="text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-wide text-center leading-tight
-                                <%= isCanceled ? 'text-gray-300' :
+                                <%= isCanceled ? 'text-slate-300' :
                                    isDone   ? 'text-green-600' :
                                    isActive ? 'text-blue-600'  :
-                                              'text-gray-400'  %>">
+                                              'text-slate-400'  %>">
                                 <%= etapa.label %>
                             </span>
                         </div>
                         <% if(i < etapas.length - 1) { %>
                         <div id="tl-line-<%= i %>" class="h-0.5 flex-1 mx-0.5 sm:mx-1 mb-6 sm:mb-5
-                            <%= isCanceled ? 'bg-gray-100' : isDone ? 'bg-green-400' : 'bg-gray-200' %>"></div>
+                            <%= isCanceled ? 'bg-slate-100' : isDone ? 'bg-green-400' : 'bg-slate-200' %>"></div>
                         <% } %>
                     </div>
                     <% }) %>
@@ -125,8 +125,8 @@
 
             <!-- Alterar status (admin/secom) -->
             <% if(user && user.role !== 'secretaria') { %>
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4" id="status-panel">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Atualizar Status</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4" id="status-panel">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Atualizar Status</h3>
                 <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <% var statusOpts = statusSolicitacao; %>
                     <% statusOpts.forEach(function(opt) { %>
@@ -152,20 +152,20 @@
             <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- Feed de Atividade                                               -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm" id="feed">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm" id="feed">
 
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                 Histórico de Atividade
             </h3>
-            <span class="text-xs text-gray-400 font-medium"><%= comentarios.length %> entradas</span>
+            <span class="text-xs text-slate-400 font-medium"><%= comentarios.length %> entradas</span>
         </div>
 
         <div class="p-6 space-y-4">
 
             <% if(comentarios.length === 0) { %>
-            <p class="text-center text-sm text-gray-400 py-6">Nenhuma atividade ainda.</p>
+            <p class="text-center text-sm text-slate-400 py-6">Nenhuma atividade ainda.</p>
             <% } %>
 
             <% comentarios.forEach(function(c) {
@@ -176,12 +176,16 @@
 
                 <% if(c.tipo === 'evento') { %>
                 <!-- ─── Evento de sistema ─── -->
-                <div class="flex items-center gap-3 py-0.5">
-                    <div class="flex-1 h-px bg-gray-100"></div>
-                    <span class="shrink-0 text-[10px] text-gray-400 font-medium px-2 py-1 bg-gray-50 rounded-full border border-gray-100">
-                        <%= c.texto %> · <span class="font-bold"><%= c.autor ? c.autor.nome : '' %></span> · <%= fmtDate %>
-                    </span>
-                    <div class="flex-1 h-px bg-gray-100"></div>
+                <div class="flex items-center justify-center gap-3 py-1.5">
+                    <div class="hidden sm:block w-10 h-px bg-slate-200 shrink-0"></div>
+                    <p class="text-[11px] text-slate-400 text-center leading-snug max-w-[85%]">
+                        <%= c.texto %>
+                        <span class="text-slate-300 mx-0.5">·</span>
+                        <span class="font-semibold text-slate-500"><%= c.autor ? c.autor.nome : '' %></span>
+                        <span class="text-slate-300 mx-0.5">·</span>
+                        <%= fmtDate %>
+                    </p>
+                    <div class="hidden sm:block w-10 h-px bg-slate-200 shrink-0"></div>
                 </div>
 
                 <% } else if(c.tipo === 'aprovacao') { %>
@@ -268,10 +272,10 @@
                             <% } %>
                             <% if(c.arquivo_url) { %>
                             <button type="button" onclick="Alpine.store('carousel').showAt([{ url: '<%= c.arquivo_url %>', titulo: '<%= (c.arquivo_nome || 'Arte final').replace(/'/g, "\\'") %>' }], 0)"
-                                class="relative block rounded-lg overflow-hidden border border-teal-200 w-24 h-24 bg-gray-50">
+                                class="relative block rounded-lg overflow-hidden border border-teal-200 w-24 h-24 bg-slate-50">
                                 <img src="<%= c.arquivo_url %>" alt="<%= c.arquivo_nome || 'Arte final' %>" class="w-full h-full object-cover"
                                     onerror="handleImagemExcluida(this)">
-                                <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-gray-400 bg-gray-50">
+                                <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-slate-400 bg-slate-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3l18 18M10.5 6H18a2 2 0 012 2v9.5M6 6.5V18a2 2 0 002 2h9.5M9 12l2 2 4-4"></path></svg>
                                     <span class="text-[9px] font-semibold">Excluída</span>
                                 </div>
@@ -284,16 +288,16 @@
                 <% } else { %>
                 <!-- ─── Comentário padrão ─── -->
                 <div class="flex gap-3">
-                    <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center bg-gray-100 text-gray-600 text-xs font-black">
+                    <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-black">
                         <% if(c.autor && c.autor.avatar) { %><img src="<%= c.autor.avatar %>" alt="" class="w-full h-full object-cover"><% } else { %><%= c.autor ? c.autor.nome.charAt(0).toUpperCase() : '?' %><% } %>
                     </div>
                     <div class="flex-1">
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl rounded-tl-none p-4 space-y-1.5">
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl rounded-tl-none p-4 space-y-1.5">
                             <div class="flex items-center justify-between flex-wrap gap-1">
-                                <span class="font-semibold text-sm text-gray-800"><%= c.autor ? c.autor.nome : '' %></span>
-                                <span class="text-[10px] text-gray-400"><%= fmtDate %></span>
+                                <span class="font-semibold text-sm text-slate-800"><%= c.autor ? c.autor.nome : '' %></span>
+                                <span class="text-[10px] text-slate-400"><%= fmtDate %></span>
                             </div>
-                            <div class="text-sm text-gray-700 leading-relaxed comment-rich"><%- c.textoHtml || '' %></div>
+                            <div class="text-sm text-slate-700 leading-relaxed comment-rich"><%- c.textoHtml || '' %></div>
                         </div>
                     </div>
                 </div>
@@ -332,7 +336,7 @@
                                     class="w-full px-3 py-2.5 rounded-lg border border-orange-200 focus:ring-2 focus:ring-orange-400 outline-none text-sm resize-none bg-white"></textarea>
                                 <div class="flex gap-2 justify-end">
                                     <button type="button" @click="revisaoOpen = false"
-                                        class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancelar</button>
+                                        class="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition">Cancelar</button>
                                     <button type="submit"
                                         class="px-4 py-2 text-sm font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">Enviar Revisão</button>
                                 </div>
@@ -345,16 +349,18 @@
 
             <!-- ═══ Formulário de comentário ═══ -->
             <% if(sol.status !== 'finalizado' && sol.status !== 'cancelado') { %>
-            <div class="pt-2 border-t border-gray-100">
+            <div class="pt-2 border-t border-slate-100">
                 <form action="/solicitacoes/<%= sol.id %>/comentarios" method="POST" enctype="multipart/form-data" id="comment-form">
                     <div class="flex gap-3">
                         <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center bg-blue-600 text-white text-xs font-black">
                             <% if(user.avatar) { %><img src="<%= user.avatar %>" alt="" class="w-full h-full object-cover"><% } else { %><%= user.nome ? user.nome.charAt(0).toUpperCase() : 'U' %><% } %>
                         </div>
                         <div class="flex-1 space-y-2">
-                            <div id="comment-editor"></div>
+                            <div class="ce-wrap">
+                                <div id="comment-editor"></div>
+                            </div>
                             <input type="hidden" name="texto" id="comment-input">
-                            <p class="text-[11px] text-gray-400">Dica: arraste ou cole uma imagem aqui dentro para anexá-la ao comentário.</p>
+                            <p class="text-[11px] text-slate-400">Dica: arraste ou cole uma imagem aqui dentro para anexá-la ao comentário.</p>
 
                             <!-- File preview -->
                             <div id="file-preview" class="hidden flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-700">
@@ -364,7 +370,7 @@
                             </div>
 
                             <div class="flex items-center justify-between">
-                                <label for="arquivo-input" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 cursor-pointer transition px-2 py-1 rounded-lg hover:bg-gray-100">
+                                <label for="arquivo-input" class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 cursor-pointer transition px-2 py-1 rounded-lg hover:bg-slate-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                                     Anexar arquivo
                                 </label>
@@ -380,8 +386,8 @@
                 </form>
             </div>
             <% } else { %>
-            <div class="pt-2 border-t border-gray-100 text-center py-4">
-                <p class="text-sm text-gray-400">
+            <div class="pt-2 border-t border-slate-100 text-center py-4">
+                <p class="text-sm text-slate-400">
                     <% if(sol.status === 'finalizado') { %>Esta solicitação foi finalizada. O histórico está arquivado acima.<% } %>
                     <% if(sol.status === 'cancelado') { %>Esta solicitação foi cancelada.<% } %>
                 </p>
@@ -397,9 +403,9 @@
         <div class="space-y-5">
 
             <!-- Material Entregue -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Material Entregue
                     </h3>
@@ -414,17 +420,17 @@
                 <div class="p-4 space-y-3">
                     <% if(sol.imagens && sol.imagens.length) { %>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                             Arte Final <% if(sol.imagens.length > 1) { %>· <%= sol.imagens.length %> imagens<% } %>
                         </p>
                         <div class="grid grid-cols-4 gap-2">
                             <% sol.imagens.forEach(function(img, idx) { %>
                             <div class="relative group aspect-square">
                                 <button type="button" onclick="abrirGaleriaSolicitacao(<%= idx %>)"
-                                    class="relative w-full h-full block rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                    class="relative w-full h-full block rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
                                     <img src="<%= img.url %>" alt="<%= img.nome || 'Arte final' %>" class="w-full h-full object-cover"
                                         onerror="handleImagemExcluida(this)">
-                                    <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-gray-400 bg-gray-50">
+                                    <div class="hidden absolute inset-0 flex-col items-center justify-center gap-1 text-slate-400 bg-slate-50">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3l18 18M10.5 6H18a2 2 0 012 2v9.5M6 6.5V18a2 2 0 002 2h9.5M9 12l2 2 4-4"></path></svg>
                                         <span class="text-[9px] font-semibold">Excluída</span>
                                     </div>
@@ -442,9 +448,9 @@
                     <% } %>
                     <% if(sol.link_publicacao) { %>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Link de Publicação</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Link de Publicação</p>
                         <a href="<%= sol.link_publicacao %>" target="_blank" rel="noopener"
-                           class="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:border-teal-300 transition group">
+                           class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-teal-300 transition group">
                             <svg class="w-3.5 h-3.5 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                             <span class="text-xs text-teal-700 truncate group-hover:underline"><%= sol.link_publicacao %></span>
                         </a>
@@ -452,7 +458,7 @@
                     <% } %>
                     <% if(sol.link_arquivo_matriz) { %>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Arquivo Matriz</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Arquivo Matriz</p>
                         <a href="<%= sol.link_arquivo_matriz %>" target="_blank" rel="noopener"
                            class="flex items-center gap-2 p-2.5 bg-indigo-50 border border-indigo-200 rounded-lg hover:border-indigo-400 transition group">
                             <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -462,46 +468,46 @@
                     </div>
                     <% } %>
                     <% if(!sol.arte_final_url && !sol.link_publicacao && !sol.link_arquivo_matriz) { %>
-                    <p class="text-xs text-gray-400 italic">Nenhum material entregue ainda.</p>
+                    <p class="text-xs text-slate-400 italic">Nenhum material entregue ainda.</p>
                     <% } %>
 
                     <!-- Formulário de atualização (admin/secom) -->
                     <% if(user.role !== 'secretaria') { %>
-                    <div id="update-material-form" class="hidden border-t border-gray-100 pt-3">
-                        <p class="text-xs font-semibold text-gray-600 mb-3">Atualizar Material</p>
+                    <div id="update-material-form" class="hidden border-t border-slate-100 pt-3">
+                        <p class="text-xs font-semibold text-slate-600 mb-3">Atualizar Material</p>
                         <form id="form-update-material" enctype="multipart/form-data" class="space-y-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1.5">
-                                    Novas Imagens <span class="text-gray-400">(opcional — pode selecionar várias, serão adicionadas à galeria)</span>
+                                <label class="block text-xs font-medium text-slate-500 mb-1.5">
+                                    Novas Imagens <span class="text-slate-400">(opcional — pode selecionar várias, serão adicionadas à galeria)</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
-                                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    <span id="upd-file-label" class="text-xs text-gray-500 truncate flex-1">Selecionar arquivos…</span>
+                                <label class="flex items-center gap-2 p-2.5 border border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
+                                    <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <span id="upd-file-label" class="text-xs text-slate-500 truncate flex-1">Selecionar arquivos…</span>
                                     <input type="file" name="arte_final" id="upd-arte-final-input" class="hidden" accept="image/*" multiple>
                                 </label>
                                 <div id="upd-img-preview" class="hidden mt-2 flex flex-wrap"></div>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1.5">
-                                    Link de Publicação <span class="text-gray-400">(opcional)</span>
+                                <label class="block text-xs font-medium text-slate-500 mb-1.5">
+                                    Link de Publicação <span class="text-slate-400">(opcional)</span>
                                 </label>
                                 <input type="url" name="link_publicacao"
                                     value="<%= sol.link_publicacao || '' %>"
                                     placeholder="https://..."
-                                    class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-xs">
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-xs">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1.5">
-                                    Link do Arquivo Matriz <span class="text-gray-400">(Google Drive, Dropbox…)</span>
+                                <label class="block text-xs font-medium text-slate-500 mb-1.5">
+                                    Link do Arquivo Matriz <span class="text-slate-400">(Google Drive, Dropbox…)</span>
                                 </label>
                                 <input type="url" name="link_arquivo_matriz"
                                     value="<%= sol.link_arquivo_matriz || '' %>"
                                     placeholder="https://drive.google.com/..."
-                                    class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" onclick="toggleUpdateMaterial()"
-                                    class="flex-1 px-3 py-2 text-xs font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition">
+                                    class="flex-1 px-3 py-2 text-xs font-medium border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition">
                                     Cancelar
                                 </button>
                                 <button type="submit" id="btn-upd-material"
@@ -516,23 +522,23 @@
             </div>
 
             <!-- Status atual -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Informações</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Informações</h3>
 
                 <div class="space-y-3">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
                         <% var statusColor = statusSolicitacaoMap; %>
                         <span id="status-badge" class="inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide
-                            <%= statusColor[sol.status] ? statusColor[sol.status].badge : 'bg-gray-100 text-gray-700' %>">
+                            <%= statusColor[sol.status] ? statusColor[sol.status].badge : 'bg-slate-100 text-slate-700' %>">
                             <%= sol.status %>
                         </span>
                     </div>
 
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prioridade</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Prioridade</p>
                         <span class="inline-flex items-center gap-1.5 text-sm font-semibold
-                            <%= sol.prioridade === 'alta' ? 'text-red-600' : sol.prioridade === 'media' ? 'text-yellow-600' : 'text-gray-500' %>">
+                            <%= sol.prioridade === 'alta' ? 'text-red-600' : sol.prioridade === 'media' ? 'text-yellow-600' : 'text-slate-500' %>">
                             <% if(sol.prioridade === 'alta') { %>
                                 <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                             <% } else if(sol.prioridade === 'media') { %>
@@ -545,8 +551,8 @@
                     </div>
 
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Tipo de Mídia</p>
-                        <span class="inline-flex px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold uppercase tracking-wide">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tipo de Mídia</p>
+                        <span class="inline-flex px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold uppercase tracking-wide">
                             <%= sol.tipo_midia %>
                         </span>
                     </div>
@@ -561,8 +567,8 @@
                         var prazo2dt = new Date(pStr2 + 'T12:00:00');
                         var dias = Math.round((prazo2dt - hoje2dt) / 86400000);
                     %>
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prazo de Entrega</p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Prazo de Entrega</p>
                         <div class="flex items-center gap-2">
                             <% if(atrasado2) { %>
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
@@ -575,7 +581,7 @@
                                 <%= pFmt %> (<%= dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : dias + 'd' %>)
                             </span>
                             <% } else { %>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 <%= pFmt %> (<%= dias %>d)
                             </span>
@@ -584,54 +590,54 @@
                     </div>
                     <% } %>
 
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Secretaria</p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Secretaria</p>
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black"
                                  style="background-color: <%= sol.secretaria ? sol.secretaria.cor : '#6b7280' %>">
                                 <%= sol.secretaria ? sol.secretaria.nome.charAt(0) : '?' %>
                             </div>
-                            <span class="text-sm font-semibold text-gray-800"><%= sol.secretaria ? sol.secretaria.nome : '—' %></span>
+                            <span class="text-sm font-semibold text-slate-800"><%= sol.secretaria ? sol.secretaria.nome : '—' %></span>
                         </div>
                     </div>
 
                     <% if(user.role === 'super_admin' && sol.secretaria && sol.secretaria.municipio) { %>
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Município</p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Município</p>
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            <span class="text-sm font-semibold text-gray-800"><%= sol.secretaria.municipio.nome %><% if(sol.secretaria.municipio.estado) { %>/<%= sol.secretaria.municipio.estado %><% } %></span>
+                            <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="text-sm font-semibold text-slate-800"><%= sol.secretaria.municipio.nome %><% if(sol.secretaria.municipio.estado) { %>/<%= sol.secretaria.municipio.estado %><% } %></span>
                         </div>
                     </div>
                     <% } %>
 
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Solicitado por</p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Solicitado por</p>
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-100 text-blue-700 text-xs font-black">
                                 <% if(sol.autor && sol.autor.avatar) { %><img src="<%= sol.autor.avatar %>" alt="" class="w-full h-full object-cover"><% } else { %><%= sol.autor ? sol.autor.nome.charAt(0).toUpperCase() : '?' %><% } %>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-gray-800"><%= sol.autor ? sol.autor.nome : '—' %></p>
-                                <p class="text-[10px] text-gray-400"><%= sol.autor ? sol.autor.email : '' %></p>
+                                <p class="text-sm font-semibold text-slate-800"><%= sol.autor ? sol.autor.nome : '—' %></p>
+                                <p class="text-[10px] text-slate-400"><%= sol.autor ? sol.autor.email : '' %></p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Criado em</p>
-                        <p class="text-sm font-medium text-gray-700">
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Criado em</p>
+                        <p class="text-sm font-medium text-slate-700">
                             <%= new Date(sol.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) %>
                         </p>
-                        <p class="text-xs text-gray-400">
+                        <p class="text-xs text-slate-400">
                             <%= new Date(sol.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
                         </p>
                     </div>
 
                     <% if(sol.updatedAt && sol.updatedAt !== sol.createdAt) { %>
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Última atualização</p>
-                        <p class="text-sm font-medium text-gray-700">
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Última atualização</p>
+                        <p class="text-sm font-medium text-slate-700">
                             <%= new Date(sol.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) %>
                             às <%= new Date(sol.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
                         </p>
@@ -641,18 +647,22 @@
             </div>
 
             <!-- Ações rápidas -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-2">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ações</h3>
-                <a href="/solicitacoes" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-2">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Ações</h3>
+                <a href="/solicitacoes" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                     Ver todas as solicitações
                 </a>
-                <a href="/solicitacoes/nova" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <a href="/solicitacoes/nova" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Nova solicitação
                 </a>
-                <a href="/solicitacoes/<%= sol.id %>/editar" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <a href="/eventos/novo?solicitacao_id=<%= sol.id %>" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4m-2-2h4"></path></svg>
+                    Criar evento desta solicitação
+                </a>
+                <a href="/solicitacoes/<%= sol.id %>/editar" class="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     Editar solicitação
                 </a>
             </div>
@@ -668,28 +678,28 @@
 <div id="modal-concluir" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
         <div class="flex items-center justify-between">
-            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
                 <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Concluir Solicitação
             </h3>
-            <button onclick="fecharModalConcluir()" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+            <button onclick="fecharModalConcluir()" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
 
-        <p class="text-sm text-gray-600">Opcionalmente, anexe a arte final produzida e informe o link de publicação.</p>
+        <p class="text-sm text-slate-600">Opcionalmente, anexe a arte final produzida e informe o link de publicação.</p>
 
         <form id="form-concluir" enctype="multipart/form-data" class="space-y-4">
 
             <!-- Arte Final -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">
                     Arte Final
-                    <span class="text-gray-400 font-normal">(opcional — pode selecionar várias imagens)</span>
+                    <span class="text-slate-400 font-normal">(opcional — pode selecionar várias imagens)</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
-                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span class="text-sm text-gray-500">Clique para selecionar imagens</span>
+                <label class="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
+                    <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-sm text-slate-500">Clique para selecionar imagens</span>
                     <input type="file" name="arte_final" id="concluir-arte-final-input" class="hidden" accept="image/*" multiple>
                 </label>
                 <div id="arte-preview-wrap" class="hidden mt-2 flex flex-wrap"></div>
@@ -697,33 +707,33 @@
 
             <!-- Link de publicação -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">
                     Link de Publicação
-                    <span class="text-gray-400 font-normal">(opcional)</span>
+                    <span class="text-slate-400 font-normal">(opcional)</span>
                 </label>
                 <input type="url" name="link_publicacao" placeholder="https://..."
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
             </div>
 
             <!-- Link arquivo matriz -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">
                     Link do Arquivo Matriz
-                    <span class="text-gray-400 font-normal">(Google Drive, Dropbox… — opcional)</span>
+                    <span class="text-slate-400 font-normal">(Google Drive, Dropbox… — opcional)</span>
                 </label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <input type="url" name="link_arquivo_matriz" placeholder="https://drive.google.com/..."
-                        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                 </div>
-                <p class="text-xs text-gray-400 mt-1">Cole aqui o link do arquivo original (AI, PSD, Canva etc.) para que a equipe possa reutilizá-lo futuramente.</p>
+                <p class="text-xs text-slate-400 mt-1">Cole aqui o link do arquivo original (AI, PSD, Canva etc.) para que a equipe possa reutilizá-lo futuramente.</p>
             </div>
 
             <div class="flex gap-3 pt-1">
                 <button type="button" onclick="fecharModalConcluir()"
-                    class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition text-sm">
+                    class="flex-1 px-4 py-2.5 border border-slate-300 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition text-sm">
                     Cancelar
                 </button>
                 <button type="submit" id="btn-confirmar-concluir"
@@ -788,7 +798,7 @@
         var badge = document.getElementById('status-badge');
         if (badge) {
             badge.textContent = status;
-            badge.className = 'inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ' + (statusColors[status] || 'bg-gray-100 text-gray-700');
+            badge.className = 'inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ' + (statusColors[status] || 'bg-slate-100 text-slate-700');
         }
 
         // Botões do painel
@@ -814,22 +824,22 @@
             var line  = document.getElementById('tl-line-' + i);
             if (dot) {
                 dot.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold border-2 transition ' +
-                    (isCanceled ? 'border-gray-200 bg-gray-50 text-gray-300' :
+                    (isCanceled ? 'border-slate-200 bg-slate-50 text-slate-300' :
                      isDone     ? 'border-green-500 bg-green-500 text-white' :
                      isActive   ? 'border-blue-500 bg-blue-500 text-white'  :
-                                  'border-gray-200 bg-white text-gray-300');
+                                  'border-slate-200 bg-white text-slate-300');
                 dot.innerHTML = (!isCanceled && isDone) ? CHECKMARK : String(i + 1);
             }
             if (label) {
                 label.className = 'text-[8px] sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-wide text-center leading-tight ' +
-                    (isCanceled ? 'text-gray-300' :
+                    (isCanceled ? 'text-slate-300' :
                      isDone     ? 'text-green-600' :
                      isActive   ? 'text-blue-600'  :
-                                  'text-gray-400');
+                                  'text-slate-400');
             }
             if (line) {
                 line.className = 'h-0.5 flex-1 mx-0.5 sm:mx-1 mb-6 sm:mb-5 ' +
-                    (isCanceled ? 'bg-gray-100' : isDone ? 'bg-green-400' : 'bg-gray-200');
+                    (isCanceled ? 'bg-slate-100' : isDone ? 'bg-green-400' : 'bg-slate-200');
             }
         });
 
@@ -963,7 +973,7 @@
                     item.className = 'relative inline-block mr-2 mb-2';
                     var img = document.createElement('img');
                     img.src = e.target.result;
-                    img.className = 'h-16 w-16 object-cover rounded-lg border border-gray-200';
+                    img.className = 'h-16 w-16 object-cover rounded-lg border border-slate-200';
                     var btn = document.createElement('button');
                     btn.type = 'button';
                     btn.textContent = '×';
@@ -1007,11 +1017,11 @@
                 var texto = data[rede.key] || '';
                 if (!texto) return;
                 var card = document.createElement('div');
-                card.className = 'border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50';
+                card.className = 'border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50';
                 var textoId = 'variacao-texto-' + i;
                 card.innerHTML =
-                    '<p class="text-[10px] font-bold uppercase tracking-wide text-gray-500">' + rede.label + '</p>' +
-                    '<p id="' + textoId + '" class="text-xs text-gray-700 whitespace-pre-wrap">' + texto.replace(/</g, '&lt;') + '</p>' +
+                    '<p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">' + rede.label + '</p>' +
+                    '<p id="' + textoId + '" class="text-xs text-slate-700 whitespace-pre-wrap">' + texto.replace(/</g, '&lt;') + '</p>' +
                     '<button type="button" class="text-[11px] font-semibold text-purple-600 hover:text-purple-800" onclick="copiarVariacao(\'' + textoId + '\', this)">Copiar texto</button>';
                 lista.appendChild(card);
             });
@@ -1107,10 +1117,12 @@
 </script>
 
 <style>
-#comment-editor .ql-toolbar.ql-snow { border: 1px solid #e5e7eb; border-bottom: none; border-radius: 0.75rem 0.75rem 0 0; background: #f9fafb; padding: 6px 8px; }
-#comment-editor .ql-container.ql-snow { border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; font-size: 0.875rem; font-family: inherit; }
-#comment-editor .ql-editor { min-height: 68px; max-height: 240px; overflow-y: auto; padding: 10px 12px; }
-#comment-editor .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+/* O Quill transforma o próprio elemento em .ql-container e insere a toolbar como irmã anterior.
+   Por isso os seletores são aplicados a partir do wrapper, não como descendentes do editor. */
+.ce-wrap .ql-toolbar.ql-snow { border: 1px solid #e5e7eb; border-bottom: none; border-radius: 0.75rem 0.75rem 0 0; background: #f9fafb; padding: 6px 8px; flex-wrap: wrap; }
+.ce-wrap .ql-container.ql-snow { border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; font-size: 0.875rem; font-family: inherit; height: auto; }
+.ce-wrap .ql-editor { min-height: 68px; max-height: 240px; overflow-y: auto; height: auto; padding: 10px 12px; }
+.ce-wrap .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
 .comment-rich img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
 .comment-rich p { margin: 0; }
 .comment-rich ul, .comment-rich ol { padding-left: 1.25rem; margin: 2px 0; }

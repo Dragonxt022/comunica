@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import EventoRepository from './repository.ts';
-import { Secretaria, Evento, User, EventoResponsavel, AcaoPlanejamento } from '../../database/models/index.ts';
+import { Secretaria, Evento, User, EventoResponsavel, AcaoPlanejamento, Solicitacao, SolicitacaoComentario } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, getActiveMid } from '../../lib/municipio-filter.ts';
@@ -48,7 +48,7 @@ export const createView = async (req: Request, res: Response) => {
     }
     const secretarias = await Secretaria.findAll({ where: secWhere });
     const users = await User.findAll({ where: usrWhere, include: [{ model: Secretaria, as: 'secretaria' }] });
-    const prefillDate = (req.query.data as string) || '';
+    let prefillDate = (req.query.data as string) || '';
     const prefill = {
       titulo: (req.query.titulo as string) || '',
       descricao: (req.query.descricao as string) || '',
@@ -56,7 +56,24 @@ export const createView = async (req: Request, res: Response) => {
       acao_id: (req.query.acao_id as string) || '',
       plano_id: (req.query.plano_id as string) || '',
     };
-    res.render('eventos/create', { title: 'Novo Evento', secretarias, users, prefillDate, prefill });
+
+    // Criação de evento a partir de uma solicitação existente (reaproveita os dados)
+    let origemSolicitacao: { id: number; titulo: string } | null = null;
+    const solicitacaoId = Number(req.query.solicitacao_id) || 0;
+    if (solicitacaoId) {
+      const sol = await Solicitacao.findOne({
+        where: secretariaWhere(user, { id: solicitacaoId }, getActiveMid(req)),
+      });
+      if (sol) {
+        if (!prefill.titulo) prefill.titulo = sol.titulo;
+        if (!prefill.descricao) prefill.descricao = sol.descricao || '';
+        if (!prefill.secretaria_id && sol.secretaria_id) prefill.secretaria_id = String(sol.secretaria_id);
+        if (!prefillDate && sol.prazo) prefillDate = String(sol.prazo).slice(0, 10);
+        origemSolicitacao = { id: sol.id, titulo: sol.titulo };
+      }
+    }
+
+    res.render('eventos/create', { title: 'Novo Evento', secretarias, users, prefillDate, prefill, origemSolicitacao });
   } catch (error) {
     console.error('Error creating evento view:', error);
     res.status(500).send('Internal Server Error');
@@ -297,6 +314,18 @@ export const store = async (req: Request, res: Response) => {
       url: `/eventos`,
       tipo: 'evento_novo',
     }).catch(() => {});
+
+    // Vincula à solicitação de origem (quando o evento foi criado a partir de uma solicitação)
+    const solicitacaoId = req.body.solicitacao_id ? Number(req.body.solicitacao_id) : null;
+    if (solicitacaoId) {
+      await SolicitacaoComentario.create({
+        solicitacao_id: solicitacaoId,
+        autor_id: user.id,
+        tipo: 'evento',
+        texto: `Evento "${titulo}" criado a partir desta solicitação.`,
+      }).catch(() => {});
+      return res.redirect(`/solicitacoes/${solicitacaoId}`);
+    }
 
     // Vincula ao planejamento se veio de uma ação
     const acaoId = req.body.acao_id ? Number(req.body.acao_id) : null;

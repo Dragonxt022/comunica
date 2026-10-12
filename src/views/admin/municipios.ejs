@@ -3,8 +3,8 @@
     <!-- Cabeçalho -->
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Municípios</h2>
-            <p class="text-sm text-gray-500 mt-1">Gestão de municípios atendidos pelo sistema.</p>
+            <h2 class="text-2xl font-bold text-slate-900">Municípios</h2>
+            <p class="text-sm text-slate-500 mt-1">Gestão de municípios atendidos pelo sistema.</p>
         </div>
         <a href="/admin/municipios/novo"
             class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm">
@@ -16,11 +16,11 @@
     <!-- Busca -->
     <div class="flex items-center gap-3">
         <div class="relative flex-1 max-w-sm">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input id="mun-search" type="text" placeholder="Buscar por nome ou estado..."
-                class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                class="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
         </div>
-        <select id="mun-status-filter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <select id="mun-status-filter" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
             <option value="">Todos os status</option>
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
@@ -39,36 +39,36 @@
     </div>
     <% } %>
 
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <% if (counts.length === 0) { %>
-        <div class="p-12 text-center text-gray-400">
+        <div class="p-12 text-center text-slate-400">
             <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             <p class="text-sm font-medium">Nenhum município cadastrado</p>
         </div>
         <% } else { %>
         <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-slate-50 border-b border-slate-200">
                 <tr>
-                    <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Município</th>
-                    <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
-                    <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Secretarias</th>
-                    <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuários</th>
-                    <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                    <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Município</th>
+                    <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
+                    <th class="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Secretarias</th>
+                    <th class="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuários</th>
+                    <th class="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                     <th class="px-5 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-slate-100">
                 <% counts.forEach(({ municipio, qtdSecretarias, qtdUsuarios }) => { %>
-                <tr class="hover:bg-gray-50 transition" data-search="<%= (municipio.nome + ' ' + municipio.estado).toLowerCase() %>" data-status="<%= municipio.ativo ? 'ativo' : 'inativo' %>">
-                    <td class="px-5 py-3.5 font-medium text-gray-800"><%= municipio.nome %></td>
-                    <td class="px-5 py-3.5 text-gray-500"><%= municipio.estado %></td>
-                    <td class="px-5 py-3.5 text-center text-gray-600"><%= qtdSecretarias %></td>
-                    <td class="px-5 py-3.5 text-center text-gray-600"><%= qtdUsuarios %></td>
+                <tr class="hover:bg-slate-50 transition" data-search="<%= (municipio.nome + ' ' + municipio.estado).toLowerCase() %>" data-status="<%= municipio.ativo ? 'ativo' : 'inativo' %>">
+                    <td class="px-5 py-3.5 font-medium text-slate-800"><%= municipio.nome %></td>
+                    <td class="px-5 py-3.5 text-slate-500"><%= municipio.estado %></td>
+                    <td class="px-5 py-3.5 text-center text-slate-600"><%= qtdSecretarias %></td>
+                    <td class="px-5 py-3.5 text-center text-slate-600"><%= qtdUsuarios %></td>
                     <td class="px-5 py-3.5 text-center">
                         <% if (municipio.ativo) { %>
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Ativo</span>
                         <% } else { %>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inativo</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inativo</span>
                         <% } %>
                     </td>
                     <td class="px-5 py-3.5">

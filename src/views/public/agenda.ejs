@@ -6,11 +6,11 @@
             Portal de Imprensa
         </div>
 
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             <%= config && config.titulo_site ? config.titulo_site : 'Prefeitura Municipal' %>
         </h1>
 
-        <p class="text-sm sm:text-base md:text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed px-2">
+        <p class="text-sm sm:text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed px-2">
             <%= config && config.descricao_site ? config.descricao_site : 'Agenda oficial e comunicados para os profissionais de imprensa e veículos de comunicação.' %>
         </p>
 
@@ -43,7 +43,7 @@
     <section id="eventos" class="scroll-mt-20">
         <div class="flex items-center gap-3 mb-8">
             <div class="w-1 h-8 bg-blue-600 rounded-full"></div>
-            <h2 class="text-2xl font-extrabold text-gray-900">Agenda de Eventos</h2>
+            <h2 class="text-2xl font-extrabold text-slate-900">Agenda de Eventos</h2>
             <span class="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full"><%= eventos.length %> próximos</span>
         </div>
 
@@ -84,9 +84,9 @@
             <!-- Timeline de eventos -->
             <div class="lg:col-span-3 space-y-5">
                 <% if(eventos.length === 0) { %>
-                    <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-gray-500 font-medium">Nenhum evento público agendado para os próximos dias.</p>
+                    <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                        <svg class="w-12 h-12 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-slate-500 font-medium">Nenhum evento público agendado para os próximos dias.</p>
                     </div>
                 <% } else { %>
                     <% eventos.forEach(function(evento) { %>
@@ -102,20 +102,20 @@
                                 +'&details='+encodeURIComponent(evento.descricao||'')
                                 +'&location='+encodeURIComponent(evento.local||'');
                         %>
-                        <div class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col lg:flex-row"
+                        <div class="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col lg:flex-row"
                              style="border-left: 6px solid <%= evento.secretaria ? evento.secretaria.cor : '#3b82f6' %>">
                             <!-- Data -->
-                            <div class="p-4 sm:p-5 lg:w-44 bg-gray-50/60 flex flex-row lg:flex-col items-center justify-between lg:justify-center text-center shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 gap-4 lg:gap-0">
-                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            <div class="p-4 sm:p-5 lg:w-44 bg-slate-50/60 flex flex-row lg:flex-col items-center justify-between lg:justify-center text-center shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 gap-4 lg:gap-0">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">
                                     <%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '') %>
                                 </span>
-                                <span class="text-3xl sm:text-4xl font-black text-gray-900 leading-none my-1">
+                                <span class="text-3xl sm:text-4xl font-black text-slate-900 leading-none my-1">
                                     <%= new Date(evento.data_inicio).getDate().toString().padStart(2, '0') %>
                                 </span>
                                 <span class="text-xs font-bold text-blue-600 uppercase">
                                     <%= new Date(evento.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
                                 </span>
-                                <span class="text-xs text-gray-400 mt-1">
+                                <span class="text-xs text-slate-400 mt-1">
                                     <%= new Date(evento.data_inicio).toLocaleDateString('pt-BR', { weekday: 'short' }) %>
                                 </span>
                             </div>
@@ -123,7 +123,7 @@
                             <div class="p-4 sm:p-6 flex-1 space-y-3">
                                 <div class="flex flex-col sm:flex-row items-start justify-between gap-4">
                                     <div>
-                                        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition leading-snug"><%= evento.titulo %></h3>
+                                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition leading-snug"><%= evento.titulo %></h3>
                                         <div class="flex flex-wrap items-center gap-2 mt-1.5">
                                             <% if(evento.secretaria) { %>
                                             <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
@@ -131,7 +131,7 @@
                                                 <%= evento.secretaria.nome %>
                                             </span>
                                             <% } %>
-                                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider"><%= evento.tipo %></span>
+                                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider"><%= evento.tipo %></span>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
@@ -145,14 +145,14 @@
                                         <% } %>
                                         <!-- Adicionar ao Calendário -->
                                         <a href="<%- _gcalUrl %>" target="_blank" rel="noopener"
-                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition"
                                             title="Adicionar ao Google Calendar">
                                             <span class="w-3.5 h-3.5 bg-blue-600 text-white text-[8px] font-black rounded flex items-center justify-center">G</span>
                                             <span class="hidden sm:inline">Google</span>
                                         </a>
                                         <button type="button"
                                             onclick="agendaIcsDownload(<%= evento.id %>)"
-                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition"
                                             title="Baixar arquivo .ics para Apple Calendar / Outlook">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                             <span class="hidden sm:inline">iCal</span>
@@ -160,17 +160,17 @@
                                         <!-- Compartilhar -->
                                         <button type="button"
                                             onclick="compartilhar('<%= encodeURIComponent(evento.titulo) %>', window.location.href)"
-                                            class="p-2 bg-gray-50 text-gray-400 rounded-xl border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition"
+                                            class="p-2 bg-slate-50 text-slate-400 rounded-xl border border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition"
                                             title="Compartilhar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                         </button>
                                     </div>
                                 </div>
                                 <% if(evento.descricao) { %>
-                                <p class="text-sm text-gray-600 leading-relaxed line-clamp-2"><%= evento.descricao %></p>
+                                <p class="text-sm text-slate-600 leading-relaxed line-clamp-2"><%= evento.descricao %></p>
                                 <% } %>
                                 <% if(evento.local) { %>
-                                <div class="flex items-center gap-1.5 text-gray-500 text-sm">
+                                <div class="flex items-center gap-1.5 text-slate-500 text-sm">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     <span><%= evento.local %></span>
                                 </div>
@@ -189,16 +189,16 @@
     <section id="materias" class="scroll-mt-20">
         <div class="flex items-center gap-3 mb-8">
             <div class="w-1 h-8 bg-indigo-600 rounded-full"></div>
-            <h2 class="text-2xl font-extrabold text-gray-900">Matérias para a Imprensa</h2>
+            <h2 class="text-2xl font-extrabold text-slate-900">Matérias para a Imprensa</h2>
             <span class="ml-2 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full"><%= _releases.length %> publicadas</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
             <% _releases.forEach(function(release) { %>
-            <article class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col h-full">
+            <article class="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col h-full">
                 <!-- Capa -->
                 <% if(release.imagem_capa) { %>
-                <div class="relative overflow-hidden bg-gray-100 aspect-video">
+                <div class="relative overflow-hidden bg-slate-100 aspect-video">
                     <img src="<%= release.imagem_capa %>" alt="<%= release.titulo %>"
                          class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                 </div>
@@ -214,14 +214,14 @@
                         <p class="text-xs font-bold text-indigo-600 uppercase tracking-widest">
                             <%= release.publicado_em ? new Date(release.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '' %>
                         </p>
-                        <h3 class="text-base font-bold text-gray-900 group-hover:text-indigo-700 transition leading-snug line-clamp-2">
+                        <h3 class="text-base font-bold text-slate-900 group-hover:text-indigo-700 transition leading-snug line-clamp-2">
                             <%= release.titulo %>
                         </h3>
                         <% if(release.subtitulo) { %>
-                        <p class="text-sm text-gray-500 line-clamp-2 leading-relaxed"><%= release.subtitulo %></p>
+                        <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed"><%= release.subtitulo %></p>
                         <% } %>
                     </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                         <a href="/imprensa/releases/<%= release.id %>"
                            class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition inline-flex items-center gap-1">
                             Ler matéria
@@ -229,7 +229,7 @@
                         </a>
                         <button type="button"
                             onclick="compartilhar('<%= encodeURIComponent(release.titulo) %>', window.location.origin + '/imprensa/releases/<%= release.id %>')"
-                            class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
                             title="Compartilhar">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                         </button>
@@ -243,11 +243,11 @@
     <section id="materias" class="scroll-mt-20">
         <div class="flex items-center gap-3 mb-8">
             <div class="w-1 h-8 bg-indigo-600 rounded-full"></div>
-            <h2 class="text-2xl font-extrabold text-gray-900">Matérias para a Imprensa</h2>
+            <h2 class="text-2xl font-extrabold text-slate-900">Matérias para a Imprensa</h2>
         </div>
-        <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-            <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
-            <p class="text-gray-500 font-medium">Nenhuma matéria publicada ainda.</p>
+        <div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+            <svg class="w-12 h-12 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4M9 12h6M9 16h4"></path></svg>
+            <p class="text-slate-500 font-medium">Nenhuma matéria publicada ainda.</p>
         </div>
     </section>
     <% } %>

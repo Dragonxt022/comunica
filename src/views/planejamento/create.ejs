@@ -6,38 +6,38 @@
         subtitle: 'Defina o período e os objetivos do plano.'
     }) %>
 
-    <form action="/planejamento" method="POST" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+    <form action="/planejamento" method="POST" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Título do Plano <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Título do Plano <span class="text-red-500">*</span></label>
             <input type="text" name="titulo" required placeholder="Ex: Plano de Comunicação — 1º Semestre 2026"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Descrição <span class="text-slate-400 font-normal">(opcional)</span></label>
             <textarea name="descricao" rows="3" placeholder="Descreva os objetivos gerais deste plano..."
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"></textarea>
+                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"></textarea>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Início do Período <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Início do Período <span class="text-red-500">*</span></label>
                 <input type="date" name="periodo_inicio" required
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                    class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fim do Período <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Fim do Período <span class="text-red-500">*</span></label>
                 <input type="date" name="periodo_fim" required
-                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                    class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
             </div>
         </div>
 
         <% if (user && ['admin', 'secom', 'super_admin'].includes(user.role)) { %>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Secretaria <span class="text-red-500">*</span></label>
             <select name="secretaria_id" required
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 <option value="">Selecione...</option>
                 <% secretarias.forEach(function(s) { %>
                     <option value="<%= s.id %>"><%= s.nome %></option>
@@ -47,7 +47,7 @@
         <% } %>
 
         <div class="pt-2 flex justify-end gap-3">
-            <a href="/planejamento" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition">Cancelar</a>
+            <a href="/planejamento" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-slate-50 transition">Cancelar</a>
             <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>

@@ -5,6 +5,7 @@ coverage/
 public/uploads/
 !public/icon.svg
 data/whatsapp-auth/
+.playwright-mcp/
 .DS_Store
 *.log
 .env*

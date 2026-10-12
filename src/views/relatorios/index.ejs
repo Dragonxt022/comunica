@@ -13,8 +13,8 @@
 
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap no-print">
   <div>
-    <h2 class="text-xl font-bold text-gray-900">Analíticos</h2>
-    <p class="text-sm text-gray-400 mt-0.5">
+    <h2 class="text-xl font-bold text-slate-900">Analíticos</h2>
+    <p class="text-sm text-slate-400 mt-0.5">
       <%= new Date(filtro.inicio + 'T00:00:00').toLocaleDateString('pt-BR') %> — <%= new Date(filtro.fim + 'T00:00:00').toLocaleDateString('pt-BR') %>
       <% if (filtro.secretaria) { %> · Filtrado por secretaria<% } %>
       <% if (isSuperAdmin) { %> · <%= filtro.municipioNome ? 'Município: ' + filtro.municipioNome : 'Todos os municípios' %><% } %>
@@ -27,7 +27,7 @@
       Imprimir / Exportar
     </button>
     <a href="/relatorios/mensal/novo"
-      class="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition shadow-sm">
+      class="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 text-sm font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 transition shadow-sm">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
       Relatório Mensal (modelo)
     </a>
@@ -35,35 +35,35 @@
 </div>
 
 <!-- Filtros de período -->
-<form method="GET" action="/relatorios" class="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3 items-end no-print">
+<form method="GET" action="/relatorios" class="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-3 items-end no-print">
   <div class="flex gap-1.5 flex-wrap">
     <% [['mes','Este mês'],['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','Este ano']].forEach(function(p) { %>
     <a href="/relatorios?periodo=<%= p[0] %><%= filtro.secretaria ? '&secretaria=' + filtro.secretaria : '' %><%= isSuperAdmin ? '&municipio_id=' + filtro.municipioId : '' %>"
-       class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition <%= filtro.presetAtivo === p[0] ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600' %>">
+       class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition <%= filtro.presetAtivo === p[0] ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400 hover:text-indigo-600' %>">
       <%= p[1] %>
     </a>
     <% }) %>
   </div>
   <div class="flex gap-2 items-end flex-wrap">
     <div>
-      <label class="block text-xs font-medium text-gray-500 mb-1">De</label>
+      <label class="block text-xs font-medium text-slate-500 mb-1">De</label>
       <input type="date" name="inicio" value="<%= filtro.inicio %>"
-             class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+             class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
     </div>
     <div>
-      <label class="block text-xs font-medium text-gray-500 mb-1">Até</label>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Até</label>
       <input type="date" name="fim" value="<%= filtro.fim %>"
-             class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+             class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
     </div>
     <% if (isSuperAdmin) { %>
-    <select name="municipio_id" class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+    <select name="municipio_id" class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
       <option value="">Todos os municípios</option>
       <% municipios.forEach(function(m) { %>
       <option value="<%= m.id %>" <%= String(filtro.municipioId) === String(m.id) ? 'selected' : '' %>><%= m.nome %></option>
       <% }) %>
     </select>
     <% } %>
-    <select name="secretaria" class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+    <select name="secretaria" class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
       <option value="">Todas as secretarias</option>
       <% secretarias.forEach(function(s) { %>
       <option value="<%= s.id %>" <%= filtro.secretaria == s.id ? 'selected' : '' %>><%= s.nome %></option>
@@ -76,34 +76,34 @@
 <!-- ── KPIs principais ───────────────────────────────────────────────────── -->
 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Solicitações</p>
-    <p class="text-3xl font-black text-gray-900"><%= sol.total %></p>
-    <p class="text-xs text-gray-400 mt-1"><%= sol.emAndamento %> em andamento</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Solicitações</p>
+    <p class="text-3xl font-black text-slate-900"><%= sol.total %></p>
+    <p class="text-xs text-slate-400 mt-1"><%= sol.emAndamento %> em andamento</p>
   </div>
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Finalizadas</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Finalizadas</p>
     <p class="text-3xl font-black text-emerald-600"><%= sol.finalizadas %></p>
-    <p class="text-xs text-gray-400 mt-1">Taxa: <span class="font-semibold text-gray-700"><%= sol.taxaConclusao %>%</span></p>
+    <p class="text-xs text-slate-400 mt-1">Taxa: <span class="font-semibold text-slate-700"><%= sol.taxaConclusao %>%</span></p>
   </div>
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Tempo Médio</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Tempo Médio</p>
     <p class="text-3xl font-black text-blue-600"><%= sol.avgDias %><span class="text-lg font-semibold">d</span></p>
-    <p class="text-xs text-gray-400 mt-1">Mín <%= sol.minDias %>d · Máx <%= sol.maxDias %>d</p>
+    <p class="text-xs text-slate-400 mt-1">Mín <%= sol.minDias %>d · Máx <%= sol.maxDias %>d</p>
   </div>
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">No Prazo</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">No Prazo</p>
     <p class="text-3xl font-black <%= sol.atrasadas > sol.noPrazo ? 'text-red-500' : 'text-emerald-600' %>"><%= sol.noPrazo %></p>
-    <p class="text-xs text-gray-400 mt-1"><%= sol.atrasadas %> atrasadas · <%= sol.semPrazo %> sem prazo</p>
+    <p class="text-xs text-slate-400 mt-1"><%= sol.atrasadas %> atrasadas · <%= sol.semPrazo %> sem prazo</p>
   </div>
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Releases</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Releases</p>
     <p class="text-3xl font-black text-purple-600"><%= rel.total %></p>
-    <p class="text-xs text-gray-400 mt-1">publicados no período</p>
+    <p class="text-xs text-slate-400 mt-1">publicados no período</p>
   </div>
   <div class="kpi-card col-span-1">
-    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Eventos</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Eventos</p>
     <p class="text-3xl font-black text-amber-600"><%= ev.total %></p>
-    <p class="text-xs text-gray-400 mt-1"><%= ev.totalInscritos %> inscritos · <%= ev.comInscricoes %> c/ inscrição</p>
+    <p class="text-xs text-slate-400 mt-1"><%= ev.totalInscritos %> inscritos · <%= ev.comInscricoes %> c/ inscrição</p>
   </div>
 </div>
 
@@ -111,16 +111,16 @@
 <div class="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-5">
 
   <!-- Gráfico mensal -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-4">Solicitações por Mês</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-4">Solicitações por Mês</p>
     <div class="relative h-48">
       <canvas id="chart-mensal"></canvas>
     </div>
   </div>
 
   <!-- Por status (donut) -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-4">Por Status</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-4">Por Status</p>
     <div class="flex items-center gap-4">
       <div class="relative w-36 h-36 shrink-0">
         <canvas id="chart-status"></canvas>
@@ -131,9 +131,9 @@
         <div class="flex items-center justify-between text-xs">
           <div class="flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<%= statusColors[k] || '#6b7280' %>"></span>
-            <span class="text-gray-600 capitalize"><%= k %></span>
+            <span class="text-slate-600 capitalize"><%= k %></span>
           </div>
-          <span class="font-bold text-gray-800"><%= v %></span>
+          <span class="font-bold text-slate-800"><%= v %></span>
         </div>
         <% }) %>
       </div>
@@ -146,20 +146,20 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
   <!-- Por secretaria -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-4">Solicitações por Secretaria</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-4">Solicitações por Secretaria</p>
     <% if (sol.bySec.length === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhum dado no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhum dado no período.</p>
     <% } else { %>
     <div class="space-y-3">
       <% const maxSec = sol.bySec[0] ? sol.bySec[0].count : 1; %>
       <% sol.bySec.forEach(function(s) { %>
       <div>
         <div class="flex items-center justify-between text-xs mb-1">
-          <span class="font-medium text-gray-700 truncate max-w-[60%]" title="<%= s.nome %>"><%= s.nome %></span>
-          <span class="text-gray-500"><%= s.count %> total · <span class="text-emerald-600 font-semibold"><%= s.finalizadas %> fin.</span></span>
+          <span class="font-medium text-slate-700 truncate max-w-[60%]" title="<%= s.nome %>"><%= s.nome %></span>
+          <span class="text-slate-500"><%= s.count %> total · <span class="text-emerald-600 font-semibold"><%= s.finalizadas %> fin.</span></span>
         </div>
-        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
           <div class="h-full bg-indigo-500 rounded-full bar-fill" style="width:<%= Math.round(s.count/maxSec*100) %>%"></div>
         </div>
       </div>
@@ -169,10 +169,10 @@
   </div>
 
   <!-- Por tipo de mídia -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-4">Por Tipo de Mídia</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-4">Por Tipo de Mídia</p>
     <% if (sol.byTipo.length === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhum dado no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhum dado no período.</p>
     <% } else { %>
     <div class="space-y-3">
       <% const maxTipo = sol.byTipo[0] ? sol.byTipo[0].count : 1; %>
@@ -180,10 +180,10 @@
       <% sol.byTipo.forEach(function(t, i) { %>
       <div>
         <div class="flex items-center justify-between text-xs mb-1">
-          <span class="font-medium text-gray-700"><%= t.label %></span>
-          <span class="font-bold text-gray-800"><%= t.count %> <span class="text-gray-400 font-normal">(<%= sol.total > 0 ? Math.round(t.count/sol.total*100) : 0 %>%)</span></span>
+          <span class="font-medium text-slate-700"><%= t.label %></span>
+          <span class="font-bold text-slate-800"><%= t.count %> <span class="text-slate-400 font-normal">(<%= sol.total > 0 ? Math.round(t.count/sol.total*100) : 0 %>%)</span></span>
         </div>
-        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
           <div class="h-full bar-fill" style="width:<%= Math.round(t.count/maxTipo*100) %>%; background:<%= tipoColors[i % tipoColors.length] %>"></div>
         </div>
       </div>
@@ -198,35 +198,35 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
   <!-- Faixas de tempo de atendimento -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-1">Tempo de Atendimento</p>
-    <p class="text-xs text-gray-400 mb-4">Distribuição das solicitações finalizadas</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-1">Tempo de Atendimento</p>
+    <p class="text-xs text-slate-400 mb-4">Distribuição das solicitações finalizadas</p>
     <% if (sol.finalizadas === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhuma solicitação finalizada no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhuma solicitação finalizada no período.</p>
     <% } else { %>
     <div class="space-y-3">
       <% const maxFaixa = sol.faixas.reduce(function(m,f){ return Math.max(m, f.count); }, 1); %>
       <% sol.faixas.forEach(function(f) { %>
       <div class="stat-bar-row">
-        <span class="text-gray-500 w-16 shrink-0"><%= f.label %></span>
+        <span class="text-slate-500 w-16 shrink-0"><%= f.label %></span>
         <div class="stat-bar-bg">
           <div class="h-full bg-blue-500 rounded-full bar-fill" style="width:<%= f.count > 0 ? Math.round(f.count/maxFaixa*100) : 0 %>%"></div>
         </div>
-        <span class="font-bold text-gray-700 w-6 text-right shrink-0"><%= f.count %></span>
+        <span class="font-bold text-slate-700 w-6 text-right shrink-0"><%= f.count %></span>
       </div>
       <% }) %>
     </div>
-    <div class="mt-4 pt-3 border-t border-gray-100 flex gap-4 text-xs text-gray-500">
-      <span>Média: <strong class="text-gray-900"><%= sol.avgDias %>d</strong></span>
-      <span>Mín: <strong class="text-gray-900"><%= sol.minDias %>d</strong></span>
-      <span>Máx: <strong class="text-gray-900"><%= sol.maxDias %>d</strong></span>
+    <div class="mt-4 pt-3 border-t border-slate-100 flex gap-4 text-xs text-slate-500">
+      <span>Média: <strong class="text-slate-900"><%= sol.avgDias %>d</strong></span>
+      <span>Mín: <strong class="text-slate-900"><%= sol.minDias %>d</strong></span>
+      <span>Máx: <strong class="text-slate-900"><%= sol.maxDias %>d</strong></span>
     </div>
     <% } %>
   </div>
 
   <!-- Por prioridade -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-4">Por Prioridade</p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-4">Por Prioridade</p>
     <div class="space-y-4">
       <% const priMeta = [['alta','#ef4444','Urgente'],['media','#f59e0b','Média'],['baixa','#10b981','Baixa']]; %>
       <% priMeta.forEach(function(pm) { %>
@@ -236,25 +236,25 @@
         <div class="flex items-center justify-between text-sm mb-1.5">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full" style="background:<%= pm[1] %>"></span>
-            <span class="font-medium text-gray-700"><%= pm[2] %></span>
+            <span class="font-medium text-slate-700"><%= pm[2] %></span>
           </div>
-          <span class="font-bold text-gray-800"><%= cnt %> <span class="text-xs text-gray-400">(<%= pct %>%)</span></span>
+          <span class="font-bold text-slate-800"><%= cnt %> <span class="text-xs text-slate-400">(<%= pct %>%)</span></span>
         </div>
-        <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
           <div class="h-full rounded-full bar-fill" style="width:<%= pct %>%; background:<%= pm[1] %>"></div>
         </div>
       </div>
       <% }) %>
 
-      <div class="pt-3 border-t border-gray-100">
+      <div class="pt-3 border-t border-slate-100">
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-            <p class="font-bold text-lg text-gray-900"><%= sol.emAndamento %></p>
-            <p class="text-gray-400">Em andamento</p>
+          <div class="bg-slate-50 rounded-lg p-2.5 text-center">
+            <p class="font-bold text-lg text-slate-900"><%= sol.emAndamento %></p>
+            <p class="text-slate-400">Em andamento</p>
           </div>
-          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
+          <div class="bg-slate-50 rounded-lg p-2.5 text-center">
             <p class="font-bold text-lg text-red-600"><%= sol.canceladas %></p>
-            <p class="text-gray-400">Canceladas</p>
+            <p class="text-slate-400">Canceladas</p>
           </div>
         </div>
       </div>
@@ -262,12 +262,12 @@
   </div>
 
   <!-- Cumprimento de prazo -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
-    <p class="text-sm font-semibold text-gray-800 mb-1">Cumprimento de Prazo</p>
-    <p class="text-xs text-gray-400 mb-4">Solicitações com prazo definido: <strong><%= sol.comPrazo %></strong></p>
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
+    <p class="text-sm font-semibold text-slate-800 mb-1">Cumprimento de Prazo</p>
+    <p class="text-xs text-slate-400 mb-4">Solicitações com prazo definido: <strong><%= sol.comPrazo %></strong></p>
 
     <% if (sol.comPrazo === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhuma solicitação com prazo no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhuma solicitação com prazo no período.</p>
     <% } else { %>
     <%
       const prazoTotal = sol.noPrazo + sol.atrasadas;
@@ -284,8 +284,8 @@
                   stroke-linecap="round"/>
         </svg>
         <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span class="text-2xl font-black text-gray-900"><%= pctNoPrazo %>%</span>
-          <span class="text-[10px] text-gray-400">no prazo</span>
+          <span class="text-2xl font-black text-slate-900"><%= pctNoPrazo %>%</span>
+          <span class="text-[10px] text-slate-400">no prazo</span>
         </div>
       </div>
     </div>
@@ -304,9 +304,9 @@
         </span>
         <span class="font-bold text-red-600"><%= sol.atrasadas %></span>
       </div>
-      <div class="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-lg">
-        <span class="text-gray-500">Sem prazo definido</span>
-        <span class="font-semibold text-gray-600"><%= sol.semPrazo %></span>
+      <div class="flex items-center justify-between px-2 py-1.5 bg-slate-50 rounded-lg">
+        <span class="text-slate-500">Sem prazo definido</span>
+        <span class="font-semibold text-slate-600"><%= sol.semPrazo %></span>
       </div>
     </div>
     <% } %>
@@ -318,43 +318,43 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
   <!-- Releases -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
     <div class="flex items-center justify-between mb-4">
-      <p class="text-sm font-semibold text-gray-800">Releases Publicados</p>
+      <p class="text-sm font-semibold text-slate-800">Releases Publicados</p>
       <span class="text-2xl font-black text-purple-600"><%= rel.total %></span>
     </div>
     <% if (rel.total === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhum release publicado no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhum release publicado no período.</p>
     <% } else { %>
     <div class="grid grid-cols-2 gap-4">
       <!-- Por mês -->
       <div>
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por mês</p>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Por mês</p>
         <div class="space-y-1.5">
           <% const maxRelMes = rel.byMonth.reduce(function(m,r){ return Math.max(m, r.count); }, 1); %>
           <% rel.byMonth.forEach(function(r) { %>
           <div class="stat-bar-row">
-            <span class="text-gray-400 w-10 shrink-0 text-[11px]"><%= r.label %></span>
+            <span class="text-slate-400 w-10 shrink-0 text-[11px]"><%= r.label %></span>
             <div class="stat-bar-bg">
               <div class="h-full bg-purple-500 rounded-full bar-fill" style="width:<%= r.count > 0 ? Math.round(r.count/maxRelMes*100) : 0 %>%"></div>
             </div>
-            <span class="font-bold text-gray-700 w-5 text-right shrink-0 text-[11px]"><%= r.count %></span>
+            <span class="font-bold text-slate-700 w-5 text-right shrink-0 text-[11px]"><%= r.count %></span>
           </div>
           <% }) %>
         </div>
       </div>
       <!-- Por secretaria -->
       <div>
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por secretaria</p>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Por secretaria</p>
         <div class="space-y-1.5">
           <% const maxRelSec = rel.bySec[0] ? rel.bySec[0].count : 1; %>
           <% rel.bySec.slice(0,6).forEach(function(r) { %>
           <div class="stat-bar-row">
-            <span class="text-gray-500 truncate" style="max-width:80px;font-size:11px" title="<%= r.nome %>"><%= r.nome.split(' ').slice(-1)[0] %></span>
+            <span class="text-slate-500 truncate" style="max-width:80px;font-size:11px" title="<%= r.nome %>"><%= r.nome.split(' ').slice(-1)[0] %></span>
             <div class="stat-bar-bg">
               <div class="h-full bg-purple-400 rounded-full bar-fill" style="width:<%= Math.round(r.count/maxRelSec*100) %>%"></div>
             </div>
-            <span class="font-bold text-gray-700 w-4 text-right shrink-0 text-[11px]"><%= r.count %></span>
+            <span class="font-bold text-slate-700 w-4 text-right shrink-0 text-[11px]"><%= r.count %></span>
           </div>
           <% }) %>
         </div>
@@ -364,13 +364,13 @@
   </div>
 
   <!-- Eventos -->
-  <div class="bg-white border border-gray-200 rounded-xl p-5">
+  <div class="bg-white border border-slate-200 rounded-xl p-5">
     <div class="flex items-center justify-between mb-4">
-      <p class="text-sm font-semibold text-gray-800">Eventos</p>
+      <p class="text-sm font-semibold text-slate-800">Eventos</p>
       <span class="text-2xl font-black text-amber-600"><%= ev.total %></span>
     </div>
     <% if (ev.total === 0) { %>
-    <p class="text-sm text-gray-400 italic">Nenhum evento no período.</p>
+    <p class="text-sm text-slate-400 italic">Nenhum evento no período.</p>
     <% } else { %>
     <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="text-center bg-amber-50 rounded-lg p-2.5">
@@ -381,27 +381,27 @@
         <p class="text-xl font-black text-blue-700"><%= ev.totalInscritos %></p>
         <p class="text-[10px] text-blue-600">inscritos</p>
       </div>
-      <div class="text-center bg-gray-50 rounded-lg p-2.5">
-        <p class="text-xl font-black text-gray-700"><%= ev.total - ev.comInscricoes %></p>
-        <p class="text-[10px] text-gray-500">sem inscrições</p>
+      <div class="text-center bg-slate-50 rounded-lg p-2.5">
+        <p class="text-xl font-black text-slate-700"><%= ev.total - ev.comInscricoes %></p>
+        <p class="text-[10px] text-slate-500">sem inscrições</p>
       </div>
     </div>
     <div class="grid grid-cols-2 gap-3">
       <div>
-        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Por status</p>
+        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Por status</p>
         <% ev.byStatus.forEach(function(s) { %>
         <div class="flex items-center justify-between text-xs py-0.5">
-          <span class="text-gray-600 capitalize"><%= s.label.replace('_',' ') %></span>
-          <span class="font-bold text-gray-800"><%= s.count %></span>
+          <span class="text-slate-600 capitalize"><%= s.label.replace('_',' ') %></span>
+          <span class="font-bold text-slate-800"><%= s.count %></span>
         </div>
         <% }) %>
       </div>
       <div>
-        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Por tipo</p>
+        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Por tipo</p>
         <% ev.byTipo.slice(0,5).forEach(function(t) { %>
         <div class="flex items-center justify-between text-xs py-0.5">
-          <span class="text-gray-600 truncate" style="max-width:100px"><%= t.label %></span>
-          <span class="font-bold text-gray-800"><%= t.count %></span>
+          <span class="text-slate-600 truncate" style="max-width:100px"><%= t.label %></span>
+          <span class="font-bold text-slate-800"><%= t.count %></span>
         </div>
         <% }) %>
       </div>
@@ -423,8 +423,8 @@
        x-transition:enter-end="opacity-100 scale-100">
 
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-bold text-gray-900">Imprimir / Exportar PDF</h3>
-      <button @click="printModal = false" class="text-gray-400 hover:text-gray-600">
+      <h3 class="text-lg font-bold text-slate-900">Imprimir / Exportar PDF</h3>
+      <button @click="printModal = false" class="text-slate-400 hover:text-slate-600">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
@@ -435,19 +435,19 @@
 
       <div class="flex gap-3 mb-4">
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-500 mb-1">De</label>
+          <label class="block text-xs font-medium text-slate-500 mb-1">De</label>
           <input type="date" name="data_inicio" x-model="printInicio"
-                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
         </div>
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-500 mb-1">Até</label>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Até</label>
           <input type="date" name="data_fim" x-model="printFim"
-                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-400">
+                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-400">
         </div>
       </div>
 
       <div class="space-y-3 mb-5">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seções a incluir</p>
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Seções a incluir</p>
 
         <% const secoes_opts = [
           ['sol', 'Solicitações', 'Listagem e estatísticas de chamados'],
@@ -455,18 +455,18 @@
           ['ev',  'Eventos',  'Eventos realizados e inscrições'],
         ]; %>
         <% secoes_opts.forEach(function(opt) { %>
-        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-indigo-400 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50">
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50">
           <input type="checkbox" name="secoes" value="<%= opt[0] %>" checked
-                 class="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                 class="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
           <div>
-            <p class="text-sm font-semibold text-gray-800"><%= opt[1] %></p>
-            <p class="text-xs text-gray-400 mt-0.5"><%= opt[2] %></p>
+            <p class="text-sm font-semibold text-slate-800"><%= opt[1] %></p>
+            <p class="text-xs text-slate-400 mt-0.5"><%= opt[2] %></p>
           </div>
         </label>
         <% }) %>
       </div>
 
-      <div class="bg-gray-50 rounded-xl p-3 mb-4 text-xs text-gray-500">
+      <div class="bg-slate-50 rounded-xl p-3 mb-4 text-xs text-slate-500">
         <strong>Período:</strong> <span x-text="printInicio ? new Date(printInicio + 'T00:00:00').toLocaleDateString('pt-BR') : '—'"></span>
         a <span x-text="printFim ? new Date(printFim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'"></span><br>
         <% if (isSuperAdmin) { %>
@@ -477,7 +477,7 @@
 
       <div class="flex gap-3">
         <button type="button" @click="printModal = false"
-                class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
+                class="flex-1 px-4 py-2.5 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition">
           Cancelar
         </button>
         <button type="submit"

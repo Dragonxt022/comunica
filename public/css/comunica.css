@@ -1,0 +1,171 @@
+/* =====================================================================
+   COMUNICA — Design System (SaaS premium minimalista)
+   Tokens visuais + componentes compartilhados.
+   Complementa o Tailwind (CDN), não o substitui.
+   ===================================================================== */
+
+:root {
+  /* Cores */
+  --c-bg:              #f8fafc;   /* fundo principal (cinza muito claro) */
+  --c-surface:         #ffffff;   /* superfícies */
+  --c-border:          #e2e8f0;   /* bordas suaves */
+  --c-border-strong:   #cbd5e1;
+  --c-text:            #0f172a;   /* texto principal (azul-acinzentado escuro) */
+  --c-muted:           #475569;   /* texto secundário */
+  --c-muted-2:         #94a3b8;   /* texto terciário / placeholder */
+  --c-primary:         #2563eb;
+  --c-primary-hover:   #1d4ed8;
+  --c-primary-soft:    #eff6ff;
+  --c-primary-border:  #bfdbfe;
+  --c-success:         #059669;
+  --c-warning:         #d97706;
+  --c-danger:          #dc2626;
+
+  /* Raios */
+  --radius-sm: 8px;
+  --radius:    10px;
+  --radius-lg: 14px;
+
+  /* Sombras (muito sutis) */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
+
+  /* Escala de espaçamento (4 · 8 · 12 · 16 · 24 · 32) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+html, body { height: 100%; }
+body {
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Foco visível e acessível em toda a interface */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Superfícies / cartões ────────────────────────────────────────── */
+.c-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+.c-card-hover { transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease; }
+.c-card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--c-border-strong); }
+
+/* ── Botões ───────────────────────────────────────────────────────── */
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.c-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.c-btn-primary   { background: var(--c-primary); color: #fff; }
+.c-btn-primary:hover { background: var(--c-primary-hover); }
+
+.c-btn-secondary { background: var(--c-surface); color: var(--c-muted); border-color: var(--c-border-strong); }
+.c-btn-secondary:hover { background: #f1f5f9; color: var(--c-text); }
+
+.c-btn-ghost     { background: transparent; color: var(--c-muted); }
+.c-btn-ghost:hover { background: #f1f5f9; color: var(--c-text); }
+
+.c-btn-danger    { background: var(--c-danger); color: #fff; }
+.c-btn-danger:hover { background: #b91c1c; }
+
+.c-btn-sm { padding: 6px 10px; font-size: 12px; border-radius: var(--radius-sm); }
+
+/* ── Campos de formulário ─────────────────────────────────────────── */
+.c-input,
+.c-select,
+.c-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius);
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.c-input::placeholder, .c-textarea::placeholder { color: var(--c-muted-2); }
+.c-input:focus, .c-select:focus, .c-textarea:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.c-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--c-muted-2);
+  margin-bottom: 6px;
+}
+
+/* ── Etiquetas / status ───────────────────────────────────────────── */
+.c-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9999px;
+  line-height: 1.4;
+}
+.c-badge-neutral { background: #f1f5f9; color: var(--c-muted); }
+.c-badge-primary { background: var(--c-primary-soft); color: var(--c-primary-hover); }
+.c-badge-success { background: #ecfdf5; color: var(--c-success); }
+.c-badge-warning { background: #fffbeb; color: var(--c-warning); }
+.c-badge-danger  { background: #fef2f2; color: var(--c-danger); }
+
+/* ── Navegação lateral ────────────────────────────────────────────── */
+.c-side-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-muted);
+  transition: background-color .15s ease, color .15s ease;
+}
+.c-side-link:hover { background: #f1f5f9; color: var(--c-text); }
+.c-side-link.is-active {
+  background: var(--c-primary-soft);
+  color: var(--c-primary-hover);
+  font-weight: 600;
+}
+
+/* Ocultar a scrollbar em áreas de navegação mantendo o scroll */
+.c-scroll-hidden { scrollbar-width: none; -ms-overflow-style: none; }
+.c-scroll-hidden::-webkit-scrollbar { display: none; }
+
+/* ── Divisórias ───────────────────────────────────────────────────── */
+.c-divider { border-color: var(--c-border); }

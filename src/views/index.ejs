@@ -21,8 +21,8 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
     <!-- ── Cabeçalho ─────────────────────────────────────────────────────── -->
     <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
-            <h1 class="text-xl font-bold text-gray-900"><%= saudacao %>, <%= user.nome.split(' ')[0] %></h1>
-            <p class="text-sm text-gray-400 mt-0.5 capitalize"><%= dataSaudacao %></p>
+            <h1 class="text-xl font-bold text-slate-900"><%= saudacao %>, <%= user.nome.split(' ')[0] %></h1>
+            <p class="text-sm text-slate-400 mt-0.5 capitalize"><%= dataSaudacao %></p>
         </div>
         <a href="/solicitacoes/nova"
            class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm shrink-0">
@@ -33,7 +33,7 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
     <!-- ── Acesso Rápido ──────────────────────────────────────────────────── -->
     <div>
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Acesso Rápido</p>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Acesso Rápido</p>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 
             <a href="/solicitacoes/nova"
@@ -45,52 +45,52 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
             </a>
 
             <a href="/eventos"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Calendário</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Calendário</span>
             </a>
 
             <a href="/planejamento"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-violet-50 border border-gray-200 hover:border-violet-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-violet-50 border border-slate-200 hover:border-violet-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Planejamento</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Planejamento</span>
             </a>
 
             <a href="/solicitacoes"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-orange-50 group-hover:bg-orange-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Solicitações</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Solicitações</span>
             </a>
 
             <a href="/biblioteca"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-teal-50 group-hover:bg-teal-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Biblioteca</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Biblioteca</span>
             </a>
 
             <% if(user.role !== 'secretaria') { %>
             <a href="/releases"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-slate-50 border border-gray-200 hover:border-slate-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM15 4v4h4"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Releases</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Releases</span>
             </a>
             <% } else { %>
             <a href="/inscricoes"
-               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 rounded-xl transition text-center">
+               class="group flex flex-col items-center gap-2 p-4 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition text-center">
                 <div class="w-9 h-9 rounded-lg bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition">
                     <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </div>
-                <span class="text-xs font-semibold text-gray-700 leading-tight">Inscrições</span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">Inscrições</span>
             </a>
             <% } %>
         </div>
@@ -99,7 +99,7 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
     <!-- ── Alertas (só aparecem quando têm dados) ─────────────────────────── -->
     <% if (totalAlertas > 0) { %>
     <div>
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Atenção necessária</p>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Atenção necessária</p>
         <div class="grid grid-cols-1 sm:grid-cols-<%= totalAlertas %> gap-3">
 
             <% if (solicitacoesPendentes > 0) { %>
@@ -151,19 +151,19 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
         <div class="lg:col-span-2 space-y-6">
 
             <!-- Próximos eventos da semana -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <h3 class="text-sm font-bold text-gray-900">Agenda da Semana</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-900">Agenda da Semana</h3>
                     <a href="/eventos" class="text-xs font-medium text-blue-600 hover:underline">Ver calendário →</a>
                 </div>
                 <% if (eventosSemana.length === 0) { %>
                 <div class="flex flex-col items-center justify-center py-10 text-center px-6">
                     <svg class="w-10 h-10 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <p class="text-sm text-gray-400">Nenhum evento nos próximos 7 dias.</p>
+                    <p class="text-sm text-slate-400">Nenhum evento nos próximos 7 dias.</p>
                     <a href="/eventos/novo" class="mt-2 text-xs font-semibold text-blue-600 hover:underline">Agendar evento →</a>
                 </div>
                 <% } else { %>
-                <div class="divide-y divide-gray-50">
+                <div class="divide-y divide-slate-50">
                     <% eventosSemana.slice(0, 5).forEach(function(ev) {
                         const dEv = new Date(ev.data_inicio);
                         const isHoje = dEv.toDateString() === hojStr;
@@ -171,17 +171,17 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                         const horaLabel = dEv.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                         const cor = ev.secretaria ? ev.secretaria.cor : '#6366f1';
                     %>
-                    <a href="/eventos" class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition group">
+                    <a href="/eventos" class="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition group">
                         <div class="shrink-0 w-12 text-center">
-                            <p class="text-[10px] font-bold uppercase <%= isHoje ? 'text-blue-600' : 'text-gray-400' %>"><%= diaLabel.split(' ')[0] %></p>
-                            <p class="text-lg font-bold <%= isHoje ? 'text-blue-700' : 'text-gray-800' %> leading-tight"><%= dEv.getDate() %></p>
+                            <p class="text-[10px] font-bold uppercase <%= isHoje ? 'text-blue-600' : 'text-slate-400' %>"><%= diaLabel.split(' ')[0] %></p>
+                            <p class="text-lg font-bold <%= isHoje ? 'text-blue-700' : 'text-slate-800' %> leading-tight"><%= dEv.getDate() %></p>
                         </div>
                         <div class="w-0.5 h-10 rounded-full shrink-0" style="background:<%= cor %>20;border-left: 3px solid <%= cor %>"></div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition"><%= ev.titulo %></p>
+                            <p class="text-sm font-semibold text-slate-900 truncate group-hover:text-blue-700 transition"><%= ev.titulo %></p>
                             <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span class="text-xs text-gray-400"><%= horaLabel %></span>
-                                <% if (ev.local) { %><span class="text-xs text-gray-400">· <%= ev.local %></span><% } %>
+                                <span class="text-xs text-slate-400"><%= horaLabel %></span>
+                                <% if (ev.local) { %><span class="text-xs text-slate-400">· <%= ev.local %></span><% } %>
                                 <% if (ev.secretaria) { %>
                                 <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded" style="background:<%= cor %>18;color:<%= cor %>"><%= ev.secretaria.nome %></span>
                                 <% } %>
@@ -203,9 +203,9 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
             <!-- Gráfico semanal -->
             <% if(user.role === 'admin' || user.role === 'secom') { %>
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-bold text-gray-900">Volume de Solicitações — 8 Semanas</h3>
+                    <h3 class="text-sm font-bold text-slate-900">Volume de Solicitações — 8 Semanas</h3>
                     <a href="/relatorios" class="text-xs font-medium text-blue-600 hover:underline">Relatório →</a>
                 </div>
                 <canvas id="chartSemanal" height="80"></canvas>
@@ -229,10 +229,10 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                         </button>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-gray-900">Metas do Mês</h3>
-                        <span class="text-xs text-gray-400 capitalize"><%= new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) %></span>
+                        <h3 class="text-sm font-bold text-slate-900">Metas do Mês</h3>
+                        <span class="text-xs text-slate-400 capitalize"><%= new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) %></span>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <% metas.forEach(function(m) {
@@ -241,9 +241,9 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                             var atingida = progresso >= m.quantidade;
                         %>
                         <div class="rounded-xl border p-3.5 space-y-2.5 transition-all
-                            <%= atingida ? 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50' : 'border-gray-100' %>">
+                            <%= atingida ? 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50' : 'border-slate-100' %>">
                             <div class="flex items-start justify-between gap-1">
-                                <p class="text-xs font-semibold text-gray-600 leading-tight"><%= m.tipo_midia %></p>
+                                <p class="text-xs font-semibold text-slate-600 leading-tight"><%= m.tipo_midia %></p>
                                 <% if(atingida) { %>
                                 <span class="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded-full">
                                     <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -252,10 +252,10 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                                 <% } %>
                             </div>
                             <div class="flex justify-between items-baseline">
-                                <span class="text-xl font-bold <%= atingida ? 'text-emerald-700' : 'text-gray-900' %>"><%= progresso %></span>
-                                <span class="text-xs text-gray-400">/<%= m.quantidade %></span>
+                                <span class="text-xl font-bold <%= atingida ? 'text-emerald-700' : 'text-slate-900' %>"><%= progresso %></span>
+                                <span class="text-xs text-slate-400">/<%= m.quantidade %></span>
                             </div>
-                            <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div class="h-full rounded-full transition-all duration-700
                                     <%= atingida ? 'bg-emerald-500' : pct >= 75 ? 'bg-blue-500' : pct >= 50 ? 'bg-indigo-400' : 'bg-gray-300' %>"
                                     style="width:<%= pct %>%"></div>
@@ -272,42 +272,42 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
         <!-- Coluna direita (1/3) -->
         <div class="space-y-6">
 
-            <!-- Resumo numérico (só mostra valores > 0 ou relevantes) -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-50">
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Solicitações pendentes</span>
-                    <span class="text-sm font-bold <%= solicitacoesPendentes > 0 ? 'text-orange-600' : 'text-gray-400' %>"><%= solicitacoesPendentes %></span>
+            <!-- Resumo numérico -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Pendentes</p>
+                    <p class="mt-1 text-2xl font-bold <%= solicitacoesPendentes > 0 ? 'text-amber-600' : 'text-slate-300' %>"><%= solicitacoesPendentes %></p>
                 </div>
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Em produção</span>
-                    <span class="text-sm font-bold <%= solicitacoesEmProducao > 0 ? 'text-blue-600' : 'text-gray-400' %>"><%= solicitacoesEmProducao %></span>
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Em produção</p>
+                    <p class="mt-1 text-2xl font-bold <%= solicitacoesEmProducao > 0 ? 'text-blue-600' : 'text-slate-300' %>"><%= solicitacoesEmProducao %></p>
                 </div>
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Finalizadas este mês</span>
-                    <span class="text-sm font-bold <%= finalizadasMes > 0 ? 'text-emerald-600' : 'text-gray-400' %>"><%= finalizadasMes %></span>
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Finalizadas (mês)</p>
+                    <p class="mt-1 text-2xl font-bold <%= finalizadasMes > 0 ? 'text-emerald-600' : 'text-slate-300' %>"><%= finalizadasMes %></p>
                 </div>
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Eventos na semana</span>
-                    <span class="text-sm font-bold <%= eventosNaSemana > 0 ? 'text-indigo-600' : 'text-gray-400' %>"><%= eventosNaSemana %></span>
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Eventos na semana</p>
+                    <p class="mt-1 text-2xl font-bold <%= eventosNaSemana > 0 ? 'text-indigo-600' : 'text-slate-300' %>"><%= eventosNaSemana %></p>
                 </div>
                 <% if(user.role === 'admin' || user.role === 'secom') { %>
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Releases publicados</span>
-                    <span class="text-sm font-bold <%= releasesPublicados > 0 ? 'text-slate-700' : 'text-gray-400' %>"><%= releasesPublicados %></span>
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Releases publicados</p>
+                    <p class="mt-1 text-2xl font-bold <%= releasesPublicados > 0 ? 'text-slate-700' : 'text-slate-300' %>"><%= releasesPublicados %></p>
                 </div>
-                <div class="px-5 py-3.5 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-500">Usuários ativos</span>
-                    <span class="text-sm font-bold text-gray-700"><%= totalUsuativos %></span>
+                <div class="c-card px-4 py-3.5">
+                    <p class="text-xs font-medium text-slate-400">Usuários ativos</p>
+                    <p class="mt-1 text-2xl font-bold text-slate-700"><%= totalUsuativos %></p>
                 </div>
                 <% } %>
             </div>
 
             <!-- Top Secretarias (admin/secom) -->
             <% if(user.role !== 'secretaria' && topSecretarias.length > 0) { %>
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-bold text-gray-900">Top Secretarias</h3>
-                    <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">por demanda</span>
+                    <h3 class="text-sm font-bold text-slate-900">Top Secretarias</h3>
+                    <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">por demanda</span>
                 </div>
                 <div class="space-y-2.5">
                     <% var maxTotal = topSecretarias[0] ? topSecretarias[0].total : 1; %>
@@ -317,16 +317,16 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
                                       style="background:<%= sec.cor %>"><%= idx + 1 %></span>
-                                <span class="font-medium text-gray-700 truncate"><%= sec.nome %></span>
+                                <span class="font-medium text-slate-700 truncate"><%= sec.nome %></span>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 ml-2">
                                 <% if(sec.pendentes > 0) { %>
                                 <span class="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded font-semibold"><%= sec.pendentes %> pend.</span>
                                 <% } %>
-                                <span class="font-bold text-gray-900"><%= sec.total %></span>
+                                <span class="font-bold text-slate-900"><%= sec.total %></span>
                             </div>
                         </div>
-                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div class="h-full rounded-full" style="width:<%= Math.round(sec.total / maxTotal * 100) %>%;background:<%= sec.cor %>"></div>
                         </div>
                     </div>
@@ -336,25 +336,25 @@ const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
             <% } %>
 
             <!-- Solicitações Recentes -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <h3 class="text-sm font-bold text-gray-900">Solicitações Recentes</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-900">Solicitações Recentes</h3>
                     <a href="/solicitacoes" class="text-xs font-medium text-blue-600 hover:underline">Ver tudo</a>
                 </div>
                 <% if(solicitacoesRecentes.length === 0) { %>
                 <div class="py-10 text-center px-5">
                     <svg class="w-8 h-8 mx-auto mb-2 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <p class="text-sm text-gray-400">Nenhuma solicitação ainda.</p>
+                    <p class="text-sm text-slate-400">Nenhuma solicitação ainda.</p>
                     <a href="/solicitacoes/nova" class="mt-1.5 block text-xs font-semibold text-blue-600 hover:underline">Abrir chamado →</a>
                 </div>
                 <% } else { %>
-                <div class="divide-y divide-gray-50">
+                <div class="divide-y divide-slate-50">
                     <% solicitacoesRecentes.forEach(function(s) { %>
-                    <a href="/solicitacoes" class="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 transition group">
+                    <a href="/solicitacoes" class="flex items-start gap-3 px-5 py-3 hover:bg-slate-50 transition group">
                         <div class="flex-1 min-w-0">
-                            <p class="text-[10px] font-semibold text-gray-400 uppercase mb-0.5"><%= s.tipo_midia %></p>
-                            <p class="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition"><%= s.titulo %></p>
-                            <p class="text-xs text-gray-400 mt-0.5 truncate"><%= s.secretaria ? s.secretaria.nome : '—' %></p>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase mb-0.5"><%= s.tipo_midia %></p>
+                            <p class="text-sm font-medium text-slate-900 truncate group-hover:text-blue-700 transition"><%= s.titulo %></p>
+                            <p class="text-xs text-slate-400 mt-0.5 truncate"><%= s.secretaria ? s.secretaria.nome : '—' %></p>
                         </div>
                         <% if(s.prioridade === 'alta') { %>
                         <span class="shrink-0 mt-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-600 border border-red-200 uppercase">alta</span>
