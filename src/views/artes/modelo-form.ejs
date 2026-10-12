@@ -925,7 +925,15 @@
         var x = o.x, y = o.y, w = o.w, h2 = o.h;
         if (hh.indexOf('e') >= 0) w = o.w + dx; if (hh.indexOf('s') >= 0) h2 = o.h + dy;
         if (hh.indexOf('w') >= 0) { x = o.x + dx; w = o.w - dx; } if (hh.indexOf('n') >= 0) { y = o.y + dy; h2 = o.h - dy; }
-        set({ x:x, y:y, w:Math.max(20, w), h:Math.max(20, h2) });
+        w = Math.max(20, w); h2 = Math.max(20, h2);
+        if (e.shiftKey && hh.length === 2 && o.w > 0 && o.h > 0) {
+          // Shift num canto: mantém a proporção original.
+          var ar = o.w / o.h;
+          if (Math.abs(w - o.w) >= Math.abs(h2 - o.h)) h2 = w / ar; else w = h2 * ar;
+          if (hh.indexOf('w') >= 0) x = o.x + o.w - w;
+          if (hh.indexOf('n') >= 0) y = o.y + o.h - h2;
+        }
+        set({ x:x, y:y, w:w, h:h2 });
       } else if (el.tipo === 'circulo') {
         var dep = (hh === 'se' || hh === 'e' || hh === 's') ? 1 : -1; set({ r: Math.max(20, o.r + dep * (Math.abs(dx) > Math.abs(dy) ? dx : dy)) });
       } else if (el.tipo === 'texto') {
