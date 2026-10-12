@@ -90,7 +90,16 @@ function renderImagem(el: ElImagem, input: ComposicaoInput): string {
   if (el.cor) {
     const fId = `tint-${el.id}`;
     const cor = resolverCor(el.cor, input.paleta);
-    filterDef = `<filter id="${fId}" x="0" y="0" width="100%" height="100%"><feFlood flood-color="${cor}"/><feComposite in2="SourceGraphic" operator="in"/></filter>`;
+    if (el.corModo === 'recolorir') {
+      // Recolore preservando detalhes: cinza (luminância) × cor alvo.
+      const h = cor.replace('#', '');
+      const r = (parseInt(h.slice(0, 2), 16) / 255).toFixed(3);
+      const g = (parseInt(h.slice(2, 4), 16) / 255).toFixed(3);
+      const b = (parseInt(h.slice(4, 6), 16) / 255).toFixed(3);
+      filterDef = `<filter id="${fId}"><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="linear" slope="${r}"/><feFuncG type="linear" slope="${g}"/><feFuncB type="linear" slope="${b}"/></feComponentTransfer></filter>`;
+    } else {
+      filterDef = `<filter id="${fId}" x="0" y="0" width="100%" height="100%"><feFlood flood-color="${cor}"/><feComposite in2="SourceGraphic" operator="in"/></filter>`;
+    }
     filterAttr = ` filter="url(#${fId})"`;
   }
   return `<defs>${clip}${filterDef}</defs><image href="${dataUri}" x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" preserveAspectRatio="${preserve}" clip-path="url(#${clipId})"${filterAttr} opacity="${op}"/>`;
