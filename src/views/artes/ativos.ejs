@@ -1,3 +1,10 @@
+<style>
+  .ativo-file-label { border: 1.5px dashed var(--c-border-strong); border-radius: 10px; padding: 14px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:.15s; }
+  .ativo-file-label:hover { border-color: var(--c-primary); background: var(--c-primary-soft); }
+  .ativo-modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:80; display:none; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; }
+  .ativo-modal-bg.open { display:flex; }
+</style>
+
 <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -9,10 +16,14 @@
 
     <% if (ok) { %><div class="c-card p-3 text-sm text-emerald-700 bg-emerald-50 border-emerald-100">Alterações salvas.</div><% } %>
 
-    <div class="grid lg:grid-cols-[360px_1fr] gap-6">
+    <div class="grid lg:grid-cols-[340px_1fr] gap-6">
         <form action="/artes/ativos" method="POST" enctype="multipart/form-data" class="c-card p-5 space-y-3 h-fit">
             <h2 class="text-sm font-bold text-gray-800">Enviar elemento</h2>
-            <div><label class="c-label">Arquivo (imagem/SVG)</label><input type="file" name="imagem" accept="image/*" required></div>
+            <label class="ativo-file-label">
+                <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span id="ativo-file-name" class="text-xs text-slate-500 truncate">Escolher imagem (PNG, JPG, SVG…)</span>
+                <input type="file" name="imagem" id="ativo-file" accept="image/*" class="hidden" required>
+            </label>
             <div><label class="c-label">Nome</label><input class="c-input" name="nome" required></div>
             <div class="grid grid-cols-2 gap-3">
                 <div><label class="c-label">Categoria</label><input class="c-input" name="categoria" value="Geral" list="cats">
@@ -24,41 +35,59 @@
                 </select></div>
             </div>
             <div><label class="c-label">Descrição</label><input class="c-input" name="descricao"></div>
-            <div><label class="c-label">Tags (separadas por vírgula)</label><input class="c-input" name="tags"></div>
+            <div><label class="c-label">Tags (separadas por vírgula)</label><input class="c-input" name="tags" placeholder="saude, campanha, fundo"></div>
             <div><label class="c-label">Texto alternativo</label><input class="c-input" name="alt"></div>
             <label class="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" name="uso_institucional"> Uso institucional</label>
             <button class="c-btn c-btn-primary w-full">Enviar elemento</button>
         </form>
 
         <div class="space-y-4">
-            <form method="GET" action="/artes/ativos" class="flex flex-wrap gap-2">
-                <input class="c-input" style="max-width:220px" name="q" value="<%= filtros.q %>" placeholder="Buscar por nome...">
-                <select class="c-select" style="max-width:200px" name="categoria" onchange="this.form.submit()">
-                    <option value="">Todas as categorias</option>
-                    <% categorias.forEach(function(c){ %><option value="<%= c %>" <%= filtros.categoria===c?'selected':'' %>><%= c %></option><% }); %>
-                </select>
+            <form method="GET" action="/artes/ativos" class="flex flex-wrap items-end gap-2">
+                <div><label class="c-label">Busca</label><input class="c-input" style="max-width:200px" name="q" value="<%= filtros.q %>" placeholder="Nome..."></div>
+                <div><label class="c-label">Categoria</label>
+                    <select class="c-select" name="categoria">
+                        <option value="">Todas</option>
+                        <% categorias.forEach(function(c){ %><option value="<%= c %>" <%= filtros.categoria===c?'selected':'' %>><%= c %></option><% }); %>
+                    </select>
+                </div>
+                <div><label class="c-label">Tag</label>
+                    <select class="c-select" name="tag">
+                        <option value="">Todas</option>
+                        <% tags.forEach(function(t){ %><option value="<%= t %>" <%= filtros.tag===t?'selected':'' %>><%= t %></option><% }); %>
+                    </select>
+                </div>
+                <div><label class="c-label">Situação</label>
+                    <select class="c-select" name="estado">
+                        <option value="">Todas</option>
+                        <option value="publicado" <%= filtros.estado==='publicado'?'selected':'' %>>Publicados</option>
+                        <option value="arquivado" <%= filtros.estado==='arquivado'?'selected':'' %>>Arquivados</option>
+                    </select>
+                </div>
                 <button class="c-btn c-btn-secondary">Filtrar</button>
             </form>
 
             <% if (!ativos.length) { %>
-            <div class="c-card p-8 text-center text-sm text-gray-400">Nenhum elemento cadastrado.</div>
+            <div class="c-card p-8 text-center text-sm text-gray-400">Nenhum elemento encontrado.</div>
             <% } else { %>
             <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                <% ativos.forEach(function(a){ %>
-                <div class="c-card overflow-hidden">
+                <% ativos.forEach(function(a){ var emUso = usos[a.id] || 0; %>
+                <div class="c-card overflow-hidden <%= a.estado==='arquivado' ? 'opacity-60' : '' %>">
                     <div class="h-32 bg-slate-100 flex items-center justify-center overflow-hidden">
                         <% if (a.url) { %><img src="<%= a.url %>" alt="<%= a.alt || a.nome %>" class="max-h-full max-w-full object-contain" loading="lazy"><% } else { %><span class="text-xs text-gray-400">sem arquivo</span><% } %>
                     </div>
                     <div class="p-3 space-y-1.5">
-                        <p class="text-sm font-semibold text-gray-800 truncate"><%= a.nome %></p>
+                        <p class="text-sm font-semibold text-gray-800 truncate" title="<%= a.nome %>"><%= a.nome %></p>
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="c-badge c-badge-neutral"><%= a.categoria %></span>
                             <span class="c-badge c-badge-primary"><%= a.tipo %></span>
                             <% if (a.uso_institucional) { %><span class="c-badge c-badge-warning">institucional</span><% } %>
+                            <% if (emUso > 0) { %><span class="c-badge c-badge-success" title="Usado em modelos"><%= emUso %> modelo(s)</span><% } %>
                         </div>
-                        <form action="/artes/ativos/<%= a.id %>/arquivar" method="POST">
-                            <button class="c-btn c-btn-ghost c-btn-sm"><%= a.estado === 'arquivado' ? 'Reativar' : 'Arquivar' %></button>
-                        </form>
+                        <div class="flex items-center gap-1 pt-1">
+                            <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-edit-ativo="<%= a.id %>">Editar</button>
+                            <form action="/artes/ativos/<%= a.id %>/arquivar" method="POST"><button class="c-btn c-btn-ghost c-btn-sm"><%= a.estado==='arquivado' ? 'Reativar' : 'Arquivar' %></button></form>
+                            <button type="button" class="c-btn c-btn-ghost c-btn-sm text-red-500 ml-auto" data-del-ativo="<%= a.id %>" data-uso="<%= emUso %>">Excluir</button>
+                        </div>
                     </div>
                 </div>
                 <% }); %>
@@ -67,3 +96,74 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de edição -->
+<div class="ativo-modal-bg" id="ativo-modal">
+    <form id="form-edit-ativo" method="POST" class="c-card p-6 space-y-3 w-full max-w-lg">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-gray-800">Editar elemento</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-600" id="ativo-modal-close">✕</button>
+        </div>
+        <div><label class="c-label">Nome</label><input class="c-input" name="nome" id="ea-nome" required></div>
+        <div class="grid grid-cols-2 gap-3">
+            <div><label class="c-label">Categoria</label><input class="c-input" name="categoria" id="ea-categoria"></div>
+            <div><label class="c-label">Tipo</label><select class="c-select" name="tipo" id="ea-tipo">
+                <option value="imagem">Imagem</option><option value="fundo">Fundo</option><option value="icone">Ícone</option>
+                <option value="forma">Forma</option><option value="textura">Textura</option><option value="componente">Componente</option>
+            </select></div>
+        </div>
+        <div><label class="c-label">Descrição</label><input class="c-input" name="descricao" id="ea-descricao"></div>
+        <div><label class="c-label">Tags</label><input class="c-input" name="tags" id="ea-tags"></div>
+        <div><label class="c-label">Texto alternativo</label><input class="c-input" name="alt" id="ea-alt"></div>
+        <div class="grid grid-cols-2 gap-3">
+            <div><label class="c-label">Situação</label><select class="c-select" name="estado" id="ea-estado"><option value="publicado">Publicado</option><option value="arquivado">Arquivado</option></select></div>
+            <label class="flex items-center gap-2 text-sm text-gray-600 mt-5"><input type="checkbox" name="uso_institucional" id="ea-inst"> Uso institucional</label>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+            <button type="button" class="c-btn c-btn-secondary" id="ativo-modal-cancel">Cancelar</button>
+            <button class="c-btn c-btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function(){
+  var ATIVOS = <%- JSON.stringify(ativos.map(function(a){ return { id:a.id, nome:a.nome, categoria:a.categoria, tipo:a.tipo, descricao:a.descricao, tags:a.tags, alt:a.alt, estado:a.estado, uso_institucional:a.uso_institucional }; })) %>;
+
+  var fi = document.getElementById('ativo-file');
+  fi.addEventListener('change', function(){ document.getElementById('ativo-file-name').textContent = fi.files[0] ? fi.files[0].name : 'Escolher imagem (PNG, JPG, SVG…)'; });
+
+  var modal = document.getElementById('ativo-modal');
+  document.getElementById('ativo-modal-close').addEventListener('click', function(){ modal.classList.remove('open'); });
+  document.getElementById('ativo-modal-cancel').addEventListener('click', function(){ modal.classList.remove('open'); });
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.classList.remove('open'); });
+
+  document.querySelectorAll('[data-edit-ativo]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var a = ATIVOS.find(function(x){return x.id===+btn.dataset.editAtivo;}); if(!a) return;
+      document.getElementById('form-edit-ativo').action = '/artes/ativos/'+a.id;
+      document.getElementById('ea-nome').value = a.nome || '';
+      document.getElementById('ea-categoria').value = a.categoria || '';
+      document.getElementById('ea-tipo').value = a.tipo || 'imagem';
+      document.getElementById('ea-descricao').value = a.descricao || '';
+      document.getElementById('ea-tags').value = a.tags || '';
+      document.getElementById('ea-alt').value = a.alt || '';
+      document.getElementById('ea-estado').value = a.estado || 'publicado';
+      document.getElementById('ea-inst').checked = !!a.uso_institucional;
+      modal.classList.add('open');
+    });
+  });
+
+  document.querySelectorAll('[data-del-ativo]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.dataset.delAtivo; var uso = +btn.dataset.uso || 0;
+      var msg = uso > 0 ? ('Este elemento está em uso por '+uso+' modelo(s). Excluir mesmo assim?') : 'Excluir este elemento?';
+      if(!confirm(msg)) return;
+      fetch('/artes/ativos/'+id+'/excluir', { method:'POST', headers:{'Accept':'application/json'} })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if(res.ok && res.d.ok) location.reload(); else alert((res.d && res.d.error) || 'Não foi possível excluir.'); })
+        .catch(function(){ alert('Erro ao excluir.'); });
+    });
+  });
+})();
+</script>

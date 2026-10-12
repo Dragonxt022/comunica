@@ -35,6 +35,7 @@ router.get('/ativos.json', ArtesController.ativosJson);
 router.post('/ativos', uploadAtivo, ArtesController.ativoStore);
 router.post('/ativos/:id', ArtesController.ativoUpdate);
 router.post('/ativos/:id/arquivar', ArtesController.ativoArquivar);
+router.post('/ativos/:id/excluir', ArtesController.ativoExcluir);
 
 // ── Paletas e estilos ───────────────────────────────────────────────────────
 router.get('/paletas', ArtesController.paletasList);

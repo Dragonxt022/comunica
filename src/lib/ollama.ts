@@ -1,6 +1,7 @@
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma3:1b';
-const TIMEOUT_MS = 30_000;
+// Modelos locais podem demorar (cold start + geração). Configurável via OLLAMA_TIMEOUT_MS.
+const TIMEOUT_MS = parseInt(process.env.OLLAMA_TIMEOUT_MS || '180000', 10);
 
 export async function ollamaGenerate(prompt: string, system?: string, model?: string): Promise<string> {
   const controller = new AbortController();

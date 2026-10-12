@@ -5,9 +5,10 @@ import crypto from 'crypto';
 import { Op } from 'sequelize';
 import {
   ArtePaleta, ArteEstilo, ArteAtivo, ArteTemplate, ArteTemplateVariante,
-  ArteGeracao, ArteGeracaoArquivo, Solicitacao, SolicitacaoImagem, Secretaria, User, Municipio,
+  ArteGeracao, ArteGeracaoArquivo, Solicitacao, SolicitacaoImagem, SolicitacaoComentario, Secretaria, User, Municipio,
 } from '../../database/models/index.ts';
 import { getActiveMid, municipioWhere } from '../../lib/municipio-filter.ts';
+import { notificar } from '../../lib/notificacao.ts';
 import { compor, variaveisDaVariante } from '../../lib/artes/composicao.ts';
 import { validarComposicao, validarImagens, type Problema } from '../../lib/artes/validacao.ts';
 import { svgParaPng, imagemParaDataUri, dirGeracoes, dirAtivos } from '../../lib/artes/render.ts';
@@ -450,18 +451,42 @@ export const modeloThumb = async (req: Request, res: Response) => {
 };
 
 // ── Biblioteca de ativos ───────────────────────────────────────────────────────
+/** Quantos modelos referenciam uma determinada URL de ativo. */
+async function usosPorUrl(): Promise<(url: string) => number> {
+  const variantes = await ArteTemplateVariante.findAll({ attributes: ['config'] });
+  const configs = (variantes as any[]).map((v) => String(v.config || ''));
+  return (url: string) => configs.filter((c) => c.includes(url)).length;
+}
+
 export const ativosList = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
     if (!ehGestor(user)) return res.status(403).render('errors/403', { title: 'Acesso Negado', layout: 'layouts/main' });
     const where: any = { ...whereEscopo(user, req) };
-    const { categoria, tipo, q } = req.query as Record<string, string>;
+    const { categoria, tipo, q, tag, estado } = req.query as Record<string, string>;
     if (categoria) where.categoria = categoria;
     if (tipo) where.tipo = tipo;
+    if (estado) where.estado = estado;
     if (q) where.nome = { [Op.like]: `%${q}%` };
+    if (tag) where.tags = { [Op.like]: `%${tag}%` };
     const ativos = await ArteAtivo.findAll({ where, order: [['createdAt', 'DESC']] });
+    const contarUso = await usosPorUrl();
+    const usos: Record<number, number> = {};
+    const tagsSet = new Set<string>();
+    for (const a of ativos as any[]) {
+      if (a.url) usos[a.id] = contarUso(a.url);
+      if (a.tags) String(a.tags).split(',').map((t: string) => t.trim()).filter(Boolean).forEach((t: string) => tagsSet.add(t));
+    }
     const categorias = Array.from(new Set((ativos as any[]).map((a) => a.categoria))).sort();
-    res.render('artes/ativos', { title: 'Biblioteca de elementos', ativos, categorias, filtros: { categoria: categoria || '', tipo: tipo || '', q: q || '' }, ok: req.query.ok || '' });
+    res.render('artes/ativos', {
+      title: 'Biblioteca de elementos',
+      ativos,
+      categorias,
+      tags: Array.from(tagsSet).sort(),
+      usos,
+      filtros: { categoria: categoria || '', tipo: tipo || '', q: q || '', tag: tag || '', estado: estado || '' },
+      ok: req.query.ok || '',
+    });
   } catch (error) {
     console.error('Erro artes/ativos:', error);
     res.status(500).send('Internal Server Error');
@@ -473,7 +498,7 @@ export const ativosJson = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const where: any = { ...whereEscopo(user, req), url: { [Op.ne]: null } };
     const ativos = await ArteAtivo.findAll({ where, order: [['nome', 'ASC']] });
-    res.json((ativos as any[]).map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo, categoria: a.categoria, url: a.url })));
+    res.json((ativos as any[]).map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo, categoria: a.categoria, tags: a.tags, url: a.url })));
   } catch {
     res.json([]);
   }
@@ -526,7 +551,7 @@ export const ativoUpdate = async (req: Request, res: Response) => {
     if (!ehGestor(user)) return res.status(403).json({ ok: false });
     const ativo = await ArteAtivo.findOne({ where: { id: Number(req.params.id), ...whereEscopo(user, req) } });
     if (!ativo) return res.status(404).json({ ok: false });
-    const { nome, categoria, tipo, descricao, tags, alt, estado } = req.body;
+    const { nome, categoria, tipo, descricao, tags, alt, estado, uso_institucional } = req.body;
     await ativo.update({
       nome: nome || (ativo as any).nome,
       categoria: categoria || (ativo as any).categoria,
@@ -535,11 +560,40 @@ export const ativoUpdate = async (req: Request, res: Response) => {
       tags: tags ?? (ativo as any).tags,
       alt: alt ?? (ativo as any).alt,
       estado: estado || (ativo as any).estado,
+      uso_institucional: uso_institucional === undefined ? (ativo as any).uso_institucional : (uso_institucional === 'on' || uso_institucional === '1' || uso_institucional === true),
     });
+    if (req.headers.accept?.includes('application/json')) return res.json({ ok: true, ativo });
     res.redirect('/artes/ativos?ok=1');
   } catch (error) {
     console.error('Erro artes/ativo-update:', error);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+export const ativoExcluir = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!ehGestor(user)) return res.status(403).json({ ok: false });
+    const ativo = await ArteAtivo.findOne({ where: { id: Number(req.params.id), ...whereEscopo(user, req) } });
+    if (!ativo) return res.status(404).json({ ok: false, error: 'Elemento não encontrado.' });
+    const url = (ativo as any).url as string | null;
+    if (url) {
+      const contarUso = await usosPorUrl();
+      const usos = contarUso(url);
+      if (usos > 0 && req.body?.forcar !== '1') {
+        return res.status(400).json({ ok: false, error: `Este elemento está em uso por ${usos} modelo(s). Arquive-o em vez de excluir.` });
+      }
+      try {
+        const abs = path.join(process.cwd(), 'public', String(url).replace(/^\//, ''));
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch { /* ignora */ }
+    }
+    await ativo.destroy();
+    if (req.headers.accept?.includes('application/json')) return res.json({ ok: true });
+    res.redirect('/artes/ativos?ok=1');
+  } catch (error) {
+    console.error('Erro artes/ativo-excluir:', error);
+    res.status(500).json({ ok: false, error: 'Erro ao excluir.' });
   }
 };
 
@@ -668,6 +722,17 @@ export const producaoView = async (req: Request, res: Response) => {
       solicitacao = await Solicitacao.findOne({ where: { id: solicitacaoId, ...where }, include: [{ model: Secretaria, as: 'secretaria' }] });
     }
 
+    // Sugere um modelo compatível com o tipo de mídia da solicitação, quando nenhum foi escolhido.
+    let sugestaoAutomatica = false;
+    if (!template && solicitacao && (templates as any[]).length) {
+      const alvo = String(solicitacao.tipo_midia || '').toLowerCase();
+      const match = (templates as any[]).find((t) => {
+        const cat = String(t.categoria || '').toLowerCase();
+        return cat && (cat.includes(alvo) || alvo.includes(cat));
+      });
+      if (match) { template = match; sugestaoAutomatica = true; }
+    }
+
     const paleta = template ? await coresDaPaleta(template.paleta_id) : { ...PALETA_PADRAO };
 
     res.render('artes/producao', {
@@ -682,6 +747,7 @@ export const producaoView = async (req: Request, res: Response) => {
       }))) : '[]',
       campos: template ? parseJson<Campo[]>(template.campos, []) : [],
       podeAdministrar: ehGestor(user),
+      sugestaoAutomatica,
     });
   } catch (error) {
     console.error('Erro artes/producao:', error);
@@ -907,7 +973,10 @@ export const geracaoAprovar = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     const geracao = await ArteGeracao.findOne({
       where: { id: Number(req.params.id), ...whereEscopo(user, req) },
-      include: [{ model: ArteGeracaoArquivo, as: 'arquivos' }],
+      include: [
+        { model: ArteGeracaoArquivo, as: 'arquivos' },
+        { model: ArteTemplate, as: 'template', attributes: ['id', 'nome', 'versao'] },
+      ],
     });
     if (!geracao) return res.status(404).redirect('/artes');
 
@@ -920,6 +989,8 @@ export const geracaoAprovar = async (req: Request, res: Response) => {
 
     // Integração com a Biblioteca de Artes: anexa os PNGs à solicitação de origem.
     const solicitacaoId = (geracao as any).solicitacao_id;
+    let arquivosAnexados = 0;
+    let primeiraUrl: string | null = null;
     if (solicitacaoId) {
       const sol = await Solicitacao.findOne({ where: { id: solicitacaoId, ...whereEscopo(user, req) } });
       if (sol) {
@@ -933,15 +1004,40 @@ export const geracaoAprovar = async (req: Request, res: Response) => {
             nome: `arte-${geracao.id}-${arq.papel}-${arq.formato.replace(':', 'x')}-${arq.pagina}.png`,
             ordem: base++,
           } as any);
+          arquivosAnexados++;
+          if (!primeiraUrl) primeiraUrl = arq.url;
         }
-        if (!(sol as any).arte_final_url) {
-          const primeira = ((geracao as any).arquivos || []).find((a: any) => String(a.url || '').endsWith('.png'));
-          if (primeira) await sol.update({ arte_final_url: primeira.url, arte_final_nome: `arte-${geracao.id}.png` });
+        if (!(sol as any).arte_final_url && primeiraUrl) {
+          await sol.update({ arte_final_url: primeiraUrl, arte_final_nome: `arte-${geracao.id}.png` });
+        }
+        if (arquivosAnexados > 0) {
+          const nomeTpl = (geracao as any).template?.nome || 'modelo';
+          const versao = (geracao as any).template_versao;
+          await SolicitacaoComentario.create({
+            solicitacao_id: solicitacaoId,
+            autor_id: user.id,
+            tipo: 'conclusao',
+            texto: `Arte gerada no Estúdio de Artes a partir do modelo "${nomeTpl}" (v${versao}) — ${arquivosAnexados} arquivo(s).`,
+            arquivo_url: primeiraUrl,
+            arquivo_nome: primeiraUrl ? `arte-${geracao.id}.png` : null,
+          } as any);
+          // Avança o fluxo para "concluído" (material entregue) quando ainda não estava encerrado.
+          if (!['concluído', 'finalizado', 'cancelado'].includes(String((sol as any).status))) {
+            await sol.update({ status: 'concluído' });
+          }
+          if ((sol as any).criado_por) {
+            notificar((sol as any).criado_por, {
+              titulo: 'Material disponível para revisão',
+              corpo: `"${(sol as any).titulo}" está pronto para revisão.`,
+              url: `/solicitacoes/${solicitacaoId}`,
+              tipo: 'solicitacao_concluida',
+            }).catch(() => {});
+          }
         }
       }
     }
 
-    res.json({ ok: true });
+    res.json({ ok: true, arquivosAnexados });
   } catch (error) {
     console.error('Erro artes/geracaoAprovar:', error);
     res.status(500).json({ ok: false, error: 'Erro ao aprovar.' });
@@ -1015,20 +1111,10 @@ export const iaCarrossel = async (req: Request, res: Response) => {
     const paginas = Math.max(2, Math.min(10, Number(req.body.paginas) || 3));
     if (!texto) return res.status(400).json({ error: 'Informe o conteúdo para distribuir.' });
     const { systemPrompt, modelo } = await getIaConfig();
-    const instrucao = `${systemPrompt}\n\nVocê organiza conteúdo para carrosséis de redes sociais. Distribua o texto em páginas respeitando títulos, subtítulos e blocos. Nunca invente fatos, datas ou números: use apenas o conteúdo fornecido.`;
-    const prompt = `Título geral: "${tituloBase}"\nConteúdo:\n"""${texto}"""\n\nDivida em exatamente ${paginas} páginas. Responda apenas com as páginas no formato:\n\n### PÁGINA 1\nTítulo: <título curto>\nTexto: <conteúdo da página>`;
+    const instrucao = `${systemPrompt}\n\nVocê organiza conteúdo para carrosséis de redes sociais. Distribua o texto em páginas respeitando títulos, subtítulos e blocos. Nunca invente fatos, datas ou números: use apenas o conteúdo fornecido. Não use markdown.`;
+    const prompt = `Título geral: "${tituloBase}"\nConteúdo:\n"""${texto}"""\n\nDivida em exatamente ${paginas} páginas. Responda apenas com as páginas, uma após a outra, separadas por uma linha contendo apenas "===". Cada página neste formato exato:\nTítulo: <título curto>\nTexto: <conteúdo da página>`;
     const resposta = limparMarkdown(await gerarComFallback(prompt, instrucao, modelo));
-
-    const paginasArr: { titulo: string; texto: string }[] = [];
-    const blocos = resposta.split(/###\s*P[ÁA]GINA\s*\d+/i).filter((b) => b.trim());
-    for (const b of blocos) {
-      const mTitulo = b.match(/T[ií]tulo:\s*(.+)/i);
-      const mTexto = b.match(/Texto:\s*([\s\S]+)/i);
-      paginasArr.push({
-        titulo: (mTitulo ? mTitulo[1] : '').trim().slice(0, 120),
-        texto: (mTexto ? mTexto[1] : b).trim(),
-      });
-    }
+    const paginasArr = dividirEmPaginas(resposta, paginas);
     if (paginasArr.length === 0) paginasArr.push({ titulo: tituloBase, texto });
     res.json({ paginas: paginasArr.slice(0, paginas) });
   } catch (error) {
@@ -1036,3 +1122,38 @@ export const iaCarrossel = async (req: Request, res: Response) => {
     res.status(503).json({ error: 'Assistente de IA indisponível. Você pode distribuir o conteúdo manualmente.' });
   }
 };
+
+/**
+ * Divide a resposta da IA em páginas, tolerando variações de formato
+ * (delimitador "===", marcadores "Página n", ou múltiplos blocos "Título:").
+ */
+function dividirEmPaginas(resposta: string, paginas: number): { titulo: string; texto: string }[] {
+  const bruto = String(resposta || '').replace(/\r/g, '').trim();
+  if (!bruto) return [];
+  let blocos: string[] = [];
+
+  if (/^\s*={3,}\s*$/m.test(bruto)) {
+    blocos = bruto.split(/^\s*={3,}\s*$/m).map((b) => b.trim()).filter(Boolean);
+  }
+  if (blocos.length < 2 && /p[áa]gina\s*\d+/i.test(bruto)) {
+    blocos = bruto.split(/(?:^|\n)\s*(?:#{1,6}\s*|\*{0,2})p[áa]gina\s*\d+[^\n]*/gi).map((b) => b.trim()).filter(Boolean);
+  }
+  if (blocos.length < 2) {
+    const partes = bruto.split(/(?=^\s*(?:#{1,6}\s*|\*{0,2})t[íi]tulo\s*[:\-])/gim).map((b) => b.trim()).filter(Boolean);
+    if (partes.length >= 2) blocos = partes;
+  }
+  if (blocos.length === 0) blocos = [bruto];
+
+  const paginasArr = blocos.map((b) => {
+    const mTitulo = b.match(/t[íi]tulo\s*[:\-]\s*(.+)/i);
+    const mTexto = b.match(/texto\s*[:\-]\s*([\s\S]+)/i);
+    const titulo = (mTitulo ? mTitulo[1] : '').trim().replace(/^["']|["']$/g, '').slice(0, 120);
+    let corpo = mTexto ? mTexto[1] : b;
+    corpo = corpo.replace(/^t[íi]tulo\s*[:\-].*$/im, '')
+      .replace(/^(?:#{1,6}\s*|\*{0,2})p[áa]gina\s*\d+[^\n]*$/gim, '')
+      .trim();
+    return { titulo, texto: corpo };
+  }).filter((p) => p.texto || p.titulo);
+
+  return paginasArr.length ? paginasArr : [{ titulo: '', texto: bruto }];
+}
