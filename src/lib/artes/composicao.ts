@@ -12,7 +12,7 @@ import { resolverCor, comOpacidade } from './paletas.ts';
 import { ajustarTexto, escaparXml } from './texto.ts';
 
 export const ESTILO_PADRAO: EstiloTexto = {
-  familia: 'Inter, system-ui, sans-serif',
+  familia: 'Arial, "Helvetica Neue", Helvetica, sans-serif',
   peso: 700,
   tamanho: 64,
   tamanhoMin: 28,
@@ -57,6 +57,10 @@ function renderTexto(el: ElTexto, input: ComposicaoInput, diag: DiagnosticoTexto
     return `<tspan x="${x}" dy="${i === 0 ? 0 : dy}">${escaparXml(linha)}</tspan>`;
   }).join('');
 
+  const clipId = `txt-${el.id}`;
+  const clipH = Math.max(ajuste.fontSize * estilo.alturaLinha, input.variante.altura - el.y - 2);
+  const clip = `<defs><clipPath id="${clipId}"><rect x="${el.x}" y="${el.y - 2}" width="${el.w}" height="${clipH}"/></clipPath></defs>`;
+
   diag.push({
     elementoId: el.id,
     linhas: ajuste.linhas.length,
@@ -68,7 +72,7 @@ function renderTexto(el: ElTexto, input: ComposicaoInput, diag: DiagnosticoTexto
     truncou: ajuste.truncou,
   });
 
-  return `<text x="${x}" y="${primeiraBase}" font-family="${escaparXml(estilo.familia)}" font-size="${ajuste.fontSize}" font-weight="${estilo.peso}" letter-spacing="${estilo.espacamentoLetras}" fill="${cor}" text-anchor="${anchor}">${tspans}</text>`;
+  return `${clip}<text x="${x}" y="${primeiraBase}" font-family="${escaparXml(estilo.familia)}" font-size="${ajuste.fontSize}" font-weight="${estilo.peso}" letter-spacing="${estilo.espacamentoLetras}" fill="${cor}" text-anchor="${anchor}" clip-path="url(#${clipId})">${tspans}</text>`;
 }
 
 function renderImagem(el: ElImagem, input: ComposicaoInput): string {

@@ -25,7 +25,7 @@ ArteEstilo.init(
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     municipio_id: { type: DataTypes.INTEGER, allowNull: true },
     nome: { type: DataTypes.STRING, allowNull: false },
-    familia: { type: DataTypes.STRING, defaultValue: 'Inter, system-ui, sans-serif' },
+    familia: { type: DataTypes.STRING, defaultValue: 'Arial, "Helvetica Neue", Helvetica, sans-serif' },
     peso: { type: DataTypes.INTEGER, defaultValue: 700 },
     tamanho: { type: DataTypes.INTEGER, defaultValue: 64 },
     tamanho_min: { type: DataTypes.INTEGER, defaultValue: 28 },

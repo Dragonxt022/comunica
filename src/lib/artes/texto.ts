@@ -86,7 +86,13 @@ export function ajustarTexto(
   alturaDisponivel: number | null,
   estilo: EstiloTexto
 ): AjusteTexto {
-  const larguraUtil = Math.max(1, largura - 2 * (estilo.margem || 0));
+  // As fontes usadas no rasterizador (librsvg) são, em média, mais largas que a
+  // estimativa. Reduzimos a largura útil disponível (com folga maior para pesos
+  // pesados) para garantir que o texto caiba na área segura também no PNG final.
+  const folgaFonte = estilo.peso >= 700 ? 1.24 : 1.12;
+  const larguraBase = Math.max(1, largura - 2 * (estilo.margem || 0));
+  const larguraUtil = Math.max(1, larguraBase / folgaFonte);
+
   let fontSize = estilo.tamanho;
   let linhas = quebrarLinhas(texto, larguraUtil, fontSize, estilo.espacamentoLetras);
   let reduziu = false;
@@ -99,7 +105,7 @@ export function ajustarTexto(
   while (fontSize > estilo.tamanhoMin && (!cabe(linhas.length) || excedeuLinhas)) {
     fontSize = Math.max(estilo.tamanhoMin, Math.round(fontSize - 2));
     reduziu = true;
-    linhas = quebrarLinhas(texto, Math.max(1, largura - 2 * (estilo.margem || 0)), fontSize, estilo.espacamentoLetras);
+    linhas = quebrarLinhas(texto, Math.max(1, (largura - 2 * (estilo.margem || 0)) / folgaFonte), fontSize, estilo.espacamentoLetras);
     excedeuLinhas = estilo.limiteLinhas ? linhas.length > estilo.limiteLinhas : false;
   }
 
