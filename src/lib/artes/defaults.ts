@@ -194,12 +194,19 @@ export async function seedArtes(): Promise<void> {
     ] as any);
   }
 
-  // Catálogo de 5 famílias por município
+  // Catálogo de 5 famílias por município.
+  // Só semeia se o município ainda NÃO tem nenhum modelo — assim, ao excluir um
+  // modelo do catálogo, o próximo boot/deploy NÃO o recria. Pode ser desligado
+  // com ARTES_CATALOG_SEED=false.
+  if ((process.env.ARTES_CATALOG_SEED || 'true') === 'false') return;
+
   const paletas: Record<string, any> = {};
   for (const tema of TEMAS_CATALOGO) paletas[tema.chave] = await garantirPaleta(tema);
 
   const municipios = await Municipio.findAll({ where: { ativo: true } });
   for (const mun of municipios as any[]) {
+    const jaTemModelos = await ArteTemplate.count({ where: { municipio_id: mun.id } });
+    if (jaTemModelos > 0) continue;
     for (const tema of TEMAS_CATALOGO) await garantirModelo(mun, tema, paletas[tema.chave]);
   }
 }
