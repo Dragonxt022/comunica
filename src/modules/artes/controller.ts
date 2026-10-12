@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -76,6 +76,36 @@ function varianteDaRow(row: any): Variante {
     fundo: cfg.fundo,
     elementos: Array.isArray(cfg.elementos) ? cfg.elementos : [],
   };
+}
+
+function rotuloCampo(chave: string): string {
+  return String(chave).replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+}
+
+/** Chaves dinâmicas referenciadas pelos textos das variantes ({{campo}} ou variavel). */
+function chavesUsadas(variantes: any[]): string[] {
+  const set = new Set<string>();
+  for (const v of variantes || []) {
+    const cfg = typeof v?.config === 'string' ? parseJson<{ elementos: any[] }>(v.config, { elementos: [] }) : (v as any);
+    for (const el of ((cfg && cfg.elementos) || [])) {
+      if (el.tipo !== 'texto') continue;
+      if (el.variavel) set.add(String(el.variavel));
+      for (const m of String(el.valor || '').matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)) set.add(m[1]);
+    }
+  }
+  return Array.from(set);
+}
+
+/** Campos declarados + campos derivados automaticamente das chaves usadas no layout. */
+function camposEfetivos(campos: Campo[], variantes: any[]): Campo[] {
+  const existentes = new Set((campos || []).map((c) => c.chave));
+  const extras: Campo[] = [];
+  for (const chave of chavesUsadas(variantes)) {
+    if (!existentes.has(chave)) {
+      extras.push({ chave, rotulo: rotuloCampo(chave), tipo: /texto|descri|conteudo|body|corpo/i.test(chave) ? 'textarea' : 'texto', obrigatorio: false });
+    }
+  }
+  return [...(campos || []), ...extras];
 }
 
 async function coresDaPaleta(paletaId: number | null): Promise<Record<string, string>> {
@@ -320,8 +350,10 @@ export const modeloUpdate = async (req: Request, res: Response) => {
     if (!tpl) return res.status(404).json({ ok: false, error: 'Modelo não encontrado' });
 
     const { nome, descricao, categoria, paleta_id } = req.body;
-    const campos = parseJson<Campo[]>(req.body.campos_json, parseJson<Campo[]>(tpl.campos, []));
+    const camposBase = parseJson<Campo[]>(req.body.campos_json, parseJson<Campo[]>(tpl.campos, []));
     const variantes = parseJson<any[]>(req.body.variantes_json, null);
+    // Garante que todo {{campo}} usado no layout vire um campo dinâmico.
+    const campos = camposEfetivos(camposBase, Array.isArray(variantes) ? variantes : (tpl.variantes || []));
 
     await tpl.update({
       nome: nome ? String(nome).slice(0, 120) : tpl.nome,
@@ -464,7 +496,7 @@ export const modeloThumb = async (req: Request, res: Response) => {
     const chave = String(req.params.chave || '9:16');
     const varianteRow = (tpl.variantes || []).find((v: any) => v.chave === chave) || (tpl.variantes || [])[0];
     if (!varianteRow) return res.status(404).send('Sem variante');
-    const campos = parseJson<Campo[]>(tpl.campos, []);
+    const campos = camposEfetivos(parseJson<Campo[]>(tpl.campos, []), tpl.variantes || []);
     const dadosAmostra: Record<string, string> = {};
     for (const c of campos) dadosAmostra[c.chave] = amostraCampo(c);
     const paleta = await coresDaPaleta(tpl.paleta_id);
@@ -775,7 +807,7 @@ export const producaoView = async (req: Request, res: Response) => {
         id: v.id, chave: v.chave, papel: v.papel, nome: v.nome, largura: v.largura, altura: v.altura,
         elementos: parseJson<any>(v.config, { elementos: [] }).elementos || [],
       }))) : '[]',
-      campos: template ? parseJson<Campo[]>(template.campos, []) : [],
+      campos: template ? camposEfetivos(parseJson<Campo[]>(template.campos, []), template.variantes || []) : [],
       podeAdministrar: ehGestor(user),
       sugestaoAutomatica,
     });
@@ -801,7 +833,7 @@ export const previa = async (req: Request, res: Response) => {
     const paleta = await coresDaPaleta(tpl.paleta_id);
     const estilos = await estilosMapGlobal();
     const ativosMap = await ativosMapDoMunicipio(tpl.municipio_id);
-    const campos = parseJson<Campo[]>(tpl.campos, []);
+    const campos = camposEfetivos(parseJson<Campo[]>(tpl.campos, []), tpl.variantes || []);
     const { composicao, validacao } = await comporEValidar(varianteRow, dados, paleta, estilos, campos, ativosMap);
 
     res.json({
@@ -838,7 +870,7 @@ async function montarSaidas(
   const paleta = await coresDaPaleta(tpl.paleta_id);
   const estilos = await estilosMapGlobal();
   const ativosMap = await ativosMapDoMunicipio(tpl.municipio_id);
-  const campos = parseJson<Campo[]>(tpl.campos, []);
+  const campos = camposEfetivos(parseJson<Campo[]>(tpl.campos, []), tpl.variantes || []);
   const variantes = tpl.variantes || [];
   const porChave = new Map<string, any>();
   for (const v of variantes as any[]) porChave.set(v.chave, v);

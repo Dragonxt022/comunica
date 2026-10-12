@@ -235,6 +235,25 @@
   function selEls(){ var v = varAtual(); return v.elementos.filter(function(e){ return state.sel.indexOf(e.id) >= 0; }); }
   function bounds(el){ if (el.tipo==='circulo') return { l:el.cx-el.r, t:el.cy-el.r, w:el.r*2, h:el.r*2 }; if (el.tipo==='linha') return { l:Math.min(el.x1,el.x2), t:Math.min(el.y1,el.y2), w:Math.abs(el.x2-el.x1), h:Math.abs(el.y2-el.y1) }; if (el.tipo==='texto') return { l:el.x, t:el.y, w:el.w, h:0 }; return { l:el.x, t:el.y, w:el.w, h:el.h }; }
   function moverEl(el, dl, dt){ if (el.tipo==='circulo'){ el.cx += dl; el.cy += dt; } else if (el.tipo==='linha'){ el.x1 += dl; el.y1 += dt; el.x2 += dl; el.y2 += dt; } else { el.x += dl; el.y += dt; } }
+  function rotuloDe(chave){ return String(chave).replace(/[_-]+/g,' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }).trim(); }
+  function chavesDoLayout(){
+    var set = {};
+    varAtual().elementos.forEach(function(el){
+      if (el.tipo !== 'texto') return;
+      if (el.variavel) set[el.variavel] = 1;
+      (String(el.valor || '').match(/\{\{\s*[\w.]+\s*\}\}/g) || []).forEach(function(m){ set[m.replace(/[{}]|\s/g, '')] = 1; });
+    });
+    return Object.keys(set);
+  }
+  // Cria automaticamente um campo para cada {{chave}} usado no layout.
+  function derivarCampos(){
+    var existentes = {}; state.campos.forEach(function(c){ existentes[c.chave] = 1; });
+    var mudou = false;
+    chavesDoLayout().forEach(function(k){
+      if (!existentes[k]) { state.campos.push({ chave:k, rotulo:rotuloDe(k), tipo:/texto|conteudo|descri|corpo|body/i.test(k) ? 'textarea' : 'texto', obrigatorio:false, __auto:true }); mudou = true; }
+    });
+    return mudou;
+  }
   function dadosAmostra(){ var d={}; state.campos.forEach(function(c){ d[c.chave] = (c.rotulo||c.chave); }); return d; }
   function interpolar(t, d){ return String(t||'').replace(/\{\{\s*([\w.]+)\s*\}\}/g, function(m,k){ return d[k]!==undefined?d[k]:''; }); }
   function uid(){ return 'el-'+Math.random().toString(36).slice(2,9); }
@@ -503,9 +522,11 @@
     propsEl.innerHTML = html;
   }
   function renderCampos(){
-    camposEl.innerHTML = state.campos.map(function(c,i){
+    var dica = '<p class="text-[10px] text-gray-400 mb-2">Os campos marcados como <b>auto</b> foram criados a partir dos <code>{{...}}</code> usados no layout. É isso que aparece para preencher na produção.</p>';
+    camposEl.innerHTML = dica + state.campos.map(function(c,i){
       return '<div class="border border-gray-100 rounded-lg p-2 space-y-1">'
-        + '<div class="flex gap-1"><input data-campo="chave" data-i="'+i+'" value="'+(c.chave||'')+'" placeholder="chave" style="flex:1;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">'
+        + '<div class="flex gap-1 items-center"><input data-campo="chave" data-i="'+i+'" value="'+(c.chave||'')+'" placeholder="chave" style="flex:1;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">'
+        + (c.__auto ? '<span class="text-[9px] px-1 py-0.5 rounded bg-slate-100 text-slate-500">auto</span>' : '')
         + '<button type="button" data-del-campo="'+i+'" class="text-red-500 text-xs px-1">✕</button></div>'
         + '<input data-campo="rotulo" data-i="'+i+'" value="'+(c.rotulo||'')+'" placeholder="rótulo" style="width:100%;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">'
         + '<div class="flex gap-1 items-center text-[11px] text-gray-500"><select data-campo="tipo" data-i="'+i+'" style="flex:1;padding:3px;border:1px solid #cbd5e1;border-radius:6px">'+['texto','textarea','data','hora','url','numero'].map(function(t){return '<option value="'+t+'" '+(c.tipo===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select>'
@@ -513,7 +534,7 @@
         + '<label class="flex items-center gap-1"><input type="checkbox" data-campo="fatoSensivel" data-i="'+i+'" '+(c.fatoSensivel?'checked':'')+'> sensível</label></div></div>';
     }).join('') || '<p class="text-[11px] text-gray-400">Nenhum campo.</p>';
   }
-  function renderAll(){ renderTabs(); renderCanvas(); renderProps(); renderCampos(); renderLayers(); renderFundo(); }
+  function renderAll(){ derivarCampos(); renderTabs(); renderCanvas(); renderProps(); renderCampos(); renderLayers(); renderFundo(); }
   function renderFundo(){
     var f = varAtual().fundo || 'background';
     if (typeof f === 'string' && f[0] === '#') { if (fundoSelect) fundoSelect.value = ''; if (fundoColor) fundoColor.value = f; }
@@ -548,7 +569,7 @@
       else if(tipo==='linha') el={id:uid(),tipo:'linha',x1:80,y1:cy,x2:v.largura-80,y2:cy,cor:'accent',espessura:12,camada:camada};
       else if(tipo==='imagem') el={id:uid(),tipo:'imagem',x:Math.round(v.largura*0.1),y:Math.round(v.altura*0.1),w:Math.round(v.largura*0.8),h:Math.round(v.largura*0.8),ajuste:'cover',raio:0,camada:camada,opacidade:1,editavel:true};
       else el={id:uid(),tipo:'texto',x:Math.round(v.largura*0.08),y:cy,w:Math.round(v.largura*0.84),valor:'{{titulo}}',variavel:state.campos[0]?state.campos[0].chave:'',camada:camada,estilo:{familia:'Arial, Helvetica, sans-serif',tamanho:64,tamanhoMin:28,peso:700,alturaLinha:1.15,alinhamento:'left',cor:'text',overflow:'avisar'}};
-      v.elementos.push(el); state.sel=[el.id]; pushHistory(); renderCanvas(); renderProps(); renderLayers();
+      v.elementos.push(el); state.sel=[el.id]; pushHistory(); renderAll();
     });
   });
 
@@ -714,6 +735,7 @@
     pushHistory();
     renderProps();
     renderCanvas();
+    if (derivarCampos()) renderCampos();
   });
   propsEl.addEventListener('click', function(e){
     if(e.target.dataset.align){ alinharSelecao(e.target.dataset.align); return; }
@@ -725,7 +747,7 @@
 
   // campos
   document.getElementById('btn-add-campo').addEventListener('click', function(){ state.campos.push({chave:'campo'+ (state.campos.length+1), rotulo:'Campo '+ (state.campos.length+1), tipo:'texto', obrigatorio:false}); pushHistory(); renderCampos(); });
-  camposEl.addEventListener('input', function(e){ var i=e.target.dataset.i; if(i===undefined) return; var c=state.campos[+i]; if(!c) return; var k=e.target.dataset.campo; c[k]= e.target.type==='checkbox'?e.target.checked:e.target.value; if(k==='chave') renderProps(); });
+  camposEl.addEventListener('input', function(e){ var i=e.target.dataset.i; if(i===undefined) return; var c=state.campos[+i]; if(!c) return; var k=e.target.dataset.campo; c[k]= e.target.type==='checkbox'?e.target.checked:e.target.value; if(k==='chave'){ c.__auto=false; renderProps(); } });
   camposEl.addEventListener('click', function(e){ if(e.target.dataset.delCampo!==undefined){ state.campos.splice(+e.target.dataset.delCampo,1); pushHistory(); renderCampos(); } });
 
   // salvar
