@@ -254,6 +254,11 @@
                 <button type="button" class="text-gray-400 hover:text-gray-600" id="ed-ativos-fechar">✕</button>
             </div>
             <input type="text" id="ed-ativos-busca" class="c-input mb-3" placeholder="Buscar por nome, categoria ou tag...">
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <button type="button" id="ed-ativos-upload" class="c-btn c-btn-primary c-btn-sm">Enviar do computador</button>
+                <span class="text-[11px] text-gray-400">ou <b>cole</b> uma imagem copiada (Ctrl+V)</span>
+                <input type="file" id="ed-ativos-file" accept="image/*" class="hidden">
+            </div>
             <div id="ed-ativos-grid" class="ed-ativos-grid"></div>
             <p id="ed-ativos-vazio" class="text-xs text-gray-400 hidden mt-3">Nenhum elemento encontrado. Envie imagens em Estúdio → Elementos.</p>
         </div>
@@ -504,25 +509,64 @@
     layersEl.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(function(r){ r.classList.remove('dragging','drop-before','drop-after'); });
   });
 
-  // ── Upload de imagem direto para a biblioteca ────────────────────────────
+  // ── Biblioteca de imagens: enviar (upload) e colar ───────────────────────
+  function enviarAtivo(file){
+    var fd = new FormData(); fd.append('imagem', file); fd.append('nome', file.name || 'imagem'); fd.append('tipo','imagem'); fd.append('categoria','Geral');
+    return fetch('/artes/ativos', { method:'POST', body: fd, headers:{ 'Accept':'application/json' } }).then(function(r){ return r.json(); });
+  }
+  function ajustarImagem(img, url){
+    var v = varAtual();
+    var probe = new Image();
+    probe.onload = function(){
+      var maxW = v.largura * 0.8, maxH = v.altura * 0.6;
+      var ar = (probe.naturalWidth && probe.naturalHeight) ? (probe.naturalWidth / probe.naturalHeight) : 1;
+      var w = maxW, h = w / ar;
+      if (h > maxH) { h = maxH; w = h * ar; }
+      img.w = Math.max(20, Math.round(w)); img.h = Math.max(20, Math.round(h));
+      img.x = Math.round((v.largura - img.w) / 2); img.y = Math.round((v.altura - img.h) / 2);
+      img.ajuste = 'cover';
+      renderCanvas(); renderProps(); renderLayers();
+    };
+    probe.onerror = function(){ /* mantém o tamanho padrão se não carregar */ };
+    probe.src = url;
+  }
+  function aplicarAtivo(url, id, nome){
+    var v = varAtual(); var imgNovo = null;
+    if (ativoModo === 'set') {
+      var alvo = selEl();
+      if (alvo && alvo.tipo === 'imagem') { var tinhaUrl = !!alvo.url; alvo.url = url; if (!tinhaUrl) imgNovo = alvo; }
+    } else {
+      imgNovo = { id:uid(), tipo:'imagem', x:0, y:0, w:100, h:100, ajuste:'cover', raio:0, camada:proxCamada(), opacidade:1, url:url };
+      v.elementos.push(imgNovo); state.sel = [imgNovo.id];
+    }
+    if (id) ATIVOS.push({ id:id, nome:nome || 'arte', tipo:'imagem', categoria:'Geral', url:url });
+    pushHistory(); renderAll();
+    if (imgNovo) ajustarImagem(imgNovo, url);
+    if (ativosModal.classList.contains('open')) fecharAtivos();
+  }
+  function receberArquivo(file){
+    if (!file) return;
+    if (!ativosModal.classList.contains('open')) ativoModo = 'add';
+    enviarAtivo(file).then(function(d){ if (d && d.ok && d.ativo) aplicarAtivo(d.ativo.url, d.ativo.id, d.ativo.nome); else alert('Falha ao enviar a imagem.'); }).catch(function(){ alert('Falha ao enviar a imagem.'); });
+  }
+
   document.getElementById('btn-upload-img').addEventListener('click', function(){ uploadInput.click(); });
-  uploadInput.addEventListener('change', function(){
-    var f = uploadInput.files[0]; if (!f) return;
-    var fd = new FormData(); fd.append('imagem', f); fd.append('nome', f.name); fd.append('tipo','imagem'); fd.append('categoria','Geral');
-    fetch('/artes/ativos', { method:'POST', body: fd, headers: { 'Accept':'application/json' } })
-      .then(function(r){ return r.json(); }).then(function(d){
-        uploadInput.value = '';
-        if (!d.ok || !d.ativo) { alert('Falha ao enviar a imagem.'); return; }
-        ATIVOS.push({ id:d.ativo.id, nome:d.ativo.nome, tipo:d.ativo.tipo, categoria:d.ativo.categoria, url:d.ativo.url });
-        var v = varAtual();
-        var sel = selEl();
-        if (sel && sel.tipo === 'imagem') { sel.url = d.ativo.url; }
-        else {
-          var el = { id:uid(), tipo:'imagem', x:Math.round(v.largura*0.1), y:Math.round(v.altura*0.1), w:Math.round(v.largura*0.8), h:Math.round(v.largura*0.8), ajuste:'cover', raio:0, camada:proxCamada(), opacidade:1, editavel:true, url:d.ativo.url };
-          v.elementos.push(el); state.sel = [el.id];
-        }
-        pushHistory(); renderAll();
-      }).catch(function(){ uploadInput.value=''; alert('Falha ao enviar a imagem.'); });
+  uploadInput.addEventListener('change', function(){ var f = uploadInput.files[0]; uploadInput.value = ''; receberArquivo(f); });
+
+  var ativosFile = document.getElementById('ed-ativos-file');
+  var ativosUploadBtn = document.getElementById('ed-ativos-upload');
+  if (ativosUploadBtn) ativosUploadBtn.addEventListener('click', function(){ ativosFile.click(); });
+  if (ativosFile) ativosFile.addEventListener('change', function(){ var f = ativosFile.files[0]; ativosFile.value = ''; receberArquivo(f); });
+
+  // Colar imagem (Ctrl+V): na biblioteca (se aberta) ou direto no canvas.
+  document.addEventListener('paste', function(e){
+    var cd = e.clipboardData || (window).clipboardData; if (!cd) return;
+    var items = cd.items || []; var imgItem = null;
+    for (var i = 0; i < items.length; i++){ if (items[i].type && items[i].type.indexOf('image') === 0){ imgItem = items[i]; break; } }
+    if (!imgItem) return; // deixa colar texto normalmente
+    var f = imgItem.getAsFile(); if (!f) return;
+    e.preventDefault();
+    receberArquivo(f);
   });
 
   // ── Guias / snapping ─────────────────────────────────────────────────────
@@ -638,41 +682,59 @@
     var html='';
     function f(label,key,val,type){ return '<div class="ed-field"><label>'+label+'</label><input data-prop="'+key+'" type="'+(type||'number')+'" value="'+(val==null?'':val)+'"></div>'; }
     function corField(label,key,val){ return '<div class="ed-field"><label>'+label+'</label><div style="display:flex;gap:6px"><select data-prop="'+key+'" data-cor-old="'+(val==null?'':val)+'">'+Object.keys(CORES).map(function(k){return '<option value="'+k+'" '+(val===k?'selected':'')+'>'+k+'</option>';}).join('')+'</select><input type="color" data-prop-cor="'+key+'" data-cor-old="'+(val==null?'':val)+'" value="'+cor(val)+'" style="width:40px;padding:2px"></div></div>'; }
+    function sec(t){ return '<p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-4 mb-2 pt-3 border-t border-gray-100">'+t+'</p>'; }
     var tipos={ retangulo:'Retângulo', circulo:'Círculo', linha:'Linha', imagem:'Imagem', texto:'Texto' };
-    html += '<p class="text-xs text-gray-400 uppercase font-semibold">'+tipos[el.tipo]+' · '+el.id+'</p>';
-    if (el.tipo==='retangulo'){ html+=f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w)+f('Altura','h',el.h)+corField('Cor','fill',el.fill)+f('Raio','raio',el.raio)+f('Opacidade','opacidade',el.opacidade!=null?el.opacidade:1,'number'); }
-    else if (el.tipo==='circulo'){ html+=f('Centro X','cx',el.cx)+f('Centro Y','cy',el.cy)+f('Raio','r',el.r)+corField('Cor','fill',el.fill); }
-    else if (el.tipo==='linha'){ html+=f('X1','x1',el.x1)+f('Y1','y1',el.y1)+f('X2','x2',el.x2)+f('Y2','y2',el.y2)+f('Espessura','espessura',el.espessura)+corField('Cor','cor',el.cor); }
-    else if (el.tipo==='imagem'){ html+=f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w)+f('Altura','h',el.h)+'<div class="ed-field"><label>Ajuste</label><select data-prop="ajuste"><option value="cover" '+(el.ajuste!=='contain'?'selected':'')+'>Preencher (cover)</option><option value="contain" '+(el.ajuste==='contain'?'selected':'')+'>Conter (contain)</option></select></div>'+f('Raio','raio',el.raio);
-      html+= '<div class="ed-field"><label>Imagem</label>';
-      html+= el.url ? '<img src="'+el.url+'" class="ed-img-thumb mb-2" alt="">' : '<div class="ed-img-thumb mb-2 flex items-center justify-center text-[11px] text-gray-400">sem imagem</div>';
-      html+= '<div class="flex gap-1"><button type="button" class="c-btn c-btn-secondary c-btn-sm" data-escolher-ativo>Escolher da biblioteca</button>'+(el.url?'<button type="button" class="c-btn c-btn-ghost c-btn-sm text-red-500" data-remover-imagem>Remover</button>':'')+'</div></div>';
-      html+= corField('Cor da imagem','cor', el.cor);
-      html+= '<div class="ed-field"><label>Modo da cor</label><select data-cor-modo><option value="silhueta" '+(el.corModo!=='recolorir'?'selected':'')+'>Silhueta (ícone/monocromático)</option><option value="recolorir" '+(el.corModo==='recolorir'?'selected':'')+'>Recolorir (foto, preserva detalhes)</option></select></div>';
-      html+= '<p class="text-[10px] text-gray-400 mt-1">Silhueta: usa o contorno/alfa (PNG preto vira a cor). Recolorir: mantém os detalhes da imagem.</p>'; }
-    else if (el.tipo==='texto'){ var st=el.estilo||{};
-      html+= '<div class="ed-field"><label>Texto (use {{campo}})</label><textarea data-prop="valor" rows="2">'+(el.valor||'')+'</textarea></div>';
-      var comunsChaves = CAMPOS_COMUNS.map(function(c){ return c.chave; });
-      var chips = CAMPOS_COMUNS.concat(state.campos.filter(function(c){ return comunsChaves.indexOf(c.chave) < 0; }).map(function(c){ return { chave:c.chave, rotulo:c.rotulo || c.chave }; }));
-      html+= '<div class="ed-field"><label>Inserir campo</label><div class="flex flex-wrap gap-1">'+chips.map(function(c){ return '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-ins-campo="'+c.chave+'">'+c.rotulo+'</button>'; }).join('')+'</div><p class="text-[10px] text-gray-400 mt-1">Clique para inserir <code>{{campo}}</code>. Cada <code>{{campo}}</code> vira um campo de preenchimento na produção.</p></div>';
-      html+= '<div class="ed-field"><label>Vincular campo</label><select data-prop="variavel"><option value="">—</option>'+state.campos.map(function(c){return '<option value="'+c.chave+'" '+(el.variavel===c.chave?'selected':'')+'>'+c.chave+'</option>';}).join('')+'</select></div>';
-      html+= f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w);
-      html+= '<div class="ed-field"><label>Estilo base</label><select id="ed-aplicar-estilo"><option value="">— copiar de estilo —</option>'+SVG_ESTILOS.map(function(e){return '<option value="'+e.id+'">'+e.nome+'</option>';}).join('')+'</select></div>';
-      html+= '<div class="ed-field"><label>Tamanho fonte</label><input data-estilo="tamanho" type="number" value="'+(st.tamanho||40)+'"></div>';
-      html+= '<div class="ed-field"><label>Tamanho mínimo</label><input data-estilo="tamanhoMin" type="number" value="'+(st.tamanhoMin||24)+'"></div>';
-      html+= '<div class="ed-field"><label>Peso</label><input data-estilo="peso" type="number" value="'+(st.peso||700)+'"></div>';
-      html+= '<div class="ed-field"><label>Alinhamento</label><select data-estilo="alinhamento"><option value="left" '+(st.alinhamento==='left'||!st.alinhamento?'selected':'')+'>Esquerda</option><option value="center" '+(st.alinhamento==='center'?'selected':'')+'>Centro</option><option value="right" '+(st.alinhamento==='right'?'selected':'')+'>Direita</option></select></div>';
-      html+= corField('Cor','cor',el.cor||st.cor||'text');
-      html+= '<div class="ed-field"><label>Limite de linhas</label><input data-estilo="limiteLinhas" type="number" value="'+(st.limiteLinhas||'')+'"></div>';
-      html+= '<div class="ed-field"><label>Se exceder</label><select data-estilo="overflow"><option value="diminuir" '+(st.overflow==='diminuir'?'selected':'')+'>Reduzir fonte</option><option value="avisar" '+(st.overflow==='avisar'||!st.overflow?'selected':'')+'>Avisar</option><option value="cortar" '+(st.overflow==='cortar'?'selected':'')+'>Cortar</option></select></div>';
-    }
-    html += sombraFields(el);
-    html+= '<div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">'
+
+    // Cabeçalho + ações rápidas (sempre no topo)
+    html += '<div class="flex items-center gap-2.5 mb-3">'
+      + '<span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 shrink-0">'+(ICON[el.tipo]||'')+'</span>'
+      + '<div class="min-w-0"><p class="text-sm font-semibold text-gray-800 truncate">'+(el.nome||tipos[el.tipo])+'</p><p class="text-[10px] text-gray-400">'+tipos[el.tipo]+' · '+el.id+'</p></div></div>';
+    html += '<div class="flex flex-wrap items-center gap-1.5">'
       + '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-camada="up" title="Trazer para frente">↑</button>'
       + '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-camada="down" title="Enviar para trás">↓</button>'
       + '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-copy-el title="Copiar (Ctrl+C)">Copiar</button>'
       + '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-dup-el title="Duplicar (Ctrl+D)">Duplicar</button>'
       + '<button type="button" class="c-btn c-btn-danger c-btn-sm ml-auto" data-del-el title="Excluir (Delete)">Excluir</button></div>';
+
+    html += sec('Posição e tamanho');
+    if (el.tipo==='retangulo' || el.tipo==='imagem'){ html += '<div class="grid grid-cols-2 gap-2">'+f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w)+f('Altura','h',el.h)+'</div>'; }
+    else if (el.tipo==='circulo'){ html += '<div class="grid grid-cols-2 gap-2">'+f('Centro X','cx',el.cx)+f('Centro Y','cy',el.cy)+f('Raio','r',el.r)+'</div>'; }
+    else if (el.tipo==='linha'){ html += '<div class="grid grid-cols-2 gap-2">'+f('X1','x1',el.x1)+f('Y1','y1',el.y1)+f('X2','x2',el.x2)+f('Y2','y2',el.y2)+f('Espessura','espessura',el.espessura)+'</div>'; }
+    else if (el.tipo==='texto'){ html += '<div class="grid grid-cols-2 gap-2">'+f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w)+'</div>'; }
+
+    if (el.tipo==='retangulo'){ html += sec('Aparência'); html += corField('Cor','fill',el.fill)+'<div class="grid grid-cols-2 gap-2">'+f('Raio','raio',el.raio)+f('Opacidade','opacidade',el.opacidade!=null?el.opacidade:1)+'</div>'; }
+    else if (el.tipo==='circulo'){ html += sec('Aparência'); html += corField('Cor','fill',el.fill); }
+    else if (el.tipo==='linha'){ html += sec('Aparência'); html += corField('Cor','cor',el.cor); }
+    else if (el.tipo==='imagem'){
+      html += sec('Aparência');
+      html += '<div class="ed-field"><label>Ajuste</label><select data-prop="ajuste"><option value="cover" '+(el.ajuste!=='contain'?'selected':'')+'>Preencher (cover)</option><option value="contain" '+(el.ajuste==='contain'?'selected':'')+'>Conter (contain)</option></select></div>';
+      html += '<div class="grid grid-cols-2 gap-2">'+f('Raio','raio',el.raio)+f('Opacidade','opacidade',el.opacidade!=null?el.opacidade:1)+'</div>';
+      html += sec('Imagem');
+      html += el.url ? '<img src="'+el.url+'" class="ed-img-thumb mb-2" alt="">' : '<div class="ed-img-thumb mb-2 flex items-center justify-center text-[11px] text-gray-400">sem imagem</div>';
+      html += '<div class="flex flex-wrap gap-1"><button type="button" class="c-btn c-btn-secondary c-btn-sm" data-escolher-ativo>Biblioteca / enviar / colar</button>'+(el.url?'<button type="button" class="c-btn c-btn-ghost c-btn-sm text-red-500" data-remover-imagem>Remover</button>':'')+'</div>';
+      html += '<div class="mt-3">'+corField('Cor da imagem','cor',el.cor)+'</div>';
+      html += '<div class="ed-field"><label>Modo da cor</label><select data-cor-modo><option value="silhueta" '+(el.corModo!=='recolorir'?'selected':'')+'>Silhueta (ícone)</option><option value="recolorir" '+(el.corModo==='recolorir'?'selected':'')+'>Recolorir (foto)</option></select></div>';
+    }
+    else if (el.tipo==='texto'){ var st=el.estilo||{};
+      html += sec('Conteúdo');
+      html += '<div class="ed-field"><label>Texto (use {{campo}})</label><textarea data-prop="valor" rows="2">'+(el.valor||'')+'</textarea></div>';
+      var comunsChaves = CAMPOS_COMUNS.map(function(c){ return c.chave; });
+      var chips = CAMPOS_COMUNS.concat(state.campos.filter(function(c){ return comunsChaves.indexOf(c.chave) < 0; }).map(function(c){ return { chave:c.chave, rotulo:c.rotulo || c.chave }; }));
+      html += '<div class="ed-field"><label>Inserir campo</label><div class="flex flex-wrap gap-1">'+chips.map(function(c){ return '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-ins-campo="'+c.chave+'">'+c.rotulo+'</button>'; }).join('')+'</div></div>';
+      html += '<div class="ed-field"><label>Vincular campo</label><select data-prop="variavel"><option value="">—</option>'+state.campos.map(function(c){return '<option value="'+c.chave+'" '+(el.variavel===c.chave?'selected':'')+'>'+c.chave+'</option>';}).join('')+'</select></div>';
+      html += sec('Tipografia');
+      html += '<div class="grid grid-cols-3 gap-2">'
+        + '<div class="ed-field"><label>Tamanho</label><input data-estilo="tamanho" type="number" value="'+(st.tamanho||40)+'"></div>'
+        + '<div class="ed-field"><label>Mín.</label><input data-estilo="tamanhoMin" type="number" value="'+(st.tamanhoMin||24)+'"></div>'
+        + '<div class="ed-field"><label>Peso</label><input data-estilo="peso" type="number" value="'+(st.peso||700)+'"></div></div>';
+      html += '<div class="ed-field"><label>Estilo base</label><select id="ed-aplicar-estilo"><option value="">— copiar de estilo —</option>'+SVG_ESTILOS.map(function(e){return '<option value="'+e.id+'">'+e.nome+'</option>';}).join('')+'</select></div>';
+      html += '<div class="ed-field"><label>Alinhamento</label><select data-estilo="alinhamento"><option value="left" '+(st.alinhamento==='left'||!st.alinhamento?'selected':'')+'>Esquerda</option><option value="center" '+(st.alinhamento==='center'?'selected':'')+'>Centro</option><option value="right" '+(st.alinhamento==='right'?'selected':'')+'>Direita</option></select></div>';
+      html += corField('Cor','cor',el.cor||st.cor||'text');
+      html += '<div class="grid grid-cols-2 gap-2">'
+        + '<div class="ed-field"><label>Limite linhas</label><input data-estilo="limiteLinhas" type="number" value="'+(st.limiteLinhas||'')+'"></div>'
+        + '<div class="ed-field"><label>Se exceder</label><select data-estilo="overflow"><option value="diminuir" '+(st.overflow==='diminuir'?'selected':'')+'>Reduzir</option><option value="avisar" '+(st.overflow==='avisar'||!st.overflow?'selected':'')+'>Avisar</option><option value="cortar" '+(st.overflow==='cortar'?'selected':'')+'>Cortar</option></select></div></div>';
+    }
+    html += sombraFields(el);
     propsEl.innerHTML = html;
   }
   function renderCampos(){
@@ -958,10 +1020,7 @@
   function fecharAtivos(){ ativosModal.classList.remove('open'); }
   ativosGrid.addEventListener('click', function(e){
     var card = e.target.closest('[data-ativo-url]'); if(!card) return;
-    var url = card.dataset.ativoUrl; var v = varAtual();
-    if (ativoModo === 'set') { var el = selEl(); if (el && el.tipo === 'imagem') el.url = url; }
-    else { var img = { id:uid(), tipo:'imagem', x:0, y:Math.round(v.altura*0.1), w:v.largura, h:Math.round(v.largura*0.6), ajuste:'cover', raio:0, camada:proxCamada(), opacidade:1, url:url }; v.elementos.push(img); state.sel = [img.id]; }
-    pushHistory(); renderAll(); fecharAtivos();
+    aplicarAtivo(card.dataset.ativoUrl);
   });
   document.getElementById('ed-ativos-fechar').addEventListener('click', fecharAtivos);
   ativosModal.addEventListener('click', function(e){ if(e.target === ativosModal) fecharAtivos(); });
