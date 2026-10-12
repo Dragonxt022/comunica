@@ -288,6 +288,7 @@ export const modeloEditar = async (req: Request, res: Response) => {
     if (!tpl) return res.status(404).redirect('/artes/modelos');
     const paletas = await ArtePaleta.findAll({ where: { estado: { [Op.ne]: 'arquivado' }, ...municipioWhere(user, {}, getActiveMid(req)) }, order: [['nome', 'ASC']] });
     const estilos = await ArteEstilo.findAll({ order: [['nome', 'ASC']] });
+    const paletaCores = await coresDaPaleta(tpl.paleta_id);
     res.render('artes/modelo-form', {
       title: `Editar modelo — ${tpl.nome}`,
       template: tpl,
@@ -297,6 +298,7 @@ export const modeloEditar = async (req: Request, res: Response) => {
       }))),
       paletas,
       estilos,
+      paletaCores,
       modo: 'editar',
     });
   } catch (error) {
