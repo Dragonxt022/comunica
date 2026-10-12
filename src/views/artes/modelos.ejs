@@ -1,0 +1,50 @@
+<div class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900">Modelos de arte</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Crie, teste e publique os modelos reutilizáveis da comunicação.</p>
+        </div>
+        <a href="/artes/modelos/novo" class="c-btn c-btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Novo modelo
+        </a>
+    </div>
+
+    <% if (ok === 'publicado') { %><div class="c-card p-3 text-sm text-emerald-700 bg-emerald-50 border-emerald-100">Modelo publicado.</div><% } %>
+    <% if (ok === 'arquivado') { %><div class="c-card p-3 text-sm text-gray-700 bg-gray-50">Modelo arquivado.</div><% } %>
+    <% if (erro === 'sem_elementos') { %><div class="c-card p-3 text-sm text-amber-700 bg-amber-50 border-amber-100">Adicione elementos a pelo menos uma variante antes de publicar.</div><% } %>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <% templates.forEach(function(t){ var v=(t.variantes||[])[0]; %>
+        <div class="c-card overflow-hidden">
+            <div class="bg-slate-100 h-40 flex items-center justify-center overflow-hidden">
+                <% if (v) { %><img src="/artes/modelos/<%= t.id %>/thumb/<%= v.chave %>" class="max-h-full max-w-full object-contain" loading="lazy" alt=""><% } %>
+            </div>
+            <div class="p-3 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="text-sm font-semibold text-gray-800 leading-tight"><%= t.nome %></p>
+                    <span class="c-badge <%= t.estado === 'publicado' ? 'c-badge-success' : t.estado === 'arquivado' ? 'c-badge-neutral' : 'c-badge-warning' %>"><%= t.estado %></span>
+                </div>
+                <p class="text-[11px] text-gray-400">v<%= t.versao %> · <%= t.categoria %></p>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <% JSON.parse(t.formatos||'[]').forEach(function(f){ %><span class="c-badge c-badge-primary"><%= f %></span><% }); %>
+                    <% if (t.carrossel) { %><span class="c-badge c-badge-success">carrossel</span><% } %>
+                </div>
+                <div class="flex items-center gap-1.5 pt-1">
+                    <a href="/artes/modelos/<%= t.id %>/editar" class="c-btn c-btn-secondary c-btn-sm">Editar</a>
+                    <a href="/artes/producao?template_id=<%= t.id %>" class="c-btn c-btn-ghost c-btn-sm">Testar</a>
+                    <form action="/artes/modelos/<%= t.id %>/duplicar" method="POST" class="ml-auto"><button class="c-btn c-btn-ghost c-btn-sm" title="Duplicar">⧉</button></form>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <% if (t.estado !== 'publicado') { %>
+                    <form action="/artes/modelos/<%= t.id %>/publicar" method="POST"><button class="c-btn c-btn-primary c-btn-sm">Publicar</button></form>
+                    <% } %>
+                    <% if (t.estado === 'publicado') { %>
+                    <form action="/artes/modelos/<%= t.id %>/arquivar" method="POST"><button class="c-btn c-btn-secondary c-btn-sm">Arquivar</button></form>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+        <% }); %>
+    </div>
+</div>

@@ -1,0 +1,230 @@
+<%
+  var __tpl = template;
+  var __podeIa = true;
+%>
+<style>
+  #pv-svg svg { max-width: 100%; height: auto; border-radius: 8px; }
+  .producao-grid { display:grid; grid-template-columns: 1fr; gap:1.5rem; }
+  @media (min-width: 1100px){ .producao-grid { grid-template-columns: minmax(0,1fr) 380px; } }
+</style>
+
+<div class="space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <a href="/artes" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-lg font-bold text-gray-900">Produzir arte</h1>
+                <p class="text-xs text-gray-500"><%= __tpl ? __tpl.nome : 'Escolha um modelo para começar' %></p>
+            </div>
+        </div>
+        <% if (__tpl && podeAdministrar) { %><a href="/artes/modelos/<%= __tpl.id %>/editar" class="c-btn c-btn-ghost c-btn-sm">Editar modelo</a><% } %>
+    </div>
+
+    <% if (!__tpl) { %>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <% templates.forEach(function(t){ var v=(t.variantes||[])[0]; %>
+        <a href="/artes/producao?template_id=<%= t.id %><%= solicitacao ? '&solicitacao_id='+solicitacao.id : '' %>" class="c-card c-card-hover overflow-hidden block">
+            <div class="bg-slate-100 h-44 flex items-center justify-center overflow-hidden">
+                <% if (v) { %><img src="/artes/modelos/<%= t.id %>/thumb/<%= v.chave %>" class="max-h-full max-w-full object-contain" loading="lazy" alt=""><% } %>
+            </div>
+            <div class="p-3">
+                <p class="text-sm font-semibold text-gray-800 truncate"><%= t.nome %></p>
+                <div class="flex gap-1.5 mt-1.5 flex-wrap">
+                    <span class="c-badge c-badge-neutral"><%= t.categoria %></span>
+                    <% JSON.parse(t.formatos||'[]').forEach(function(f){ %><span class="c-badge c-badge-primary"><%= f %></span><% }); %>
+                </div>
+            </div>
+        </a>
+        <% }); %>
+    </div>
+    <% if (!templates.length) { %><div class="c-card p-8 text-center text-sm text-gray-400">Nenhum modelo publicado. Peça a um administrador para publicar um modelo.</div><% } %>
+    <% } else { %>
+    <div class="producao-grid">
+        <!-- Formulário -->
+        <div class="space-y-4">
+            <% if (solicitacao) { %>
+            <div class="c-card p-3 text-sm text-blue-800 bg-blue-50 border-blue-100">
+                Vinculado à solicitação <strong>#<%= solicitacao.id %> — <%= solicitacao.titulo %></strong>.
+            </div>
+            <% } %>
+
+            <div class="c-card p-5 space-y-4">
+                <div>
+                    <label class="c-label">Modalidade</label>
+                    <div class="flex flex-wrap gap-2" id="modalidade-tabs">
+                        <label class="c-btn c-btn-secondary c-btn-sm cursor-pointer"><input type="radio" name="modalidade" value="unico" class="mr-1" checked> 9:16</label>
+                        <label class="c-btn c-btn-secondary c-btn-sm cursor-pointer"><input type="radio" name="modalidade" value="duplo" class="mr-1"> 9:16 + 3:4</label>
+                        <label class="c-btn c-btn-secondary c-btn-sm cursor-pointer"><input type="radio" name="modalidade" value="carrossel" class="mr-1" <%= !__tpl.carrossel ? 'disabled' : '' %>> Carrossel 3:4</label>
+                    </div>
+                </div>
+
+                <div id="campos-container" class="space-y-3"></div>
+            </div>
+
+            <div id="carrossel-box" class="c-card p-5 space-y-3 hidden">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-gray-800">Páginas do carrossel</h3>
+                    <div class="flex gap-2">
+                        <button type="button" class="c-btn c-btn-secondary c-btn-sm" id="btn-ia-carrossel" <%= __podeIa ? '' : 'disabled' %>>Sugerir divisão (IA)</button>
+                        <button type="button" class="c-btn c-btn-secondary c-btn-sm" id="btn-add-pagina">+ página</button>
+                    </div>
+                </div>
+                <div id="paginas-container" class="space-y-3"></div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" id="btn-gerar" class="c-btn c-btn-primary">Gerar arte</button>
+                <span id="gerar-status" class="text-sm text-gray-500"></span>
+            </div>
+        </div>
+
+        <!-- Prévia -->
+        <div class="space-y-3">
+            <div class="c-card p-4 sticky top-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-bold text-gray-700">Prévia</p>
+                    <div class="flex gap-1" id="formato-tabs"></div>
+                </div>
+                <div id="pv-svg" class="bg-slate-100 rounded-lg p-2 flex items-center justify-center min-h-[260px] text-xs text-gray-400">Preencha os campos…</div>
+                <div id="pv-validacao" class="mt-3 space-y-1.5"></div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+</div>
+
+<% if (__tpl) { %>
+<script>
+(function(){
+  var TEMPLATE_ID = <%- __tpl.id %>;
+  var VARIANTES = <%- variantesJson %>;
+  var CAMPOS = <%- JSON.stringify(campos) %>;
+  var SOLICITACAO = <%- solicitacao ? JSON.stringify({ id: solicitacao.id, titulo: solicitacao.titulo, descricao: solicitacao.descricao, prazo: solicitacao.prazo }) : 'null' %>;
+
+  var camposEl = document.getElementById('campos-container');
+  var pvSvg = document.getElementById('pv-svg');
+  var pvValid = document.getElementById('pv-validacao');
+  var formatoTabs = document.getElementById('formato-tabs');
+  var statusEl = document.getElementById('gerar-status');
+
+  // Prefill a partir da solicitação
+  var dados = {};
+  if (SOLICITACAO) {
+    dados.titulo = SOLICITACAO.titulo || '';
+    dados.texto = (SOLICITACAO.descricao || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    dados.data = SOLICITACAO.prazo || '';
+  }
+
+  // Campos
+  function campoInput(c){
+    var wrap = document.createElement('div');
+    var label = document.createElement('label'); label.className='c-label'; label.textContent = c.rotulo || c.chave; if(c.obrigatorio){ label.innerHTML += ' <span class="text-red-500">*</span>'; }
+    wrap.appendChild(label);
+    var el;
+    if (c.tipo==='textarea'){ el=document.createElement('textarea'); el.rows=4; el.className='c-textarea'; }
+    else { el=document.createElement('input'); el.className='c-input'; if(c.tipo==='data') el.type='date'; else if(c.tipo==='hora') el.type='time'; else if(c.tipo==='numero') el.type='number'; else if(c.tipo==='url') el.type='url'; }
+    el.value = dados[c.chave] || '';
+    el.dataset.chave = c.chave;
+    el.addEventListener('input', function(){ dados[c.chave]=el.value; agendarPrevia(); });
+    wrap.appendChild(el);
+    if (c.chave==='texto' && window.__podeIa!==false){
+      var bar=document.createElement('div'); bar.className='flex justify-end mt-1';
+      bar.innerHTML='<button type="button" class="text-[11px] font-semibold text-blue-600 hover:underline" data-ia-revisar>Revisar com IA</button>';
+      wrap.appendChild(bar);
+    }
+    return wrap;
+  }
+  camposEl.innerHTML='';
+  CAMPOS.forEach(function(c){ camposEl.appendChild(campoInput(c)); });
+
+  // IA revisar
+  camposEl.addEventListener('click', function(e){
+    if(!e.target.matches('[data-ia-revisar]')) return;
+    var wrap=e.target.closest('div'); var ta=wrap.parentElement.querySelector('textarea'); var atual=ta.value;
+    e.target.textContent='Revisando…';
+    fetch('/artes/ia/revisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:atual,fatos:''})})
+      .then(function(r){return r.json();}).then(function(d){
+        e.target.textContent='Revisar com IA';
+        if(!d.texto){ alert(d.error||'IA indisponível'); return; }
+        if(confirm('Sugestão da IA:\n\n'+d.texto+'\n\nSubstituir o texto?')){ ta.value=d.texto; dados.texto=d.texto; agendarPrevia(); }
+      }).catch(function(){ e.target.textContent='Revisar com IA'; alert('IA indisponível. Você pode seguir sem a revisão.'); });
+  });
+
+  // Formato tabs
+  var chaves = VARIANTES.map(function(v){return v.chave;});
+  var formatoAtual = (chaves.indexOf('9:16')>=0)?'9:16':chaves[0];
+  function renderFormatoTabs(){
+    var visiveis = chaves.filter(function(c){ return c==='9:16'||c==='3:4'; });
+    formatoTabs.innerHTML = visiveis.map(function(c){ return '<button type="button" class="c-btn c-btn-sm '+(c===formatoAtual?'c-btn-primary':'c-btn-secondary')+'" data-formato="'+c+'">'+c+'</button>'; }).join('');
+  }
+  formatoTabs.addEventListener('click', function(e){ if(e.target.dataset.formato){ formatoAtual=e.target.dataset.formato; renderFormatoTabs(); agendarPrevia(); } });
+  renderFormatoTabs();
+
+  // Modalidade
+  var modalidade = 'unico';
+  document.querySelectorAll('input[name=modalidade]').forEach(function(r){
+    r.addEventListener('change', function(){
+      modalidade = r.value;
+      document.getElementById('carrossel-box').classList.toggle('hidden', modalidade!=='carrossel');
+      agendarPrevia();
+    });
+  });
+
+  // Páginas do carrossel
+  var paginas = [{titulo:dados.titulo||'',texto:dados.texto||''}];
+  var pagCont = document.getElementById('paginas-container');
+  function renderPaginas(){
+    pagCont.innerHTML = paginas.map(function(p,i){
+      return '<div class="border border-gray-100 rounded-lg p-3 space-y-2"><div class="flex items-center justify-between"><span class="text-xs font-semibold text-gray-500">Página '+(i+1)+(i===0?' (capa)':'')+'</span>'+(paginas.length>1?'<button type="button" class="text-red-500 text-xs" data-del-pag="'+i+'">remover</button>':'')+'</div>'
+        + '<input class="c-input" data-pag-titulo="'+i+'" value="'+ (p.titulo||'').replace(/"/g,'&quot;') +'" placeholder="Título da página">'
+        + '<textarea class="c-textarea" rows="3" data-pag-texto="'+i+'" placeholder="Conteúdo da página">'+ (p.texto||'') +'</textarea></div>';
+    }).join('');
+  }
+  renderPaginas();
+  pagCont.addEventListener('input', function(e){ var i=e.target.dataset.pagTitulo; if(i!==undefined) paginas[+i].titulo=e.target.value; var j=e.target.dataset.pagTexto; if(j!==undefined) paginas[+j].texto=e.target.value; });
+  pagCont.addEventListener('click', function(e){ if(e.target.dataset.delPag!==undefined){ paginas.splice(+e.target.dataset.delPag,1); renderPaginas(); } });
+  document.getElementById('btn-add-pagina').addEventListener('click', function(){ paginas.push({titulo:'',texto:''}); renderPaginas(); });
+  document.getElementById('btn-ia-carrossel').addEventListener('click', function(){
+    var btn=this; btn.disabled=true; btn.textContent='Sugerindo…';
+    fetch('/artes/ia/carrossel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:dados.titulo||'',texto:dados.texto||'',paginas:Math.max(2,paginas.length)})})
+      .then(function(r){return r.json();}).then(function(d){ btn.disabled=false; btn.textContent='Sugerir divisão (IA)'; if(d.paginas&&d.paginas.length){ paginas=d.paginas; renderPaginas(); } else alert(d.error||'IA indisponível.'); })
+      .catch(function(){ btn.disabled=false; btn.textContent='Sugerir divisão (IA)'; alert('IA indisponível.'); });
+  });
+
+  // Prévia
+  var timer=null;
+  function agendarPrevia(){ clearTimeout(timer); timer=setTimeout(carregarPrevia, 350); }
+  function carregarPrevia(){
+    fetch('/artes/previa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({template_id:TEMPLATE_ID,chave:formatoAtual,dados:dados})})
+      .then(function(r){return r.json();}).then(function(d){
+        if(!d.ok){ pvSvg.innerHTML='<span class="text-xs text-gray-400">'+ (d.error||'Sem prévia') +'</span>'; return; }
+        pvSvg.innerHTML = d.svg;
+        renderValidacao(d.bloqueadores||[], d.avisos||[]);
+      }).catch(function(){ pvSvg.innerHTML='<span class="text-xs text-gray-400">Falha na prévia</span>'; });
+  }
+  function renderValidacao(bloq, avis){
+    var html='';
+    bloq.forEach(function(p){ html+='<div class="text-[11px] text-red-600 flex gap-1">⛔ '+p.mensagem+'</div>'; });
+    avis.forEach(function(p){ html+='<div class="text-[11px] text-amber-600 flex gap-1">⚠ '+p.mensagem+'</div>'; });
+    if(!html) html='<div class="text-[11px] text-emerald-600">✓ Sem problemas detectados.</div>';
+    pvValid.innerHTML=html;
+  }
+  agendarPrevia();
+
+  // Gerar
+  document.getElementById('btn-gerar').addEventListener('click', function(){
+    var btn=this; btn.disabled=true; statusEl.textContent='Gerando…';
+    fetch('/artes/gerar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      template_id:TEMPLATE_ID, modalidade:modalidade, dados:dados, paginas:paginas, solicitacao_id: SOLICITACAO?SOLICITACAO.id:null
+    })}).then(function(r){return r.json();}).then(function(d){
+      btn.disabled=false;
+      if(!d.ok){ statusEl.textContent=d.error||'Falha ao gerar.'; return; }
+      if((d.bloqueadores||[]).length){ statusEl.textContent='Gerado com bloqueadores — abrindo revisão.'; }
+      window.location.href=d.redireciona;
+    }).catch(function(){ btn.disabled=false; statusEl.textContent='Falha ao gerar.'; });
+  });
+})();
+</script>
+<% } %>

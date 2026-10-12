@@ -24,6 +24,13 @@ import ChatUserKey from './ChatUserKey.ts';
 import ChatCategoria from './ChatCategoria.ts';
 import IaPerfil from './IaPerfil.ts';
 import OliviaMensagem from './OliviaMensagem.ts';
+import ArtePaleta from './ArtePaleta.ts';
+import ArteEstilo from './ArteEstilo.ts';
+import ArteAtivo from './ArteAtivo.ts';
+import ArteTemplate from './ArteTemplate.ts';
+import ArteTemplateVariante from './ArteTemplateVariante.ts';
+import ArteGeracao from './ArteGeracao.ts';
+import ArteGeracaoArquivo from './ArteGeracaoArquivo.ts';
 
 // ── Existing associations ──────────────────────────────────────────────────
 
@@ -57,6 +64,20 @@ User.hasOne(ChatUserKey, { foreignKey: 'user_id', as: 'chat_key' });
 ChatCategoria.belongsTo(User, { foreignKey: 'user_id', as: 'usuario' });
 User.hasMany(ChatCategoria, { foreignKey: 'user_id', as: 'chat_categorias' });
 
+// ── Arte (gerador de artes institucionais) ──────────────────────────────────
+
+ArteTemplate.hasMany(ArteTemplateVariante, { foreignKey: 'template_id', as: 'variantes' });
+ArteTemplateVariante.belongsTo(ArteTemplate, { foreignKey: 'template_id', as: 'template' });
+
+ArteTemplate.belongsTo(ArtePaleta, { foreignKey: 'paleta_id', as: 'paleta' });
+ArteGeracao.belongsTo(ArteTemplate, { foreignKey: 'template_id', as: 'template' });
+
+ArteGeracao.hasMany(ArteGeracaoArquivo, { foreignKey: 'geracao_id', as: 'arquivos' });
+ArteGeracaoArquivo.belongsTo(ArteGeracao, { foreignKey: 'geracao_id', as: 'geracao' });
+
+ArteGeracao.belongsTo(Solicitacao, { foreignKey: 'solicitacao_id', as: 'solicitacao' });
+ArteGeracao.belongsTo(User, { foreignKey: 'usuario_id', as: 'autor' });
+
 export {
   User,
   Secretaria,
@@ -84,4 +105,11 @@ export {
   ChatCategoria,
   IaPerfil,
   OliviaMensagem,
+  ArtePaleta,
+  ArteEstilo,
+  ArteAtivo,
+  ArteTemplate,
+  ArteTemplateVariante,
+  ArteGeracao,
+  ArteGeracaoArquivo,
 };

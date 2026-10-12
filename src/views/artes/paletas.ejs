@@ -1,0 +1,126 @@
+<div class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900">Paletas e estilos</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Cores semânticas e estilos tipográficos reutilizáveis.</p>
+        </div>
+        <a href="/artes" class="c-btn c-btn-secondary">Voltar ao Estúdio</a>
+    </div>
+
+    <% if (ok) { %><div class="c-card p-3 text-sm text-emerald-700 bg-emerald-50 border-emerald-100">Alterações salvas.</div><% } %>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+        <section class="space-y-4">
+            <h2 class="text-sm font-bold text-gray-800">Paletas</h2>
+            <div class="space-y-3">
+                <% paletas.forEach(function(p){ var cores = JSON.parse(p.cores||'{}'); %>
+                <div class="c-card p-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800"><%= p.nome %></p>
+                            <p class="text-[11px] text-gray-400"><%= p.tematica ? 'temática' : 'institucional' %> · <%= p.slug %></p>
+                        </div>
+                        <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-edit-paleta="<%= p.id %>">Editar</button>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <% chaves.forEach(function(k){ %><span title="<%= k %>" style="width:22px;height:22px;border-radius:6px;border:1px solid #e2e8f0;background:<%= cores[k] || '#fff' %>"></span><% }); %>
+                    </div>
+                </div>
+                <% }); %>
+            </div>
+
+            <form id="form-paleta" action="/artes/paletas" method="POST" class="c-card p-5 space-y-3">
+                <h3 class="text-sm font-bold text-gray-800" id="paleta-form-titulo">Nova paleta</h3>
+                <input type="hidden" name="id" id="paleta-id">
+                <div><label class="c-label">Nome</label><input class="c-input" name="nome" id="paleta-nome" required></div>
+                <div><label class="c-label">Descrição</label><input class="c-input" name="descricao" id="paleta-descricao"></div>
+                <label class="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" name="tematica" id="paleta-tematica"> Paleta temática</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <% chaves.forEach(function(k){ %>
+                    <div class="flex items-center gap-2">
+                        <input type="color" name="cor_<%= k %>" id="cor_<%= k %>" value="<%= paletaPadrao[k] %>" style="width:36px;height:32px;padding:2px;border:1px solid #cbd5e1;border-radius:8px">
+                        <span class="text-xs text-gray-500"><%= k %></span>
+                    </div>
+                    <% }); %>
+                </div>
+                <button class="c-btn c-btn-primary">Salvar paleta</button>
+            </form>
+        </section>
+
+        <section class="space-y-4">
+            <h2 class="text-sm font-bold text-gray-800">Estilos tipográficos</h2>
+            <div class="space-y-2">
+                <% estilos.forEach(function(e){ %>
+                <div class="c-card p-3 flex items-center justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800"><%= e.nome %></p>
+                        <p class="text-[11px] text-gray-400"><%= e.familia %> · <%= e.peso %> · <%= e.tamanho %>px</p>
+                    </div>
+                    <button type="button" class="c-btn c-btn-secondary c-btn-sm" data-edit-estilo="<%= e.id %>">Editar</button>
+                </div>
+                <% }); %>
+            </div>
+
+            <form id="form-estilo" action="/artes/estilos" method="POST" class="c-card p-5 space-y-3">
+                <h3 class="text-sm font-bold text-gray-800" id="estilo-form-titulo">Novo estilo</h3>
+                <input type="hidden" name="id" id="estilo-id">
+                <div><label class="c-label">Nome</label><input class="c-input" name="nome" id="estilo-nome" required></div>
+                <div><label class="c-label">Família</label><input class="c-input" name="familia" id="estilo-familia" value="Inter, system-ui, sans-serif"></div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div><label class="c-label">Peso</label><input class="c-input" type="number" name="peso" id="estilo-peso" value="700"></div>
+                    <div><label class="c-label">Tamanho</label><input class="c-input" type="number" name="tamanho" id="estilo-tamanho" value="64"></div>
+                    <div><label class="c-label">Mín.</label><input class="c-input" type="number" name="tamanho_min" id="estilo-tamanho_min" value="28"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div><label class="c-label">Alt. linha</label><input class="c-input" type="number" step="0.05" name="altura_linha" id="estilo-altura" value="1.15"></div>
+                    <div><label class="c-label">Alinhamento</label><select class="c-select" name="alinhamento" id="estilo-alinhamento"><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></div>
+                    <div><label class="c-label">Cor</label><input class="c-input" name="cor" id="estilo-cor" value="text"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="c-label">Limite linhas</label><input class="c-input" type="number" name="limite_linhas" id="estilo-limite"></div>
+                    <div><label class="c-label">Se exceder</label><select class="c-select" name="overflow" id="estilo-overflow"><option value="diminuir">Reduzir</option><option value="avisar">Avisar</option><option value="cortar">Cortar</option></select></div>
+                </div>
+                <button class="c-btn c-btn-primary">Salvar estilo</button>
+            </form>
+        </section>
+    </div>
+</div>
+
+<script>
+(function(){
+  var PALETAS = <%- JSON.stringify(paletas.map(function(p){ return { id:p.id, nome:p.nome, descricao:p.descricao, tematica:p.tematica, cores: JSON.parse(p.cores||'{}') }; })) %>;
+  var ESTILOS = <%- JSON.stringify(estilos.map(function(e){ return { id:e.id, nome:e.nome, familia:e.familia, peso:e.peso, tamanho:e.tamanho, tamanho_min:e.tamanho_min, altura_linha:e.altura_linha, alinhamento:e.alinhamento, cor:e.cor, limite_linhas:e.limite_linhas, overflow:e.overflow }; })) %>;
+  var CHAVES = <%- JSON.stringify(chaves) %>;
+
+  document.querySelectorAll('[data-edit-paleta]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var p = PALETAS.find(function(x){return x.id===+btn.dataset.editPaleta;}); if(!p) return;
+      document.getElementById('paleta-form-titulo').textContent = 'Editar paleta';
+      document.getElementById('paleta-id').value = p.id;
+      document.getElementById('paleta-nome').value = p.nome;
+      document.getElementById('paleta-descricao').value = p.descricao || '';
+      document.getElementById('paleta-tematica').checked = !!p.tematica;
+      CHAVES.forEach(function(k){ var i=document.getElementById('cor_'+k); if(i && p.cores[k]) i.value = p.cores[k]; });
+      document.getElementById('form-paleta').scrollIntoView({behavior:'smooth'});
+    });
+  });
+  document.querySelectorAll('[data-edit-estilo]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var e = ESTILOS.find(function(x){return x.id===+btn.dataset.editEstilo;}); if(!e) return;
+      document.getElementById('estilo-form-titulo').textContent = 'Editar estilo';
+      document.getElementById('estilo-id').value = e.id;
+      document.getElementById('estilo-nome').value = e.nome;
+      document.getElementById('estilo-familia').value = e.familia;
+      document.getElementById('estilo-peso').value = e.peso;
+      document.getElementById('estilo-tamanho').value = e.tamanho;
+      document.getElementById('estilo-tamanho_min').value = e.tamanho_min;
+      document.getElementById('estilo-altura').value = e.altura_linha;
+      document.getElementById('estilo-alinhamento').value = e.alinhamento;
+      document.getElementById('estilo-cor').value = e.cor;
+      document.getElementById('estilo-limite').value = e.limite_linhas || '';
+      document.getElementById('estilo-overflow').value = e.overflow;
+      document.getElementById('form-estilo').scrollIntoView({behavior:'smooth'});
+    });
+  });
+})();
+</script>

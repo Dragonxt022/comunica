@@ -194,6 +194,13 @@
                 <span class="nav-label">Biblioteca</span>
             </a>
 
+            <a href="/artes" title="Estúdio de Artes"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/artes') ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <span class="nav-label">Estúdio de Artes</span>
+                <span class="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">BETA</span>
+            </a>
+
             <% if(user && (user.role === 'admin' || user.role === 'secom' || user.role === 'super_admin')) { %>
             <a href="/relatorios" title="Relatórios"
                class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/relatorios') ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' %>">
@@ -734,6 +741,7 @@
                 '/solicitacoes': 'Solicitações',
                 '/releases': 'Releases',
                 '/biblioteca': 'Biblioteca',
+                '/artes': 'Estúdio de Artes',
                 '/relatorios': 'Relatórios',
                 '/formularios': 'Formulários',
                 '/imprensa': 'Imprensa',

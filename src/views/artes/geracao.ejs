@@ -1,0 +1,84 @@
+<%
+  var g = geracao;
+  var bloq = (validacoes.bloqueadores || []);
+  var avis = (validacoes.avisos || []);
+%>
+<div class="space-y-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <a href="/artes" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-lg font-bold text-gray-900"><%= g.titulo || ('Arte #' + g.id) %></h1>
+                <p class="text-xs text-gray-500">
+                    <%= g.template ? g.template.nome : '' %> · v<%= g.template_versao %> ·
+                    <span class="c-badge <%= g.estado === 'aprovado' ? 'c-badge-success' : g.estado === 'gerado' ? 'c-badge-primary' : 'c-badge-neutral' %>"><%= g.estado %></span>
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <% if (g.solicitacao) { %><a href="/solicitacoes/<%= g.solicitacao.id %>" class="c-btn c-btn-secondary">Ver solicitação #<%= g.solicitacao.id %></a><% } %>
+            <% if (g.estado !== 'aprovado' && bloq.length === 0) { %>
+            <button type="button" id="btn-aprovar" class="c-btn c-btn-primary">Aprovar e enviar à Biblioteca</button>
+            <% } %>
+            <% if (g.estado === 'aprovado') { %><span class="c-badge c-badge-success">Aprovada</span><% } %>
+            <button type="button" id="btn-excluir" class="c-btn c-btn-ghost text-red-600">Excluir</button>
+        </div>
+    </div>
+
+    <% if (bloq.length) { %>
+    <div class="c-card p-4 border-red-100 bg-red-50">
+        <p class="text-sm font-semibold text-red-700 mb-2">Bloqueadores — resolva antes de aprovar</p>
+        <ul class="space-y-1 text-[13px] text-red-700 list-disc list-inside">
+            <% bloq.forEach(function(p){ %><li><%= p.mensagem %></li><% }); %>
+        </ul>
+    </div>
+    <% } else if (avis.length) { %>
+    <div class="c-card p-4 border-amber-100 bg-amber-50">
+        <p class="text-sm font-semibold text-amber-700 mb-2">Avisos — confira antes de aprovar</p>
+        <ul class="space-y-1 text-[13px] text-amber-700 list-disc list-inside">
+            <% avis.forEach(function(p){ %><li><%= p.mensagem %></li><% }); %>
+        </ul>
+    </div>
+    <% } else { %>
+    <div class="c-card p-3 text-sm text-emerald-700 bg-emerald-50 border-emerald-100">✓ Validação concluída sem problemas.</div>
+    <% } %>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% (g.arquivos||[]).forEach(function(a){ %>
+        <div class="c-card overflow-hidden">
+            <div class="bg-slate-100 flex items-center justify-center p-3">
+                <img src="<%= a.url %>" alt="Página <%= a.pagina %>" class="max-h-72 max-w-full object-contain" loading="lazy">
+            </div>
+            <div class="p-3 flex items-center justify-between gap-2">
+                <div>
+                    <p class="text-sm font-semibold text-gray-800"><%= a.formato %> · <%= a.papel %></p>
+                    <p class="text-[11px] text-gray-400"><%= a.largura %>×<%= a.altura %> · pág. <%= a.pagina %></p>
+                </div>
+                <a href="<%= a.url %>" download class="c-btn c-btn-secondary c-btn-sm">Baixar</a>
+            </div>
+        </div>
+        <% }); %>
+    </div>
+</div>
+
+<script>
+(function(){
+  var id = <%- g.id %>;
+  function post(url, body){
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){return r.json();});
+  }
+  var aprovar = document.getElementById('btn-aprovar');
+  if (aprovar) aprovar.addEventListener('click', function(){
+    if(!confirm('Aprovar esta arte e anexá-la à solicitação de origem?')) return;
+    aprovar.disabled = true;
+    post('/artes/geracoes/'+id+'/aprovar').then(function(d){ if(d.ok) location.reload(); else { alert(d.error||'Erro'); aprovar.disabled=false; } }).catch(function(){ aprovar.disabled=false; alert('Erro'); });
+  });
+  var excl = document.getElementById('btn-excluir');
+  excl.addEventListener('click', function(){
+    if(!confirm('Excluir esta arte?')) return;
+    post('/artes/geracoes/'+id+'/excluir').then(function(){ location.href='/artes'; });
+  });
+})();
+</script>

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --import tsx --test tests/artes.test.ts"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.24",
@@ -25,6 +26,7 @@
     "qrcode": "^1.5.4",
     "sanitize-html": "^2.17.6",
     "sequelize": "^6.37.8",
+    "sharp": "^0.35.3",
     "slugify": "^1.6.9",
     "sqlite3": "^6.0.1",
     "web-push": "^3.6.7"

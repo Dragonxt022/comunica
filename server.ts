@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, SolicitacaoImagem, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, SolicitacaoImagem, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem, ArtePaleta, ArteEstilo, ArteAtivo, ArteTemplate, ArteTemplateVariante, ArteGeracao, ArteGeracaoArquivo } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -30,6 +30,8 @@ import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import planejamentoRoutes from './src/modules/planejamento/routes.ts';
 import chatRoutes from './src/modules/chat/routes.ts';
 import iaRoutes from './src/modules/ia/routes.ts';
+import artesRoutes from './src/modules/artes/routes.ts';
+import { seedArtes } from './src/lib/artes/defaults.ts';
 import * as ImprensaController from './src/modules/imprensa/controller.ts';
 import { isAuthenticated } from './src/middlewares/auth.middleware.ts';
 import { sseBroker } from './src/lib/sse.ts';
@@ -279,6 +281,16 @@ async function seed() {
   await addCol('chat_conversas', 'avatar', 'VARCHAR(255) NULL');
   await addCol('chat_user_keys', 'private_key_jwk', 'TEXT NULL');
 
+  // Gerador de artes institucionais
+  await ArtePaleta.sync({ force: false });
+  await ArteEstilo.sync({ force: false });
+  await ArteAtivo.sync({ force: false });
+  await ArteTemplate.sync({ force: false });
+  await ArteTemplateVariante.sync({ force: false });
+  await ArteGeracao.sync({ force: false });
+  await ArteGeracaoArquivo.sync({ force: false });
+  await addCol('arte_templates', 'carrossel', 'BOOLEAN NOT NULL DEFAULT 0');
+
 
   // Migrate old event statuses to new values (idempotent)
   await sequelize.query(`UPDATE eventos SET status = 'em_planejamento' WHERE status = 'pendente'`);
@@ -309,6 +321,9 @@ async function seed() {
 
     console.log('Seed: Initial data created (SuperAdmin: admin@comunica.gov.br / admin123)');
   }
+
+  // Gerador de artes: paleta, estilos e modelo inicial por município
+  await seedArtes();
 }
 
 // Start Server
@@ -519,6 +534,7 @@ async function startServer() {
     app.use('/planejamento', isAuthenticated, planejamentoRoutes);
     app.use('/chat', chatRoutes);
     app.use('/ia', isAuthenticated, iaRoutes);
+    app.use('/artes', isAuthenticated, artesRoutes);
 
     // Lembrete de eventos próximos (a cada hora)
     setInterval(async () => {
