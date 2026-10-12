@@ -114,7 +114,7 @@
   var TEMPLATE_ID = <%- __tpl.id %>;
   var VARIANTES = <%- variantesJson %>;
   var CAMPOS = <%- JSON.stringify(campos) %>;
-  var SOLICITACAO = <%- solicitacao ? JSON.stringify({ id: solicitacao.id, titulo: solicitacao.titulo, descricao: solicitacao.descricao, prazo: solicitacao.prazo }) : 'null' %>;
+  var SOLICITACAO = <%- solicitacao ? JSON.stringify({ id: solicitacao.id, titulo: solicitacao.titulo, descricao: solicitacao.descricao, prazo: solicitacao.prazo, secretaria: (solicitacao.secretaria ? solicitacao.secretaria.nome : '') }) : 'null' %>;
 
   var camposEl = document.getElementById('campos-container');
   var pvSvg = document.getElementById('pv-svg');
@@ -122,12 +122,33 @@
   var formatoTabs = document.getElementById('formato-tabs');
   var statusEl = document.getElementById('gerar-status');
 
-  // Prefill a partir da solicitação
+  // Prefill inteligente a partir da solicitação
   var dados = {};
   if (SOLICITACAO) {
-    dados.titulo = SOLICITACAO.titulo || '';
-    dados.texto = (SOLICITACAO.descricao || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-    dados.data = SOLICITACAO.prazo || '';
+    var desc = String(SOLICITACAO.descricao || '')
+      .replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li)>/gi, '\n').replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').trim();
+    var linhas = desc.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    var mdata = desc.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    var data = mdata ? (String(mdata[1]).padStart(2,'0') + '/' + String(mdata[2]).padStart(2,'0') + (mdata[3] ? '/' + mdata[3] : '')) : '';
+    var mhora = desc.match(/(\d{1,2})\s*(?:h|:)\s*(\d{2})?/);
+    var horario = mhora ? (String(mhora[1]).padStart(2,'0') + 'h' + (mhora[2] || '00')) : '';
+    var mlocal = desc.match(/local\s*[:\-]\s*([^\n\.]+)/i);
+    var local = mlocal ? mlocal[1].trim() : '';
+    var minstr = desc.match(/(programa[çc][ãa]o|instru[çc][õo]es)\s*[:\-]\s*([^\n]+)/i);
+    var instrucoes = minstr ? minstr[2].trim() : '';
+    var corpo = linhas.filter(function(l){ return !/^(data|local|hor[áa]rio|programa[çc][ãa]o|instru[çc][õo]es)\b/i.test(l); }).join('\n');
+    CAMPOS.forEach(function(c){
+      var k = String(c.chave).toLowerCase();
+      if (k.indexOf('subtit') >= 0) dados[c.chave] = '';
+      else if (k.indexOf('titulo') >= 0) dados[c.chave] = SOLICITACAO.titulo || '';
+      else if (/(descri|texto|corpo|conte[uú]do)/.test(k)) dados[c.chave] = corpo;
+      else if (k.indexOf('data') >= 0) dados[c.chave] = data || (SOLICITACAO.prazo || '');
+      else if (k.indexOf('hora') >= 0) dados[c.chave] = horario;
+      else if (k.indexOf('local') >= 0) dados[c.chave] = local;
+      else if (k.indexOf('instru') >= 0) dados[c.chave] = instrucoes;
+      else if (k.indexOf('assin') >= 0) dados[c.chave] = SOLICITACAO.secretaria || '';
+    });
   }
 
   // Campos
