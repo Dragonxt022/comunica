@@ -252,6 +252,7 @@ export const modeloNovo = async (req: Request, res: Response) => {
     if (!ehGestor(user)) return res.status(403).render('errors/403', { title: 'Acesso Negado', layout: 'layouts/main' });
     const paletas = await ArtePaleta.findAll({ where: { estado: { [Op.ne]: 'arquivado' }, ...municipioWhere(user, {}, getActiveMid(req)) }, order: [['nome', 'ASC']] });
     const estilos = await ArteEstilo.findAll({ order: [['nome', 'ASC']] });
+    const solicitacoes = await Solicitacao.findAll({ where: whereEscopo(user, req), order: [['createdAt', 'DESC']], limit: 40, attributes: ['id', 'titulo', 'descricao', 'prazo'], include: [{ model: Secretaria, as: 'secretaria', attributes: ['id', 'nome'] }] });
     res.render('artes/modelo-form', {
       title: 'Novo modelo',
       template: null,
@@ -259,6 +260,8 @@ export const modeloNovo = async (req: Request, res: Response) => {
       paletas,
       estilos,
       paletaCores: { ...PALETA_PADRAO },
+      solicitacoes,
+      solicitacoesJson: JSON.stringify((solicitacoes as any[]).map((s) => ({ id: s.id, titulo: s.titulo, descricao: s.descricao, prazo: s.prazo, secretaria: (s.secretaria ? s.secretaria.nome : '') }))),
       modo: 'criar',
     });
   } catch (error) {
@@ -323,6 +326,7 @@ export const modeloEditar = async (req: Request, res: Response) => {
     const paletas = await ArtePaleta.findAll({ where: { estado: { [Op.ne]: 'arquivado' }, ...municipioWhere(user, {}, getActiveMid(req)) }, order: [['nome', 'ASC']] });
     const estilos = await ArteEstilo.findAll({ order: [['nome', 'ASC']] });
     const paletaCores = await coresDaPaleta(tpl.paleta_id);
+    const solicitacoes = await Solicitacao.findAll({ where: whereEscopo(user, req), order: [['createdAt', 'DESC']], limit: 40, attributes: ['id', 'titulo', 'descricao', 'prazo'], include: [{ model: Secretaria, as: 'secretaria', attributes: ['id', 'nome'] }] });
     res.render('artes/modelo-form', {
       title: `Editar modelo — ${tpl.nome}`,
       template: tpl,
@@ -334,6 +338,8 @@ export const modeloEditar = async (req: Request, res: Response) => {
       paletas,
       estilos,
       paletaCores,
+      solicitacoes,
+      solicitacoesJson: JSON.stringify((solicitacoes as any[]).map((s) => ({ id: s.id, titulo: s.titulo, descricao: s.descricao, prazo: s.prazo, secretaria: (s.secretaria ? s.secretaria.nome : '') }))),
       modo: 'editar',
     });
   } catch (error) {

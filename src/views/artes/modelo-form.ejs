@@ -214,6 +214,15 @@
 
         <!-- Canvas -->
         <div class="space-y-2 ed-col-canvas">
+            <div class="flex items-center gap-2">
+                <label class="text-[11px] text-gray-500 whitespace-nowrap">Exemplo de dados:</label>
+                <select id="ed-amostra" class="c-select" style="max-width:340px">
+                    <option value="">Rótulos dos campos</option>
+                    <% (typeof solicitacoes !== 'undefined' ? solicitacoes : []).forEach(function(s){ %>
+                    <option value="<%= s.id %>">#<%= s.id %> — <%= s.titulo %></option>
+                    <% }); %>
+                </select>
+            </div>
             <div id="ed-canvas-wrap" class="p-4">
                 <div id="ed-canvas-spacer" style="position: relative;">
                     <div id="ed-canvas"><div id="ed-canvas-inner"></div><div id="ed-guides"></div></div>
@@ -250,11 +259,19 @@
 (function(){
   var VAR_INICIAL = <%- variantesJson %>;
   var MODELO_ID = <%- __tpl ? __tpl.id : 'null' %>;
+  var SOLICITACOES = <%- (typeof solicitacoesJson !== 'undefined' ? solicitacoesJson : '[]') %>;
+  var CAMPOS_COMUNS = [
+    { chave:'titulo', rotulo:'Título' }, { chave:'subtitulo', rotulo:'Subtítulo' },
+    { chave:'descricao', rotulo:'Descrição' }, { chave:'data', rotulo:'Data' },
+    { chave:'horario', rotulo:'Horário' }, { chave:'local', rotulo:'Local' },
+    { chave:'instrucoes', rotulo:'Instruções' }, { chave:'assinatura', rotulo:'Assinatura' },
+    { chave:'chamada', rotulo:'Chamada' }, { chave:'periodo_label', rotulo:'Período (rótulo)' }, { chave:'periodo_valor', rotulo:'Período (valor)' },
+  ];
   var CAMPOS_INICIAL = <%- __tpl ? (__tpl.campos || '[]') : '[]' %>;
   var SVG_ESTILOS = <%- JSON.stringify(typeof estilos !== 'undefined' && estilos ? estilos : []) %>;
   var ATIVOS = [];
 
-  var state = { variantes: VAR_INICIAL.map(function(v){ return { id:v.id, chave:v.chave, papel:v.papel, nome:v.nome, largura:v.largura, altura:v.altura, fundo:v.fundo, elementos:(v.elementos||[]).slice() }; }), atual:0, sel:[], campos: Array.isArray(CAMPOS_INICIAL) ? CAMPOS_INICIAL : [] };
+  var state = { variantes: VAR_INICIAL.map(function(v){ return { id:v.id, chave:v.chave, papel:v.papel, nome:v.nome, largura:v.largura, altura:v.altura, fundo:v.fundo, elementos:(v.elementos||[]).slice() }; }), atual:0, sel:[], amostra:null, campos: Array.isArray(CAMPOS_INICIAL) ? CAMPOS_INICIAL : [] };
   if (!state.variantes.length) state.variantes.push({ chave:'9:16', papel:'principal', nome:'Vertical 9:16', largura:1080, altura:1920, elementos:[] });
 
   var wrap = document.getElementById('ed-canvas-wrap');
@@ -290,7 +307,42 @@
     });
     return mudou;
   }
-  function dadosAmostra(){ var d={}; state.campos.forEach(function(c){ d[c.chave] = (c.rotulo||c.chave); }); return d; }
+  function dadosAmostra(){ if (state.amostra) return state.amostra; var d={}; state.campos.forEach(function(c){ d[c.chave] = (c.rotulo||c.chave); }); return d; }
+  function dadosDeSolicitacao(sol){
+    var desc = String(sol.descricao || '').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|div|li)>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[ \t]+/g,' ').trim();
+    var linhas = desc.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    var md = desc.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    var data = md ? (String(md[1]).padStart(2,'0')+'/'+String(md[2]).padStart(2,'0')+(md[3]?'/'+md[3]:'')) : '';
+    var mh = desc.match(/(\d{1,2})\s*(?:h|:)\s*(\d{2})?/);
+    var horario = mh ? (String(mh[1]).padStart(2,'0')+'h'+(mh[2]||'00')) : '';
+    var mlocal = desc.match(/local\s*[:\-]\s*([^\n\.]+)/i);
+    var local = mlocal ? mlocal[1].trim() : '';
+    var minst = desc.match(/(programa[çc][ãa]o|instru[çc][õo]es)\s*[:\-]\s*([^\n]+)/i);
+    var instrucoes = minst ? minst[2].trim() : '';
+    var corpo = linhas.filter(function(l){ return !/^(data|local|hor[áa]rio|programa[çc][ãa]o|instru[çc][õo]es)\b/i.test(l); });
+    if (corpo.length > 1 && corpo[0].toLowerCase() === String(sol.titulo||'').toLowerCase()) corpo = corpo.slice(1);
+    var d = {};
+    state.campos.forEach(function(c){
+      var k = String(c.chave).toLowerCase();
+      if (k.indexOf('subtit') >= 0) d[c.chave] = '';
+      else if (k.indexOf('titulo') >= 0) d[c.chave] = sol.titulo || '';
+      else if (/(descri|texto|corpo|conte[uú]do)/.test(k)) d[c.chave] = corpo.join('\n');
+      else if (k.indexOf('data') >= 0) d[c.chave] = data || (sol.prazo || '');
+      else if (k.indexOf('hora') >= 0) d[c.chave] = horario;
+      else if (k.indexOf('local') >= 0) d[c.chave] = local;
+      else if (k.indexOf('instru') >= 0) d[c.chave] = instrucoes;
+      else if (k.indexOf('assin') >= 0) d[c.chave] = sol.secretaria || '';
+      else d[c.chave] = c.rotulo || c.chave;
+    });
+    return d;
+  }
+  var amostraSel = document.getElementById('ed-amostra');
+  if (amostraSel) amostraSel.addEventListener('change', function(){
+    var id = Number(amostraSel.value);
+    var sol = id ? SOLICITACOES.filter(function(s){ return s.id === id; })[0] : null;
+    state.amostra = sol ? dadosDeSolicitacao(sol) : null;
+    renderCanvas(); renderProps();
+  });
   function interpolar(t, d){ return String(t||'').replace(/\{\{\s*([\w.]+)\s*\}\}/g, function(m,k){ return d[k]!==undefined?d[k]:''; }); }
   function uid(){ return 'el-'+Math.random().toString(36).slice(2,9); }
   function proxCamada(){ var v=varAtual(); return v.elementos.reduce(function(m,e){return Math.max(m,e.camada||0);},0)+1; }
@@ -527,6 +579,21 @@
       + '<button type="button" class="c-btn c-btn-danger c-btn-sm ml-auto" data-del-el>Excluir</button></div>';
     propsEl.innerHTML = html;
   }
+  function inserirNoTexto(snippet){
+    var el = selEl(); if (!el) return;
+    var ta = document.querySelector('#ed-props textarea[data-prop="valor"]');
+    if (ta){
+      var val = ta.value || '';
+      var start = ta.selectionStart != null ? ta.selectionStart : val.length;
+      var end = ta.selectionEnd != null ? ta.selectionEnd : start;
+      el.valor = val.slice(0, start) + snippet + val.slice(end);
+      var pos = start + snippet.length;
+      renderProps(); renderCanvas();
+      var ta2 = document.querySelector('#ed-props textarea[data-prop="valor"]');
+      if (ta2){ ta2.focus(); ta2.setSelectionRange(pos, pos); }
+    } else { el.valor = (el.valor || '') + snippet; renderProps(); renderCanvas(); }
+    derivarCampos(); renderCampos();
+  }
   function sombraFields(el){
     var s = el.sombra || {};
     var h = '<div class="pt-2 mt-2 border-t border-gray-100"><label class="flex items-center gap-2 text-xs font-semibold text-gray-600"><input type="checkbox" data-sombra-on '+(el.sombra?'checked':'')+'> Sombra</label>';
@@ -559,6 +626,9 @@
       html+= '<div class="flex gap-1"><button type="button" class="c-btn c-btn-secondary c-btn-sm" data-escolher-ativo>Escolher da biblioteca</button>'+(el.url?'<button type="button" class="c-btn c-btn-ghost c-btn-sm text-red-500" data-remover-imagem>Remover</button>':'')+'</div></div>'; }
     else if (el.tipo==='texto'){ var st=el.estilo||{};
       html+= '<div class="ed-field"><label>Texto (use {{campo}})</label><textarea data-prop="valor" rows="2">'+(el.valor||'')+'</textarea></div>';
+      var comunsChaves = CAMPOS_COMUNS.map(function(c){ return c.chave; });
+      var chips = CAMPOS_COMUNS.concat(state.campos.filter(function(c){ return comunsChaves.indexOf(c.chave) < 0; }).map(function(c){ return { chave:c.chave, rotulo:c.rotulo || c.chave }; }));
+      html+= '<div class="ed-field"><label>Inserir campo</label><div class="flex flex-wrap gap-1">'+chips.map(function(c){ return '<button type="button" class="c-btn c-btn-secondary c-btn-sm" data-ins-campo="'+c.chave+'">'+c.rotulo+'</button>'; }).join('')+'</div><p class="text-[10px] text-gray-400 mt-1">Clique para inserir <code>{{campo}}</code>. Cada <code>{{campo}}</code> vira um campo de preenchimento na produção.</p></div>';
       html+= '<div class="ed-field"><label>Vincular campo</label><select data-prop="variavel"><option value="">—</option>'+state.campos.map(function(c){return '<option value="'+c.chave+'" '+(el.variavel===c.chave?'selected':'')+'>'+c.chave+'</option>';}).join('')+'</select></div>';
       html+= f('X','x',el.x)+f('Y','y',el.y)+f('Largura','w',el.w);
       html+= '<div class="ed-field"><label>Estilo base</label><select id="ed-aplicar-estilo"><option value="">— copiar de estilo —</option>'+SVG_ESTILOS.map(function(e){return '<option value="'+e.id+'">'+e.nome+'</option>';}).join('')+'</select></div>';
@@ -801,6 +871,7 @@
   });
   propsEl.addEventListener('click', function(e){
     if(e.target.dataset.align){ alinharSelecao(e.target.dataset.align); return; }
+    if(e.target.dataset.insCampo){ inserirNoTexto('{{'+e.target.dataset.insCampo+'}}'); return; }
     if(e.target.dataset.copyEl!==undefined){ copiarSelecionado(); return; }
     if(e.target.dataset.dupEl!==undefined){ duplicarSelecionado(); return; }
     if(e.target.dataset.delEl!==undefined){ excluirSelecionado(); return; }
