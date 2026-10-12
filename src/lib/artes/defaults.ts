@@ -88,16 +88,16 @@ function layoutAviso(w: number, h: number, tema: TemaModelo): Elemento[] {
   const bannerY = cardY + Math.round(cardH * 0.23);
   els.push({ id: 'banner', tipo: 'retangulo', x: cardX + 30, y: bannerY, w: cardW - 60, h: 46, fill: 'accent', camada: 6, bloqueado: true });
   els.push(txt('banner-texto', cardX + 30, bannerY + 9, cardW - 60, 'ATENÇÃO  -  ATENÇÃO  -  ATENÇÃO  -  ATENÇÃO', undefined, { tamanho: 26, peso: 700, cor: 'primary', limiteLinhas: 1 }));
-  els.push(txt('titulo', cardX + 20, cardY + Math.round(cardH * 0.30), cardW - 40, '{{titulo}}', 'titulo', { tamanho: 50, peso: 800, cor: 'primary', limiteLinhas: 3 }));
-  els.push(txt('subtitulo', cardX + 20, cardY + Math.round(cardH * 0.42), cardW - 40, '{{subtitulo}}', 'subtitulo', { tamanho: 34, peso: 700, cor: 'secondary', limiteLinhas: 2 }));
-  const perY = cardY + Math.round(cardH * 0.52), perH = Math.round(h * 0.075);
+  els.push(txt('titulo', cardX + 20, cardY + Math.round(cardH * 0.30), cardW - 40, '{{titulo}}', 'titulo', { tamanho: 48, peso: 800, cor: 'primary', limiteLinhas: 3 }));
+  els.push(txt('subtitulo', cardX + 20, cardY + Math.round(cardH * 0.44), cardW - 40, '{{subtitulo}}', 'subtitulo', { tamanho: 32, peso: 700, cor: 'secondary', limiteLinhas: 2 }));
+  const perY = cardY + Math.round(cardH * 0.53), perH = Math.round(h * 0.075);
   const perX = cardX + 60, perW = cardW - 120;
   els.push({ id: 'periodo', tipo: 'retangulo', x: perX, y: perY, w: perW, h: perH, fill: 'accent', raio: Math.round(perH / 2), camada: 6, bloqueado: true });
   els.push(txt('periodo-texto', perX, perY + Math.round(perH * 0.28), perW, '{{data}}   {{horario}}', 'data', { tamanho: 46, peso: 800, cor: 'primary', limiteLinhas: 1 }));
-  els.push(txt('descricao', cardX + 20, cardY + Math.round(cardH * 0.64), cardW - 40, '{{descricao}}', 'descricao', { tamanho: 34, peso: 600, cor: 'secondary', limiteLinhas: 3 }));
-  els.push(txt('local', cardX + 20, cardY + Math.round(cardH * 0.75), cardW - 40, 'Local: {{local}}', 'local', { tamanho: 32, peso: 700, cor: 'primary', limiteLinhas: 2 }));
-  els.push(txt('instrucoes', cardX + 20, cardY + Math.round(cardH * 0.83), cardW - 40, '{{instrucoes}}', 'instrucoes', { tamanho: 30, peso: 600, cor: 'mutedText', limiteLinhas: 3 }));
-  els.push(txt('assinatura', cardX + 20, cardY + Math.round(cardH * 0.95), cardW - 40, '{{assinatura}}', 'assinatura', { tamanho: 30, peso: 700, cor: 'text', limiteLinhas: 1 }));
+  els.push(txt('descricao', cardX + 20, cardY + Math.round(cardH * 0.62), cardW - 40, '{{descricao}}', 'descricao', { tamanho: 32, peso: 600, cor: 'secondary', tamanhoMin: 22, limiteLinhas: 4 }));
+  els.push(txt('local', cardX + 20, cardY + Math.round(cardH * 0.76), cardW - 40, 'Local: {{local}}', 'local', { tamanho: 30, peso: 700, cor: 'primary', limiteLinhas: 2 }));
+  els.push(txt('instrucoes', cardX + 20, cardY + Math.round(cardH * 0.83), cardW - 40, '{{instrucoes}}', 'instrucoes', { tamanho: 28, peso: 600, cor: 'mutedText', tamanhoMin: 20, limiteLinhas: 3 }));
+  els.push(txt('assinatura', cardX + 20, cardY + Math.round(cardH * 0.95), cardW - 40, '{{assinatura}}', 'assinatura', { tamanho: 28, peso: 700, cor: 'text', limiteLinhas: 1 }));
   els.push(txt('rodape', Math.round(w * 0.2), h - bandH + Math.round(bandH * 0.18), Math.round(w * 0.6), 'PREFEITURA MUNICIPAL', undefined, { tamanho: 26, peso: 800, cor: 'surface', limiteLinhas: 1 }));
   return els;
 }

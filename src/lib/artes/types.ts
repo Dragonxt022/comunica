@@ -22,6 +22,14 @@ export interface EstiloTexto {
   overflow: 'diminuir' | 'cortar' | 'avisar';
 }
 
+export interface Sombra {
+  cor?: CorRef;
+  blur?: number;
+  x?: number;
+  y?: number;
+  opacidade?: number;
+}
+
 export interface ElementoBase {
   id: string;
   tipo: string;
@@ -31,6 +39,7 @@ export interface ElementoBase {
   oculto?: boolean;
   institucional?: boolean;
   opacidade?: number;
+  sombra?: Sombra;
 }
 
 export interface ElRetangulo extends ElementoBase {

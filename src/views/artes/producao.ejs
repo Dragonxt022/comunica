@@ -137,7 +137,10 @@
     var local = mlocal ? mlocal[1].trim() : '';
     var minstr = desc.match(/(programa[çc][ãa]o|instru[çc][õo]es)\s*[:\-]\s*([^\n]+)/i);
     var instrucoes = minstr ? minstr[2].trim() : '';
-    var corpo = linhas.filter(function(l){ return !/^(data|local|hor[áa]rio|programa[çc][ãa]o|instru[çc][õo]es)\b/i.test(l); }).join('\n');
+    var corpo = linhas.filter(function(l){ return !/^(data|local|hor[áa]rio|programa[çc][ãa]o|instru[çc][õo]es)\b/i.test(l); });
+    // Evita repetir o título da solicitação na descrição.
+    if (corpo.length > 1 && corpo[0].trim().toLowerCase() === String(SOLICITACAO.titulo || '').trim().toLowerCase()) corpo = corpo.slice(1);
+    corpo = corpo.join('\n');
     CAMPOS.forEach(function(c){
       var k = String(c.chave).toLowerCase();
       if (k.indexOf('subtit') >= 0) dados[c.chave] = '';

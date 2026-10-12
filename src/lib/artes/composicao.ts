@@ -88,6 +88,19 @@ function renderImagem(el: ElImagem, input: ComposicaoInput): string {
 }
 
 function renderElemento(el: Elemento, input: ComposicaoInput, diag: DiagnosticoTexto[]): string {
+  const interno = renderElementoBase(el, input, diag);
+  if (!interno || !el.sombra) return interno;
+  const s = el.sombra;
+  const cor = resolverCor(s.cor || 'text', input.paleta);
+  const dx = s.x != null ? s.x : 6;
+  const dy = s.y != null ? s.y : 6;
+  const blur = s.blur != null ? s.blur : 6;
+  const op = s.opacidade != null ? s.opacidade : 0.45;
+  const id = `sh-${el.id}`;
+  return `<defs><filter id="${id}" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="${dx}" dy="${dy}" stdDeviation="${blur}" flood-color="${cor}" flood-opacity="${op}"/></filter></defs><g filter="url(#${id})">${interno}</g>`;
+}
+
+function renderElementoBase(el: Elemento, input: ComposicaoInput, diag: DiagnosticoTexto[]): string {
   const op = el.opacidade ?? 1;
   const opAttr = op < 1 ? ` opacity="${op}"` : '';
   switch (el.tipo) {
