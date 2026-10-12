@@ -68,6 +68,14 @@
                     </div>
                 </div>
 
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="btn-ia-preencher" class="c-btn c-btn-secondary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        Preencher com IA
+                    </button>
+                    <span id="ia-preencher-status" class="text-xs text-gray-500">A IA lê a solicitação, corrige o texto e preenche os campos.</span>
+                </div>
+
                 <div id="campos-container" class="space-y-3"></div>
             </div>
 
@@ -281,6 +289,22 @@
     pvValid.innerHTML=html;
   }
   sincronizarModo();
+
+  // Modo IA: preencher os campos a partir da solicitação
+  var btnIa = document.getElementById('btn-ia-preencher');
+  if (btnIa) btnIa.addEventListener('click', function(){
+    var btn = this; var st = document.getElementById('ia-preencher-status');
+    btn.disabled = true; st.textContent = 'A IA está lendo a solicitação…';
+    fetch('/artes/ia/preencher', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ template_id:TEMPLATE_ID, solicitacao_id: SOLICITACAO ? SOLICITACAO.id : null, dados:dados }) })
+      .then(function(r){ return r.json(); }).then(function(d){
+        btn.disabled = false;
+        if (!d.ok || !d.dados) { st.textContent = d.error || 'IA indisponível. Preencha manualmente.'; return; }
+        Object.keys(d.dados).forEach(function(k){ dados[k] = d.dados[k]; });
+        document.querySelectorAll('#campos-container [data-chave]').forEach(function(el){ if (d.dados[el.dataset.chave] !== undefined) el.value = d.dados[el.dataset.chave]; });
+        st.textContent = 'Campos preenchidos pela IA — revise e ajuste se precisar.';
+        agendarPrevia();
+      }).catch(function(){ btn.disabled = false; st.textContent = 'IA indisponível. Preencha manualmente.'; });
+  });
 
   // Gerar
   document.getElementById('btn-gerar').addEventListener('click', function(){

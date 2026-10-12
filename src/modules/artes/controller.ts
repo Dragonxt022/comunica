@@ -1172,6 +1172,68 @@ export const iaRevisar = async (req: Request, res: Response) => {
   }
 };
 
+function extrairJsonCampos(resposta: string, campos: Campo[], base: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = { ...base };
+  let obj: any = null;
+  const m = String(resposta || '').match(/\{[\s\S]*\}/);
+  if (m) { try { obj = JSON.parse(m[0]); } catch { obj = null; } }
+  if (!obj || typeof obj !== 'object') {
+    obj = {};
+    for (const linha of String(resposta || '').split('\n')) {
+      const mm = linha.match(/^\s*"?([\w.]+)"?\s*[:\-]\s*(.+)$/);
+      if (mm) obj[mm[1]] = String(mm[2]).replace(/^["']|["']$/g, '').trim();
+    }
+  }
+  for (const c of campos) {
+    let v = obj[c.chave];
+    if (v === undefined || v === null) continue;
+    v = String(v).trim();
+    if (c.maxCaracteres && v.length > c.maxCaracteres) v = v.slice(0, c.maxCaracteres).trim();
+    out[c.chave] = v;
+  }
+  return out;
+}
+
+/**
+ * Modo IA: lê a solicitação, corrige o texto e preenche os campos do banner
+ * respeitando os limites de cada campo.
+ */
+export const iaPreencher = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const templateId = Number(req.body.template_id);
+    const solicitacaoId = Number(req.body.solicitacao_id) || 0;
+    const base = parseJson<Record<string, string>>(req.body.dados, {});
+    const tpl = await carregarTemplate(templateId, user, req);
+    if (!tpl) return res.status(404).json({ ok: false, error: 'Modelo não encontrado' });
+
+    const campos = camposEfetivos(parseJson<Campo[]>(tpl.campos, []), tpl.variantes || []);
+
+    let origem = '';
+    if (solicitacaoId) {
+      const sol = await Solicitacao.findOne({ where: { id: solicitacaoId, ...whereEscopo(user, req) }, include: [{ model: Secretaria, as: 'secretaria' }] });
+      if (sol) {
+        const desc = String((sol as any).descricao || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        origem = `Título da solicitação: ${sol.titulo}\nDescrição: ${desc}\nSecretaria: ${(sol as any).secretaria?.nome || ''}\nPrazo: ${(sol as any).prazo || ''}`;
+      }
+    }
+    if (!origem) origem = `Dados informados:\n${JSON.stringify(base)}`;
+
+    const listaCampos = campos.map((c) => `- "${c.chave}" (${c.rotulo}; ${c.tipo}${c.maxCaracteres ? `; máximo ${c.maxCaracteres} caracteres` : ''}${c.obrigatorio ? '; obrigatório' : ''})`).join('\n');
+
+    const { systemPrompt, modelo } = await getIaConfig();
+    const instrucao = `${systemPrompt}\n\nVocê redige textos de comunicação institucional em português do Brasil. Corrija ortografia, gramática, clareza e dicção. Ajuste cada texto para caber no limite de caracteres informado. NUNCA invente datas, horários, endereços, nomes, valores ou números: use apenas o que foi fornecido e preserve-os exatamente. Se faltar informação para um campo, deixe-o como string vazia "". Não use markdown.`;
+    const prompt = `Solicitação:\n${origem}\n\nCampos do banner (preencha todos):\n${listaCampos}\n\nResponda APENAS com um objeto JSON válido, sem texto antes ou depois e sem markdown, no formato:\n{"chave":"valor", ...}`;
+
+    const resposta = await gerarComFallback(prompt, instrucao, modelo);
+    const dados = extrairJsonCampos(resposta, campos, base);
+    res.json({ ok: true, dados });
+  } catch (error) {
+    console.error('Erro artes/ia-preencher:', error);
+    res.status(503).json({ ok: false, error: 'Assistente de IA indisponível no momento. Você pode preencher manualmente.' });
+  }
+};
+
 export const iaCarrossel = async (req: Request, res: Response) => {
   try {
     const texto = String(req.body.texto || '').trim();

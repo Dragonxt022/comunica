@@ -54,6 +54,7 @@ router.post('/geracoes/:id/excluir', ArtesController.geracaoExcluir);
 
 // ── Assistência textual por IA ──────────────────────────────────────────────
 router.post('/ia/revisar', ArtesController.iaRevisar);
+router.post('/ia/preencher', ArtesController.iaPreencher);
 router.post('/ia/carrossel', ArtesController.iaCarrossel);
 
 export default router;
