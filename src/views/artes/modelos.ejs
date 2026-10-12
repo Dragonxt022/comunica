@@ -12,6 +12,7 @@
 
     <% if (ok === 'publicado') { %><div class="c-card p-3 text-sm text-emerald-700 bg-emerald-50 border-emerald-100">Modelo publicado.</div><% } %>
     <% if (ok === 'arquivado') { %><div class="c-card p-3 text-sm text-gray-700 bg-gray-50">Modelo arquivado.</div><% } %>
+    <% if (ok === 'excluido') { %><div class="c-card p-3 text-sm text-gray-700 bg-gray-50">Modelo excluído.</div><% } %>
     <% if (erro === 'sem_elementos') { %><div class="c-card p-3 text-sm text-amber-700 bg-amber-50 border-amber-100">Adicione elementos a pelo menos uma variante antes de publicar.</div><% } %>
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -42,9 +43,24 @@
                     <% if (t.estado === 'publicado') { %>
                     <form action="/artes/modelos/<%= t.id %>/arquivar" method="POST"><button class="c-btn c-btn-secondary c-btn-sm">Arquivar</button></form>
                     <% } %>
+                    <button type="button" class="c-btn c-btn-ghost c-btn-sm text-red-500 ml-auto" data-del-modelo="<%= t.id %>" title="Excluir modelo">Excluir</button>
                 </div>
             </div>
         </div>
         <% }); %>
     </div>
 </div>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-del-modelo]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(!confirm('Excluir este modelo? Modelos com artes geradas precisam ser arquivados.')) return;
+      fetch('/artes/modelos/'+btn.dataset.delModelo+'/excluir', { method:'POST', headers:{'Accept':'application/json'} })
+        .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+        .then(function(res){ if(res.ok && res.d.ok) location.reload(); else alert((res.d && res.d.error) || 'Não foi possível excluir.'); })
+        .catch(function(){ alert('Erro ao excluir.'); });
+    });
+  });
+})();
+</script>

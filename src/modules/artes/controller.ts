@@ -391,6 +391,29 @@ export const modeloArquivar = async (req: Request, res: Response) => {
   }
 };
 
+export const modeloExcluir = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!ehGestor(user)) return res.status(403).json({ ok: false, error: 'Sem permissão' });
+    const tpl = await carregarTemplate(Number(req.params.id), user, req);
+    if (!tpl) return res.status(404).json({ ok: false, error: 'Modelo não encontrado' });
+
+    const geracoes = await ArteGeracao.count({ where: { template_id: tpl.id } });
+    if (geracoes > 0) {
+      return res.status(400).json({ ok: false, error: `Este modelo já gerou ${geracoes} arte(s). Arquive-o em vez de excluir, para preservar o histórico.` });
+    }
+
+    await ArteTemplateVariante.destroy({ where: { template_id: tpl.id } });
+    await tpl.destroy();
+
+    if (req.headers.accept?.includes('application/json')) return res.json({ ok: true });
+    res.redirect('/artes/modelos?ok=excluido');
+  } catch (error) {
+    console.error('Erro artes/modelo-excluir:', error);
+    res.status(500).json({ ok: false, error: 'Erro ao excluir.' });
+  }
+};
+
 export const modeloDuplicar = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;

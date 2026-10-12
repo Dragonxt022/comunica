@@ -27,6 +27,7 @@ router.get('/modelos/:id/thumb/:chave', ArtesController.modeloThumb);
 router.post('/modelos/:id', ArtesController.modeloUpdate);
 router.post('/modelos/:id/publicar', ArtesController.modeloPublicar);
 router.post('/modelos/:id/arquivar', ArtesController.modeloArquivar);
+router.post('/modelos/:id/excluir', ArtesController.modeloExcluir);
 router.post('/modelos/:id/duplicar', ArtesController.modeloDuplicar);
 
 // ── Biblioteca de ativos ────────────────────────────────────────────────────

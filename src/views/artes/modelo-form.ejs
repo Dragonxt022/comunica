@@ -66,6 +66,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <% if (__isEditar) { %><button type="button" id="btn-excluir-modelo" class="c-btn c-btn-ghost text-red-600">Excluir modelo</button><% } %>
             <button type="button" id="btn-salvar" class="c-btn c-btn-primary">Salvar</button>
         </div>
     </div>
@@ -212,6 +213,7 @@
 <script>
 (function(){
   var VAR_INICIAL = <%- variantesJson %>;
+  var MODELO_ID = <%- __tpl ? __tpl.id : 'null' %>;
   var CAMPOS_INICIAL = <%- __tpl ? (__tpl.campos || '[]') : '[]' %>;
   var SVG_ESTILOS = <%- JSON.stringify(typeof estilos !== 'undefined' && estilos ? estilos : []) %>;
   var ATIVOS = [];
@@ -733,6 +735,14 @@
     document.getElementById('form-modelo').submit();
   }
   document.getElementById('btn-salvar').addEventListener('click', salvar);
+  var btnExcluirModelo = document.getElementById('btn-excluir-modelo');
+  if (btnExcluirModelo) btnExcluirModelo.addEventListener('click', function(){
+    if (!confirm('Excluir este modelo? Modelos com artes geradas precisam ser arquivados.')) return;
+    fetch('/artes/modelos/' + MODELO_ID + '/excluir', { method:'POST', headers:{ 'Accept':'application/json' } })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){ if (res.ok && res.d.ok) window.location.href = '/artes/modelos?ok=excluido'; else alert((res.d && res.d.error) || 'Não foi possível excluir.'); })
+      .catch(function(){ alert('Erro ao excluir.'); });
+  });
   document.getElementById('form-modelo').addEventListener('submit', function(){ document.getElementById('variantes_json').value=JSON.stringify(state.variantes); document.getElementById('campos_json').value=JSON.stringify(state.campos); });
 
   window.addEventListener('resize', renderCanvas);
