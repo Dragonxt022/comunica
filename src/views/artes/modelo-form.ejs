@@ -157,7 +157,7 @@
                         <label>Cor de fundo</label>
                         <div style="display:flex;gap:6px">
                             <select id="ed-fundo-select">
-                                <% Object.keys(paletaCores || {}).forEach(function(k){ %><option value="<%= k %>"><%= k %></option><% }); %>
+                                <% Object.keys((typeof paletaCores !== 'undefined' && paletaCores) ? paletaCores : {}).forEach(function(k){ %><option value="<%= k %>"><%= k %></option><% }); %>
                                 <option value="#FFFFFF">branco</option>
                             </select>
                             <input type="color" id="ed-fundo-color" value="#FFFFFF" style="width:40px;padding:2px">

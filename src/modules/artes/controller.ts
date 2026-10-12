@@ -221,11 +221,14 @@ export const modeloNovo = async (req: Request, res: Response) => {
     const user = (req as any).session.user;
     if (!ehGestor(user)) return res.status(403).render('errors/403', { title: 'Acesso Negado', layout: 'layouts/main' });
     const paletas = await ArtePaleta.findAll({ where: { estado: { [Op.ne]: 'arquivado' }, ...municipioWhere(user, {}, getActiveMid(req)) }, order: [['nome', 'ASC']] });
+    const estilos = await ArteEstilo.findAll({ order: [['nome', 'ASC']] });
     res.render('artes/modelo-form', {
       title: 'Novo modelo',
       template: null,
       variantesJson: '[]',
       paletas,
+      estilos,
+      paletaCores: { ...PALETA_PADRAO },
       modo: 'criar',
     });
   } catch (error) {
