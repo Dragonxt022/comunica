@@ -19,6 +19,10 @@
   #ed-guides { position:absolute; inset:0; pointer-events:none; z-index:5; }
   .ed-guide-v { position:absolute; top:0; bottom:0; width:1px; background:#ec4899; }
   .ed-guide-h { position:absolute; left:0; right:0; height:1px; background:#ec4899; }
+  @media (min-width: 1280px) {
+    .ed-col-canvas { position: sticky; top: 1rem; align-self: start; }
+    .ed-col-props  { position: sticky; top: 1rem; align-self: start; max-height: calc(100vh - 6rem); overflow: auto; }
+  }
 </style>
 
 <div class="space-y-4">
@@ -37,7 +41,7 @@
         </div>
     </div>
 
-    <form id="form-modelo" method="POST" action="<%= action %>" class="grid grid-cols-1 xl:grid-cols-[260px_1fr_300px] gap-4">
+    <form id="form-modelo" method="POST" action="<%= action %>" class="grid grid-cols-1 xl:grid-cols-[260px_1fr_300px] gap-4 items-start">
         <input type="hidden" name="variantes_json" id="variantes_json">
         <input type="hidden" name="campos_json" id="campos_json">
 
@@ -102,7 +106,7 @@
         </div>
 
         <!-- Canvas -->
-        <div class="space-y-2">
+        <div class="space-y-2 ed-col-canvas">
             <div id="ed-canvas-wrap" class="p-4">
                 <div id="ed-canvas-spacer" style="position: relative;">
                     <div id="ed-canvas"><div id="ed-canvas-inner"></div><div id="ed-guides"></div></div>
@@ -112,7 +116,7 @@
         </div>
 
         <!-- Propriedades -->
-        <div class="ed-panel p-4">
+        <div class="ed-panel p-4 ed-col-props">
             <p class="text-xs font-bold text-gray-700 mb-3">Propriedades</p>
             <div id="ed-props" class="space-y-3 text-sm text-gray-500">Selecione um elemento.</div>
         </div>
