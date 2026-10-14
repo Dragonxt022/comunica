@@ -291,6 +291,14 @@ export const store = async (req: Request, res: Response) => {
     const acaoId = req.body.acao_id ? Number(req.body.acao_id) : null;
     const planoId = req.body.plano_id ? Number(req.body.plano_id) : null;
 
+    // Evita criar solicitação duplicada a partir da mesma ação (reenvio / duplo clique).
+    if (acaoId) {
+      const acaoAtual: any = await AcaoPlanejamento.findByPk(acaoId).catch(() => null);
+      if (acaoAtual && acaoAtual.solicitacao_id) {
+        return res.redirect(planoId ? `/planejamento/${planoId}` : `/solicitacoes/${acaoAtual.solicitacao_id}`);
+      }
+    }
+
     let primeiraSolId: number | null = null;
     for (const tipo_midia of tipos) {
       const sol = await SolicitacaoRepository.create({

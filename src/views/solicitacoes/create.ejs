@@ -21,6 +21,7 @@ document.addEventListener('alpine:init', function() {
             chatLoading: false,
             toast: '',
             toastOk: true,
+            enviando: false,
             init: function() {
                 this.quill = new Quill(this.$refs.quillEditor, {
                     theme: 'snow',
@@ -53,13 +54,17 @@ document.addEventListener('alpine:init', function() {
                 this.quill.setText(text);
             },
             prepararSubmit: function(event) {
+                // Evita envio duplicado (duplo clique / reenvio) — só a primeira submissão passa.
+                if (this.enviando) { event.preventDefault(); return; }
                 var html = this.quill.root.innerHTML;
                 var vazio = html === '<p><br></p>';
                 this.$refs.descricaoInput.value = vazio ? '' : html;
                 if (vazio) {
                     event.preventDefault();
                     this.showToast('Escreva a descrição/briefing antes de enviar.', false);
+                    return;
                 }
+                this.enviando = true;
             },
             get filteredSecretarias() {
                 if (!this.selectedMun) return this.allSecretarias;
@@ -470,11 +475,12 @@ document.addEventListener('alpine:init', function() {
             <div class="flex items-center gap-3 order-1 sm:order-2 ml-auto">
             <a href="/solicitacoes" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-white transition text-sm">Cancelar</a>
             <button type="submit"
-                :disabled="tiposSelecionados.length === 0"
-                :class="tiposSelecionados.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
+                :disabled="tiposSelecionados.length === 0 || enviando"
+                :class="(tiposSelecionados.length === 0 || enviando) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
                 class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold transition shadow-sm inline-flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span x-text="tiposSelecionados.length > 1 ? 'Criar ' + tiposSelecionados.length + ' Demandas' : 'Enviar Solicitação'"></span>
+                <svg x-show="!enviando" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <svg x-show="enviando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span x-text="enviando ? 'Enviando…' : (tiposSelecionados.length > 1 ? 'Criar ' + tiposSelecionados.length + ' Demandas' : 'Enviar Solicitação')"></span>
             </button>
             </div>
         </div>
