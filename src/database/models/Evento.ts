@@ -24,6 +24,8 @@ class Evento extends Model {
   public pdf_regulamento!: string | null;
   public municipio_id!: number | null;
   public plano_id!: number | null;
+  public notificado_1dia!: boolean;
+  public notificado_1h!: boolean;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -111,6 +113,14 @@ Evento.init(
     plano_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    notificado_1dia: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    notificado_1h: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {

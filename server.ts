@@ -262,6 +262,11 @@ async function seed() {
   await addCol('eventos', 'pdf_regulamento', 'VARCHAR(500) NULL');
   await addCol('eventos', 'imagem_capa', 'VARCHAR(255) NULL');
   await addCol('eventos', 'plano_id', 'INTEGER NULL');
+  await addCol('eventos', 'notificado_1dia', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('eventos', 'notificado_1h', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('configuracoes', 'notif_resumo_diario', 'BOOLEAN NOT NULL DEFAULT 1');
+  await addCol('configuracoes', 'notif_evento_1dia', 'BOOLEAN NOT NULL DEFAULT 1');
+  await addCol('configuracoes', 'notif_evento_1h', 'BOOLEAN NOT NULL DEFAULT 1');
   // Garante criação das novas tabelas mesmo se sync() não as pegou
   await FormularioTemplate.sync({ force: false });
   await Inscricao.sync({ force: false });
@@ -349,6 +354,22 @@ async function seed() {
 
   // Gerador de artes: paleta, estilos e modelo inicial por município
   await seedArtes();
+}
+
+// Configuração de notificações automáticas (globais). Ausência do valor = ligado.
+async function getNotifConfig(): Promise<{ resumo: boolean; evento1dia: boolean; evento1h: boolean }> {
+  try {
+    const cached = getConfigCache();
+    const cfg: any = cached?.cfg || await Configuracao.findOne({ where: { id: 1 } });
+    const on = (v: any) => (v === null || v === undefined ? true : !!v);
+    return {
+      resumo: on(cfg?.notif_resumo_diario),
+      evento1dia: on(cfg?.notif_evento_1dia),
+      evento1h: on(cfg?.notif_evento_1h),
+    };
+  } catch {
+    return { resumo: true, evento1dia: true, evento1h: true };
+  }
 }
 
 // Start Server
@@ -561,28 +582,53 @@ async function startServer() {
     app.use('/ia', isAuthenticated, iaRoutes);
     app.use('/artes', isAuthenticated, artesRoutes);
 
-    // Lembrete de eventos próximos (a cada hora)
-    setInterval(async () => {
+    // Lembretes de eventos: 1 dia antes e/ou 1 hora antes (configurável).
+    const verificarLembretesEventos = async () => {
       try {
+        const notif = await getNotifConfig();
+        if (!notif.evento1dia && !notif.evento1h) return;
         const agora = new Date();
-        const em24h = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
-        const em25h = new Date(agora.getTime() + 25 * 60 * 60 * 1000);
-        const eventos = await Evento.findAll({
-          where: { data_inicio: { [Op.between]: [em24h, em25h] }, arquivado: false },
-          include: [{ model: Secretaria, as: 'secretaria' }],
-        });
         const { notificarRole } = await import('./src/lib/notificacao.ts');
-        for (const ev of eventos) {
-          const hora = new Date(ev.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          await notificarRole(['admin', 'secom'], {
-            titulo: '📅 Evento amanhã',
-            corpo: `${ev.titulo} às ${hora}`,
-            url: `/eventos`,
-            tipo: 'evento_lembrete',
+        const horaDe = (d: any) => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        if (notif.evento1dia) {
+          const ini = new Date(agora.getTime() + 23 * 60 * 60 * 1000);
+          const fim = new Date(agora.getTime() + 25 * 60 * 60 * 1000);
+          const eventos = await Evento.findAll({
+            where: { data_inicio: { [Op.between]: [ini, fim] }, arquivado: false, notificado_1dia: false } as any,
           });
+          for (const ev of eventos as any[]) {
+            await notificarRole(['admin', 'secom'], {
+              titulo: '📅 Evento amanhã',
+              corpo: `${ev.titulo} às ${horaDe(ev.data_inicio)}`,
+              url: '/eventos',
+              tipo: 'evento_lembrete',
+            });
+            await Evento.update({ notificado_1dia: true } as any, { where: { id: ev.id } });
+          }
+        }
+
+        if (notif.evento1h) {
+          const ini = new Date(agora.getTime() + 45 * 60 * 1000);
+          const fim = new Date(agora.getTime() + 75 * 60 * 1000);
+          const eventos = await Evento.findAll({
+            where: { data_inicio: { [Op.between]: [ini, fim] }, arquivado: false, notificado_1h: false } as any,
+          });
+          for (const ev of eventos as any[]) {
+            await notificarRole(['admin', 'secom'], {
+              titulo: '⏰ Evento em 1 hora',
+              corpo: `${ev.titulo} às ${horaDe(ev.data_inicio)}`,
+              url: '/eventos',
+              tipo: 'evento_lembrete',
+            });
+            await Evento.update({ notificado_1h: true } as any, { where: { id: ev.id } });
+          }
         }
       } catch (e) { /* silencioso */ }
-    }, 60 * 60 * 1000);
+    };
+    // Roda logo no boot e depois a cada 15 minutos (garante os avisos de 1 hora).
+    verificarLembretesEventos();
+    setInterval(verificarLembretesEventos, 15 * 60 * 1000);
 
     // Notificações de ações com prazo vencido (verificação diária)
     const verificarPrazosVencidos = async () => {
@@ -623,6 +669,7 @@ async function startServer() {
     // para avisar (nunca reordena/decide sozinha; quem prioriza continua sendo a pessoa).
     const enviarResumoDiarioFila = async () => {
       try {
+        if (!(await getNotifConfig()).resumo) return;
         const municipios = await Municipio.findAll({ where: { ativo: true } });
         const agora = new Date();
         const { gerarResumoDigestFila } = await import('./src/modules/ia/controller.ts');

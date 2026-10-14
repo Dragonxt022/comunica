@@ -15,8 +15,8 @@ self.addEventListener('push', function(event) {
     var title   = data.title || 'Comunica';
     var options = {
         body:    data.body    || '',
-        icon:    data.icon    || '/icon.svg',
-        badge:   '/icon.svg',
+        icon:    data.icon    || '/icon-192.png',
+        badge:   '/icon-192.png',
         tag:     data.tag     || 'comunica-' + Date.now(),
         renotify: true,
         data:    { url: data.url || '/' },

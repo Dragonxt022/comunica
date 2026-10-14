@@ -222,6 +222,48 @@
             </label>
         </div>
 
+        <!-- Notificações -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Notificações automáticas
+            </h3>
+            <p class="text-sm text-slate-500">Ligue ou desligue os avisos enviados automaticamente pelo sistema (navegador, WhatsApp e central de notificações).</p>
+
+            <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer">
+                <input type="checkbox" name="notif_resumo_diario"
+                    <%= config && config.notif_resumo_diario ? 'checked' : '' %>
+                    class="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">
+                    <span class="font-medium">Resumo diário da fila</span>
+                    <br>
+                    <span class="text-slate-500">Envia, uma vez por dia, um resumo das solicitações pendentes e atrasadas para a equipe de comunicação.</span>
+                </span>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer">
+                <input type="checkbox" name="notif_evento_1dia"
+                    <%= config && config.notif_evento_1dia ? 'checked' : '' %>
+                    class="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">
+                    <span class="font-medium">Eventos — aviso 1 dia antes</span>
+                    <br>
+                    <span class="text-slate-500">Avisa admin e comunicação cerca de 24 horas antes de cada evento agendado.</span>
+                </span>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer">
+                <input type="checkbox" name="notif_evento_1h"
+                    <%= config && config.notif_evento_1h ? 'checked' : '' %>
+                    class="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">
+                    <span class="font-medium">Eventos — aviso 1 hora antes</span>
+                    <br>
+                    <span class="text-slate-500">Avisa admin e comunicação cerca de 1 hora antes de cada evento agendado.</span>
+                </span>
+            </label>
+        </div>
+
         <div class="flex justify-end">
             <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>

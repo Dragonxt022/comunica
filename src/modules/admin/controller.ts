@@ -488,14 +488,18 @@ export const configView = async (req: Request, res: Response) => {
 
 export const saveConfig = async (req: Request, res: Response) => {
   try {
-    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, facebook, youtube, twitter, whatsapp, site_oficial, status_eventos_json, metas_midia_json, permitir_multiplos_tipos_midia } = req.body;
+    const { titulo_site, subtitulo_site, descricao_site, email_contato, telefone_contato, instagram, facebook, youtube, twitter, whatsapp, site_oficial, status_eventos_json, metas_midia_json, permitir_multiplos_tipos_midia, notif_resumo_diario, notif_evento_1dia, notif_evento_1h } = req.body;
+    const bool = (v: any) => v === 'on' || v === '1' || v === true;
     const [config] = await Configuracao.findOrCreate({ where: { id: 1 }, defaults: {} as any });
     await config.update({
       titulo_site, subtitulo_site, descricao_site,
       email_contato, telefone_contato, instagram, facebook, youtube, twitter, whatsapp, site_oficial,
       status_eventos: status_eventos_json || null,
       metas_midia: metas_midia_json || null,
-      permitir_multiplos_tipos_midia: permitir_multiplos_tipos_midia === 'on' || permitir_multiplos_tipos_midia === '1',
+      permitir_multiplos_tipos_midia: bool(permitir_multiplos_tipos_midia),
+      notif_resumo_diario: bool(notif_resumo_diario),
+      notif_evento_1dia: bool(notif_evento_1dia),
+      notif_evento_1h: bool(notif_evento_1h),
     });
     bustConfigCache();
     const metas = config.metas_midia ? JSON.parse(config.metas_midia as string) : [];

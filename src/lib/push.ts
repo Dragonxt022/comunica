@@ -24,7 +24,7 @@ export async function sendToUser(userId: number, payload: PushPayload): Promise<
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify({ ...payload, icon: '/icon.svg' })
+        JSON.stringify({ ...payload, icon: '/icon-192.png' })
       );
     } catch (err: any) {
       if (err.statusCode === 410 || err.statusCode === 404) {

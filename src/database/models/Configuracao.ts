@@ -19,6 +19,9 @@ class Configuracao extends Model {
   public permitir_multiplos_tipos_midia!: boolean;
   public whatsapp_conectado!: boolean;
   public whatsapp_numero_conectado!: string | null;
+  public notif_resumo_diario!: boolean;
+  public notif_evento_1dia!: boolean;
+  public notif_evento_1h!: boolean;
 }
 
 Configuracao.init(
@@ -40,6 +43,9 @@ Configuracao.init(
     permitir_multiplos_tipos_midia: { type: DataTypes.BOOLEAN, defaultValue: false },
     whatsapp_conectado: { type: DataTypes.BOOLEAN, defaultValue: false },
     whatsapp_numero_conectado: { type: DataTypes.STRING, allowNull: true },
+    notif_resumo_diario: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+    notif_evento_1dia: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+    notif_evento_1h: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
   },
   { sequelize, modelName: 'Configuracao', tableName: 'configuracoes' }
 );
