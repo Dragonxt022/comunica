@@ -17,6 +17,7 @@ import Inscricao from './Inscricao.ts';
 import PlanoAcao from './PlanoAcao.ts';
 import AcaoPlanejamento from './AcaoPlanejamento.ts';
 import IndicadorMeta from './IndicadorMeta.ts';
+import ImportacaoPlano from './ImportacaoPlano.ts';
 import ChatConversa from './ChatConversa.ts';
 import ChatMensagem from './ChatMensagem.ts';
 import ChatParticipante from './ChatParticipante.ts';
@@ -47,6 +48,11 @@ Evento.hasMany(Inscricao, { foreignKey: 'evento_id', as: 'inscricoes' });
 
 Evento.belongsTo(PlanoAcao, { foreignKey: 'plano_id', as: 'plano' });
 PlanoAcao.hasMany(Evento, { foreignKey: 'plano_id', as: 'eventos' });
+
+AcaoPlanejamento.belongsTo(Solicitacao, { foreignKey: 'solicitacao_id', as: 'solicitacao' });
+
+ImportacaoPlano.belongsTo(PlanoAcao, { foreignKey: 'plano_id', as: 'plano' });
+PlanoAcao.hasMany(ImportacaoPlano, { foreignKey: 'plano_id', as: 'importacoes' });
 
 // ── Chat associations ──────────────────────────────────────────────────────
 
@@ -101,6 +107,7 @@ export {
   PlanoAcao,
   AcaoPlanejamento,
   IndicadorMeta,
+  ImportacaoPlano,
   ChatConversa,
   ChatMensagem,
   ChatParticipante,

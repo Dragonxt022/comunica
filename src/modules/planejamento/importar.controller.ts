@@ -7,7 +7,7 @@ import { escolherModeloVisao, analisarImagem, analisarTexto, extrairTextoPdf, me
 import type { DocumentoExtraido } from '../../lib/importar-documento.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
 import IndicadorMeta from '../../database/models/IndicadorMeta.ts';
-import Evento from '../../database/models/Evento.ts';
+import ImportacaoPlano from '../../database/models/ImportacaoPlano.ts';
 
 function podeEditarPlano(user: any, plano: any): boolean {
   if (!plano) return false;
@@ -103,6 +103,15 @@ export const confirmar = async (req: Request, res: Response) => {
     const acoes = Array.isArray(req.body.acoes) ? req.body.acoes : [];
     const eventos = Array.isArray(req.body.eventos) ? req.body.eventos : [];
 
+    // Cada confirmação vira um "lote" de importação, permitindo desfazer depois.
+    const lote = await ImportacaoPlano.create({
+      plano_id: planoId,
+      criado_por: user.id,
+      resumo: null,
+      total_indicadores: 0,
+      total_acoes: 0,
+    } as any);
+
     const criados = { indicadores: 0, acoes: 0, eventos: 0 };
 
     for (const it of indicadores) {
@@ -114,6 +123,7 @@ export const confirmar = async (req: Request, res: Response) => {
         valor_atual: Number(it.valor_atual) || 0,
         unidade: it.unidade || 'unidades',
         plano_id: planoId,
+        importacao_id: lote.id,
       } as any);
       criados.indicadores++;
     }
@@ -129,33 +139,62 @@ export const confirmar = async (req: Request, res: Response) => {
         prioridade: ['baixa', 'media', 'alta'].includes(it.prioridade) ? it.prioridade : 'media',
         status: 'nao_iniciado',
         plano_id: planoId,
+        importacao_id: lote.id,
       } as any);
       criados.acoes++;
     }
 
+    // Eventos extraídos viram AÇÕES do plano: é a partir da ação que o usuário
+    // decide criar o evento real no calendário ou abrir uma solicitação.
     for (const it of eventos) {
       if (!it?.titulo) continue;
-      const inicio = it.data_inicio ? new Date(it.data_inicio) : new Date();
-      const fim = it.data_fim ? new Date(it.data_fim) : inicio;
-      await Evento.create({
+      const dataEv = it.data_inicio ? String(it.data_inicio).slice(0, 10) : null;
+      await AcaoPlanejamento.create({
         titulo: String(it.titulo).slice(0, 255),
-        descricao: it.descricao || '',
-        local: it.local || '',
-        data_inicio: isNaN(inicio.getTime()) ? new Date() : inicio,
-        data_fim: isNaN(fim.getTime()) ? new Date() : fim,
-        tipo: it.tipo || 'Outros',
-        status: 'em_planejamento',
-        secretaria_id: plano.secretaria_id,
-        municipio_id: plano.municipio_id,
+        descricao: it.descricao || null,
+        objetivo: null,
+        responsavel_nome: null,
+        prazo: dataEv || null,
+        evento_local: it.local ? String(it.local).slice(0, 255) : null,
+        prioridade: 'media',
+        status: 'nao_iniciado',
         plano_id: planoId,
-        criado_por: user.id,
+        importacao_id: lote.id,
       } as any);
       criados.eventos++;
     }
 
-    return res.json({ ok: true, criados });
+    await lote.update({ total_indicadores: criados.indicadores, total_acoes: criados.acoes + criados.eventos } as any);
+
+    return res.json({ ok: true, criados, importacao_id: lote.id });
   } catch (err: any) {
     console.error('Erro importar/confirmar:', err);
     return res.status(500).json({ ok: false, error: err?.message || 'Falha ao cadastrar os itens.' });
+  }
+};
+
+/** Desfaz a última importação de um plano, removendo os itens criados naquele lote. */
+export const desfazer = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    const planoId = Number(req.body.plano_id);
+    const plano: any = await Repo.findPlanoById(planoId);
+    if (!plano) return res.status(404).json({ ok: false, error: 'Plano não encontrado.' });
+    if (!podeEditarPlano(user, plano)) return res.status(403).json({ ok: false, error: 'Sem permissão para este plano.' });
+
+    const lote: any = await ImportacaoPlano.findOne({
+      where: { plano_id: planoId },
+      order: [['createdAt', 'DESC']],
+    });
+    if (!lote) return res.status(404).json({ ok: false, error: 'Não há importação para desfazer neste plano.' });
+
+    const nInd = await IndicadorMeta.destroy({ where: { importacao_id: lote.id } });
+    const nAcoes = await AcaoPlanejamento.destroy({ where: { importacao_id: lote.id } });
+    await lote.destroy();
+
+    return res.json({ ok: true, removidos: { indicadores: nInd, acoes: nAcoes } });
+  } catch (err: any) {
+    console.error('Erro importar/desfazer:', err);
+    return res.status(500).json({ ok: false, error: 'Não foi possível desfazer a importação.' });
   }
 };

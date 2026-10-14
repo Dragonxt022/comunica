@@ -268,10 +268,21 @@ const statusEventoMap = {};
                 const corStatus = statusAcaoCores[acao.status] || 'bg-slate-100 text-slate-600';
                 const labelStatus = statusAcaoLabels[acao.status] || acao.status;
                 const eventoVinculado = acao.evento_id && eventosMap[acao.evento_id];
+                const solicitacaoVinculada = acao.solicitacao_id && solicitacoesMap[acao.solicitacao_id];
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
                 const prazoDate = acao.prazo ? new Date(acao.prazo + 'T00:00:00') : null;
                 const vencida = prazoDate && prazoDate < hoje && acao.status !== 'concluido' && acao.status !== 'cancelado';
                 const prazoFmt = prazoDate ? prazoDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+                const _desc = acao.descricao || acao.objetivo || '';
+                const eventoUrl = '/eventos/novo?titulo=' + encodeURIComponent(acao.titulo)
+                    + '&descricao=' + encodeURIComponent(_desc)
+                    + '&local=' + encodeURIComponent(acao.evento_local || '')
+                    + (acao.prazo ? '&data_inicio=' + encodeURIComponent(acao.prazo + 'T08:00') : '')
+                    + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id;
+                const solicUrl = '/solicitacoes/nova?titulo=' + encodeURIComponent(acao.titulo)
+                    + '&descricao=' + encodeURIComponent(_desc)
+                    + (acao.prazo ? '&prazo=' + encodeURIComponent(acao.prazo) : '')
+                    + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id;
             %>
             <div class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/20 transition group"
                  x-data="{ expanded: false }">
@@ -314,14 +325,22 @@ const statusEventoMap = {};
                         <% } %>
                     </div>
 
-                    <!-- Evento vinculado -->
-                    <% if (eventoVinculado) { %>
-                    <div class="mt-2 flex items-center gap-2">
+                    <!-- Itens vinculados (evento / solicitação) -->
+                    <% if (eventoVinculado || solicitacaoVinculada) { %>
+                    <div class="mt-2 flex items-center gap-2 flex-wrap">
+                        <% if (eventoVinculado) { %>
                         <a href="/eventos" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <%= eventoVinculado.titulo %>
+                            Evento: <%= eventoVinculado.titulo %>
                         </a>
                         <button @click="desvincularEvento(<%= acao.id %>)" class="text-xs text-slate-400 hover:text-red-500 transition" title="Desvincular evento">×</button>
+                        <% } %>
+                        <% if (solicitacaoVinculada) { %>
+                        <a href="/solicitacoes/<%= solicitacaoVinculada.id %>" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            Solicitação #<%= solicitacaoVinculada.id %>
+                        </a>
+                        <% } %>
                     </div>
                     <% } %>
 
@@ -340,10 +359,17 @@ const statusEventoMap = {};
                                 Editar
                             </a>
                             <% if (!acao.evento_id) { %>
-                            <a href="<%= '/eventos/novo?titulo=' + encodeURIComponent(acao.titulo) + '&descricao=' + encodeURIComponent(acao.objetivo || '') + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id %>"
+                            <a href="<%= eventoUrl %>"
                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 Gerar Evento
+                            </a>
+                            <% } %>
+                            <% if (!acao.solicitacao_id) { %>
+                            <a href="<%= solicUrl %>"
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                Criar Solicitação
                             </a>
                             <% } %>
                             <form action="/planejamento/<%= plano.id %>/acoes/<%= acao.id %>/excluir" method="POST" onsubmit="return confirm('Excluir esta ação?')">
@@ -446,22 +472,33 @@ const statusEventoMap = {};
         </div>
     </div>
 
-    <!-- Eventos do plano -->
-    <% if (eventosDoPlano.length > 0) { %>
+    <!-- Painel do plano: só o que foi criado de verdade a partir do plano -->
+    <% const solicList = Object.values(solicitacoesMap); %>
+    <% if (ultimaImportacao || eventosDoPlano.length > 0 || solicList.length > 0) { %>
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div>
-                <h2 class="text-base font-bold text-slate-900">Eventos do plano</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Eventos vinculados a este plano (ex.: importados de um documento)</p>
+                <h2 class="text-base font-bold text-slate-900">Painel do plano</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Eventos e solicitações criados a partir das ações deste plano</p>
             </div>
-            <a href="/eventos" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition">Ver calendário</a>
+            <% if (ultimaImportacao) { %>
+            <button type="button" @click="desfazerImportacao()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Desfazer última importação
+            </button>
+            <% } %>
         </div>
-        <div class="space-y-2">
+
+        <!-- Eventos criados -->
+        <% if (eventosDoPlano.length > 0) { %>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Eventos (<%= eventosDoPlano.length %>)</p>
+        <div class="space-y-2 mb-4">
             <% eventosDoPlano.forEach(function(ev) {
                 const st = statusEventoMap[ev.status] || { label: ev.status, cor: '#94a3b8' };
                 const dt = ev.data_inicio ? new Date(ev.data_inicio).toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sem data';
             %>
-            <div class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition">
+            <a href="/eventos" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition">
                 <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center" style="background:<%= st.cor %>1a;color:<%= st.cor %>">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </span>
@@ -483,9 +520,40 @@ const statusEventoMap = {};
                         <% } %>
                     </div>
                 </div>
-            </div>
+            </a>
             <% }); %>
         </div>
+        <% } %>
+
+        <!-- Solicitações criadas -->
+        <% if (solicList.length > 0) { %>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Solicitações (<%= solicList.length %>)</p>
+        <div class="space-y-2">
+            <% solicList.forEach(function(sol) {
+                const st = (statusSolicitacaoMap && statusSolicitacaoMap[sol.status]) || { label: sol.status, badge: 'bg-slate-100 text-slate-600' };
+            %>
+            <a href="/solicitacoes/<%= sol.id %>" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-emerald-200 hover:bg-emerald-50/20 transition">
+                <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start gap-2 flex-wrap">
+                        <span class="text-sm font-semibold text-slate-900 flex-1"><%= sol.titulo %></span>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= st.badge %>"><%= st.label %></span>
+                    </div>
+                    <span class="text-xs text-slate-400">Solicitação #<%= sol.id %><%= sol.tipo_midia ? ' · ' + sol.tipo_midia : '' %></span>
+                </div>
+            </a>
+            <% }); %>
+        </div>
+        <% } %>
+
+        <% if (eventosDoPlano.length === 0 && solicList.length === 0) { %>
+        <div class="text-center py-6 border-2 border-dashed border-slate-100 rounded-xl">
+            <p class="text-sm text-slate-400">Nenhum evento ou solicitação criado a partir deste plano ainda.</p>
+            <p class="text-xs text-slate-300 mt-1">Use "Gerar Evento" ou "Criar Solicitação" em cada ação.</p>
+        </div>
+        <% } %>
     </div>
     <% } %>
 
@@ -513,6 +581,20 @@ function planShow() {
             try {
                 var r = await fetch('/planejamento/<%= plano.id %>/acoes/' + acaoId + '/desvincular-evento', { method: 'POST' });
                 if ((await r.json()).ok) window.location.reload();
+            } catch(e) {}
+        },
+
+        async desfazerImportacao() {
+            if (!confirm('Desfazer a última importação? Indicadores e ações criados por ela serão removidos.')) return;
+            try {
+                var r = await fetch('/planejamento/importar/desfazer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plano_id: <%= plano.id %> }),
+                });
+                var data = await r.json();
+                if (data.ok) window.location.reload();
+                else alert(data.error || 'Não foi possível desfazer a importação.');
             } catch(e) {}
         },
 

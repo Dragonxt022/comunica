@@ -273,6 +273,7 @@ document.addEventListener('alpine:init', function () {
                 <!-- Eventos -->
                 <section>
                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Eventos <span x-text="'(' + dados.eventos.length + ')'"></span></h4>
+                    <p class="text-xs text-slate-400 mb-2">Cada evento vira uma <strong>ação do plano</strong> — depois você escolhe gerar o evento real no calendário ou abrir uma solicitação.</p>
                     <p x-show="dados.eventos.length === 0" class="text-sm text-slate-400 italic">Nenhum evento identificado.</p>
                     <div class="space-y-2">
                         <template x-for="(it, i) in dados.eventos" :key="'e'+i">

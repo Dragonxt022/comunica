@@ -13,6 +13,7 @@ router.get('/novo', isAuthenticated, C.createView);
 router.get('/importar', isAuthenticated, Imp.importarView);
 router.post('/importar/analisar', isAuthenticated, uploadDocumentos, Imp.analisar);
 router.post('/importar/confirmar', isAuthenticated, Imp.confirmar);
+router.post('/importar/desfazer', isAuthenticated, Imp.desfazer);
 
 router.post('/', isAuthenticated, C.store);
 router.get('/:id', isAuthenticated, C.show);

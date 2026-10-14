@@ -11,7 +11,7 @@ import expressLayouts from 'express-ejs-layouts';
 import dotenv from 'dotenv';
 import sequelize from './src/config/database.ts';
 import { Op } from 'sequelize';
-import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, SolicitacaoImagem, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem, ArtePaleta, ArteEstilo, ArteAtivo, ArteTemplate, ArteTemplateVariante, ArteGeracao, ArteGeracaoArquivo } from './src/database/models/index.ts';
+import { User, Secretaria, Municipio, Auditoria, Configuracao, Evento, Solicitacao, SolicitacaoImagem, Release, FormularioTemplate, Inscricao, PlanoAcao, AcaoPlanejamento, IndicadorMeta, ImportacaoPlano, ChatConversa, ChatMensagem, ChatParticipante, ChatUserKey, ChatCategoria, IaPerfil, OliviaMensagem, ArtePaleta, ArteEstilo, ArteAtivo, ArteTemplate, ArteTemplateVariante, ArteGeracao, ArteGeracaoArquivo } from './src/database/models/index.ts';
 import bcrypt from 'bcryptjs';
 import authRoutes from './src/modules/auth/routes.ts';
 import eventosRoutes from './src/modules/eventos/routes.ts';
@@ -103,6 +103,7 @@ export const DEFAULT_STATUS_EVENTOS = [
   { key: 'em_analise',      label: 'Em análise',      cor: '#3b82f6' },
   { key: 'concluido',       label: 'Concluído',        cor: '#10b981' },
   { key: 'publicado',       label: 'Publicado',        cor: '#059669' },
+  { key: 'realizado',       label: 'Realizado',        cor: '#059669' },
   { key: 'cancelado',       label: 'Cancelado',        cor: '#ef4444' },
 ];
 
@@ -267,7 +268,30 @@ async function seed() {
   await PlanoAcao.sync({ force: false });
   await AcaoPlanejamento.sync({ force: false });
   await IndicadorMeta.sync({ force: false });
+  await ImportacaoPlano.sync({ force: false });
   await addCol('acoes_planejamento', 'notificado_prazo', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('acoes_planejamento', 'solicitacao_id', 'INTEGER NULL');
+  await addCol('acoes_planejamento', 'evento_local', 'VARCHAR(255) NULL');
+  await addCol('acoes_planejamento', 'importacao_id', 'INTEGER NULL');
+  await addCol('indicadores_meta', 'importacao_id', 'INTEGER NULL');
+
+  // Garante que o status "Realizado" (usado em eventos com data passada) exista
+  // na configuração já salva, sem remover personalizações do usuário.
+  try {
+    const cfgStatus = await Configuracao.findOne({ where: { id: 1 } });
+    if (cfgStatus?.status_eventos) {
+      const stored: any[] = JSON.parse(cfgStatus.status_eventos as string);
+      if (Array.isArray(stored)) {
+        const faltando = DEFAULT_STATUS_EVENTOS.filter((d) => !stored.some((s) => s && s.key === d.key));
+        if (faltando.length > 0) {
+          await Configuracao.update({ status_eventos: JSON.stringify([...stored, ...faltando]) } as any, { where: { id: 1 } });
+          console.log('Seed: status de eventos ausentes adicionados:', faltando.map((f) => f.key).join(', '));
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Seed: falha ao sincronizar status de eventos:', e);
+  }
 
   // Chat module tables
   await ChatConversa.sync({ force: false });

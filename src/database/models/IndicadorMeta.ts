@@ -10,6 +10,7 @@ class IndicadorMeta extends Model {
   public valor_atual!: number;
   public unidade!: string;
   public plano_id!: number;
+  public importacao_id!: number | null;
   public plano?: PlanoAcao;
 }
 
@@ -22,6 +23,7 @@ IndicadorMeta.init(
     valor_atual: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
     unidade: { type: DataTypes.STRING, allowNull: false, defaultValue: 'unidades' },
     plano_id: { type: DataTypes.INTEGER, allowNull: false },
+    importacao_id: { type: DataTypes.INTEGER, allowNull: true },
   },
   { sequelize, modelName: 'IndicadorMeta', tableName: 'indicadores_meta' }
 );

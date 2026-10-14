@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as Repo from './repository.ts';
-import { Secretaria, Evento } from '../../database/models/index.ts';
+import { Secretaria, Evento, Solicitacao, ImportacaoPlano } from '../../database/models/index.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
 import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
@@ -70,13 +70,27 @@ export const show = async (req: Request, res: Response) => {
       evs.forEach((e: any) => { eventosMap[e.id] = e; });
     }
 
-    // Eventos do plano que não estão vinculados a uma ação (ex.: importados por IA)
+    // Eventos criados de verdade a partir deste plano (via ação)
     const eventosDoPlano = await Evento.findAll({
       where: { plano_id: Number(req.params.id), arquivado: false },
       order: [['data_inicio', 'ASC']],
     });
 
-    res.render('planejamento/show', { title: plano.titulo, plano, eventosMap, eventosDoPlano });
+    // Solicitações criadas a partir de ações deste plano
+    const solIds = acoes.filter((a: any) => a.solicitacao_id).map((a: any) => a.solicitacao_id);
+    const solicitacoesMap: Record<number, any> = {};
+    if (solIds.length) {
+      const sols = await Solicitacao.findAll({ where: { id: solIds }, attributes: ['id', 'titulo', 'status', 'tipo_midia'] });
+      sols.forEach((s: any) => { solicitacoesMap[s.id] = s; });
+    }
+
+    // Última importação (para permitir desfazer)
+    const ultimaImportacao = await ImportacaoPlano.findOne({
+      where: { plano_id: Number(req.params.id) },
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.render('planejamento/show', { title: plano.titulo, plano, eventosMap, eventosDoPlano, solicitacoesMap, ultimaImportacao });
   } catch (err) {
     console.error(err);
     res.status(500).send('Erro interno');

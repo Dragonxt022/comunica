@@ -52,9 +52,11 @@ export const createView = async (req: Request, res: Response) => {
     const prefill = {
       titulo: (req.query.titulo as string) || '',
       descricao: (req.query.descricao as string) || '',
+      local: (req.query.local as string) || '',
       secretaria_id: (req.query.secretaria_id as string) || '',
       acao_id: (req.query.acao_id as string) || '',
       plano_id: (req.query.plano_id as string) || '',
+      data_inicio: (req.query.data_inicio as string) || '',
     };
 
     // Criação de evento a partir de uma solicitação existente (reaproveita os dados)
@@ -288,6 +290,12 @@ export const store = async (req: Request, res: Response) => {
     const secRegistro = secId ? await Secretaria.findByPk(Number(secId)) : null;
     const municipioIdEvento = secRegistro?.municipio_id || user.municipio_id;
 
+    // Evento com data no passado é marcado como "Realizado" — não sabemos se
+    // foi cancelado, então "Em planejamento" ficaria incorreto.
+    const inicioDate = new Date(data_inicio);
+    const statusInicial = !isNaN(inicioDate.getTime()) && inicioDate < new Date() ? 'realizado' : 'em_planejamento';
+    const planoId = req.body.plano_id ? Number(req.body.plano_id) : null;
+
     const evento = await EventoRepository.create({
       titulo,
       descricao,
@@ -298,7 +306,8 @@ export const store = async (req: Request, res: Response) => {
       secretaria_id: secId,
       criado_por: user.id,
       municipio_id: municipioIdEvento,
-      status: 'em_planejamento',
+      status: statusInicial,
+      plano_id: planoId,
       imagem_capa: file ? capaUrl(file) : null,
     });
 
@@ -329,7 +338,6 @@ export const store = async (req: Request, res: Response) => {
 
     // Vincula ao planejamento se veio de uma ação
     const acaoId = req.body.acao_id ? Number(req.body.acao_id) : null;
-    const planoId = req.body.plano_id ? Number(req.body.plano_id) : null;
     if (acaoId && planoId) {
       await AcaoPlanejamento.update({ evento_id: (evento as any).id }, { where: { id: acaoId } }).catch(() => {});
       return res.redirect(`/planejamento/${planoId}`);

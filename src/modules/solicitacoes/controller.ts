@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import SolicitacaoRepository from './repository.ts';
-import { Secretaria, Solicitacao, SolicitacaoComentario, SolicitacaoImagem, User, Evento, EventoResponsavel, Municipio } from '../../database/models/index.ts';
+import { Secretaria, Solicitacao, SolicitacaoComentario, SolicitacaoImagem, User, Evento, EventoResponsavel, Municipio, AcaoPlanejamento } from '../../database/models/index.ts';
 import { sseBroker } from '../../lib/sse.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
 import { secretariaWhere, municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
@@ -130,12 +130,23 @@ export const createView = async (req: Request, res: Response) => {
         ? Municipio.findAll({ where: { ativo: true }, order: [['nome', 'ASC']] })
         : Promise.resolve([]),
     ]);
+    // Permite abrir a solicitação já pré-preenchida a partir de uma ação do planejamento.
+    const prefill = {
+      titulo: (req.query.titulo as string) || '',
+      descricao: (req.query.descricao as string) || '',
+      prazo: (req.query.prazo as string) || '',
+      secretaria_id: (req.query.secretaria_id as string) || '',
+      acao_id: (req.query.acao_id as string) || '',
+      plano_id: (req.query.plano_id as string) || '',
+    };
+
     res.render('solicitacoes/create', {
       title: 'Nova Solicitação',
       secretarias,
       users,
       municipios,
       activeMunicipioId: mid,
+      prefill,
     });
   } catch (error) {
     console.error('Error creating solicitacao view:', error);
@@ -277,7 +288,10 @@ export const store = async (req: Request, res: Response) => {
     const municipioIdChamado = secRegistro?.municipio_id || user.municipio_id;
 
     const { prazo } = req.body;
+    const acaoId = req.body.acao_id ? Number(req.body.acao_id) : null;
+    const planoId = req.body.plano_id ? Number(req.body.plano_id) : null;
 
+    let primeiraSolId: number | null = null;
     for (const tipo_midia of tipos) {
       const sol = await SolicitacaoRepository.create({
         titulo,
@@ -290,6 +304,7 @@ export const store = async (req: Request, res: Response) => {
         municipio_id: municipioIdChamado,
         status: 'pendente',
       });
+      if (primeiraSolId === null) primeiraSolId = (sol as any).id;
 
       await SolicitacaoComentario.create({
         solicitacao_id: sol.id,
@@ -307,6 +322,8 @@ export const store = async (req: Request, res: Response) => {
     }
 
     if (criar_evento === '1' && data_inicio && data_fim) {
+      const inicioDate = new Date(data_inicio);
+      const statusEvento = !isNaN(inicioDate.getTime()) && inicioDate < new Date() ? 'realizado' : 'em_planejamento';
       const evento = await Evento.create({
         titulo,
         descricao,
@@ -317,7 +334,8 @@ export const store = async (req: Request, res: Response) => {
         secretaria_id: secId,
         criado_por: user.id,
         municipio_id: municipioIdChamado,
-        status: 'em_planejamento',
+        status: statusEvento,
+        plano_id: planoId,
       } as any);
 
       const ids = parseIds(req.body['responsaveis[]'] || req.body.responsaveis);
@@ -332,6 +350,14 @@ export const store = async (req: Request, res: Response) => {
         url: `/eventos`,
         tipo: 'evento_novo',
       }).catch(() => {});
+    }
+
+    // Vincula a solicitação criada a uma ação do planejamento (quando aberta a partir dela)
+    if (acaoId && primeiraSolId) {
+      await AcaoPlanejamento.update({ solicitacao_id: primeiraSolId } as any, { where: { id: acaoId } }).catch(() => {});
+    }
+    if (planoId) {
+      return res.redirect(`/planejamento/${planoId}`);
     }
 
     res.redirect('/solicitacoes');
