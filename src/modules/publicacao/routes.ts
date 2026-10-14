@@ -8,6 +8,7 @@ router.use(isAuthenticated);
 
 router.get('/',                 Ctrl.list);
 router.get('/pendentes-count',  Ctrl.pendentesCount);
+router.post('/publicar-todas',  Ctrl.publicarTodas);
 router.post('/:id/publicar',    Ctrl.publicar);
 router.post('/:id/despublicar', Ctrl.despublicar);
 

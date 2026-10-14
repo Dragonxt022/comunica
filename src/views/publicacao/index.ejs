@@ -75,6 +75,23 @@ const publicadasJson = JSON.stringify(publicadas.map(mapItem)).replace(/</g, '\\
 
     <!-- Aba: A publicar -->
     <div x-show="aba === 'a_publicar'">
+        <% if (podePublicar) { %>
+        <form method="POST" action="/publicacao/publicar-todas" x-show="aPublicar.length > 0" x-cloak
+              onsubmit="return confirm('Marcar TODAS as solicitações listadas abaixo como publicadas?\n\nUse isto para limpar o histórico antigo (de antes deste controle). Dá para desfazer item por item depois.')"
+              class="mb-3 flex items-center justify-between gap-3 flex-wrap px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <input type="hidden" name="q" value="<%= filtros.q %>">
+            <input type="hidden" name="secretaria" value="<%= filtros.secretaria %>">
+            <input type="hidden" name="tipo" value="<%= filtros.tipo %>">
+            <% if (filtros.atrasadas) { %><input type="hidden" name="atrasadas" value="1"><% } %>
+            <span class="text-xs text-amber-800">
+                Histórico antigo? Você pode marcar <b x-text="aPublicar.length"></b> item(ns) de uma vez
+                <span x-show="<%= !!(filtros.q || filtros.secretaria || filtros.tipo || filtros.atrasadas) %>"> (respeitando os filtros aplicados)</span>.
+            </span>
+            <button type="submit" class="shrink-0 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition">
+                Marcar todas como publicadas
+            </button>
+        </form>
+        <% } %>
         <div x-show="aPublicar.length === 0" class="text-center py-16 border-2 border-dashed border-slate-100 rounded-xl">
             <div class="text-4xl mb-3">🎉</div>
             <p class="text-sm text-slate-400">Nada pendente de publicação. Tudo em dia!</p>

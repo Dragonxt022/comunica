@@ -90,6 +90,31 @@ export const pendentesCount = async (req: Request, res: Response) => {
   }
 };
 
+// Marca em massa como publicadas (útil para o histórico anterior à criação do controle).
+// Respeita os filtros aplicados na tela (q, secretaria, tipo, atrasadas).
+export const publicarTodas = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).session.user;
+    if (!podePublicar(user)) return res.status(403).send('Sem permissão');
+
+    const mid = getActiveMid(req);
+    const { q, secretaria, tipo, atrasadas } = req.body as Record<string, string>;
+    const where: any = { ...secretariaWhere(user, {}, mid), publicado: false, status: { [Op.in]: STATUS_PRONTO } };
+    if (q) where.titulo = { [Op.like]: `%${q}%` };
+    if (secretaria) where.secretaria_id = Number(secretaria);
+    if (tipo) where.tipo_midia = tipo;
+    if (atrasadas === '1') where.prazo = { [Op.ne]: null, [Op.lt]: hojeISO() };
+
+    await Solicitacao.update({ publicado: true } as any, { where });
+    sseBroker.broadcast({ type: 'solicitacao_status', updatedById: user.id });
+
+    return res.redirect('/publicacao?aba=a_publicar');
+  } catch (error) {
+    console.error('Error bulk publishing:', error);
+    return res.status(500).send('Erro interno');
+  }
+};
+
 export const publicar = async (req: Request, res: Response) => {
   try {
     const user = (req as any).session.user;
