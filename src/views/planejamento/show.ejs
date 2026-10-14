@@ -11,22 +11,30 @@ const dtInicio = new Date(plano.periodo_inicio + 'T00:00:00').toLocaleDateString
 const dtFim = new Date(plano.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 const statusCorPlano = { ativo: 'bg-emerald-100 text-emerald-700', concluido: 'bg-blue-100 text-blue-700', suspenso: 'bg-amber-100 text-amber-700' };
 const statusLabelPlano = { ativo: 'Ativo', concluido: 'Concluído', suspenso: 'Suspenso' };
-const priorCores = { alta: 'bg-red-100 text-red-700', media: 'bg-amber-100 text-amber-700', baixa: 'bg-green-100 text-green-700' };
-const priorLabels = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
-const statusAcaoCores = {
-  nao_iniciado: 'bg-slate-100 text-slate-600',
-  em_andamento: 'bg-blue-100 text-blue-700',
-  concluido: 'bg-emerald-100 text-emerald-700',
-  cancelado: 'bg-red-100 text-red-600'
-};
-const statusAcaoLabels = {
-  nao_iniciado: 'Não iniciado',
-  em_andamento: 'Em andamento',
-  concluido: 'Concluído',
-  cancelado: 'Cancelado'
-};
 const statusEventoMap = {};
 (statusEventos || []).forEach(function(s){ statusEventoMap[s.key] = s; });
+
+// Dados enviados ao cliente para filtros/ordenação/timeline/calendário.
+const acoesClient = acoes.map(function(a) {
+  const ev = a.evento_id ? eventosMap[a.evento_id] : null;
+  const sol = a.solicitacao_id ? (solicitacoesMap[a.solicitacao_id] || null) : null;
+  return {
+    id: a.id,
+    titulo: a.titulo || '',
+    descricao: a.descricao || '',
+    objetivo: a.objetivo || '',
+    responsavel_nome: a.responsavel_nome || '',
+    prazo: a.prazo || '',
+    prioridade: a.prioridade || 'media',
+    status: a.status || 'nao_iniciado',
+    evento_id: a.evento_id || null,
+    evento_titulo: ev ? ev.titulo : null,
+    solicitacao_id: a.solicitacao_id || null,
+    solicitacao_titulo: sol ? sol.titulo : null,
+    evento_local: a.evento_local || ''
+  };
+});
+const acoesJson = JSON.stringify(acoesClient).replace(/</g, '\\u003c');
 %>
 
 <style>
@@ -40,6 +48,7 @@ const statusEventoMap = {};
 .rich-content .ql-align-center{text-align:center}
 .rich-content .ql-align-right{text-align:right}
 .rich-content .ql-align-justify{text-align:justify}
+.bloco-arrastando{opacity:.5}
 </style>
 
 <div x-data="planShow()">
@@ -130,458 +139,672 @@ const statusEventoMap = {};
         </div>
     </div>
 
-    <!-- Indicadores / KPIs -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-base font-bold text-slate-900">Indicadores e Metas</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Acompanhe os resultados esperados do plano</p>
-            </div>
-            <a href="/planejamento/<%= plano.id %>/indicadores/novo"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                Adicionar Meta
-            </a>
-        </div>
+    <!-- Blocos reordenáveis -->
+    <div class="flex flex-col gap-5">
 
-        <% if (indicadores.length === 0) { %>
-        <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl">
-            <svg class="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <p class="text-sm text-slate-400 mb-3">Nenhum indicador cadastrado ainda.</p>
-            <a href="/planejamento/<%= plano.id %>/indicadores/novo"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-                Adicionar primeiro indicador
-            </a>
-        </div>
-        <% } else { %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            <% indicadores.forEach(function(ind) { %>
-            <div class="border border-slate-100 rounded-xl p-4 space-y-2.5 hover:border-indigo-200 hover:shadow-sm transition group"
-                 x-data="indicadorCard(<%= ind.id %>, <%= ind.valor_atual %>, <%= ind.valor_meta %>)">
-                <div class="flex items-start justify-between gap-2">
-                    <span class="text-sm font-semibold text-slate-800 leading-snug flex-1"><%= ind.indicador %></span>
-                    <div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition">
-                        <a href="/planejamento/<%= plano.id %>/indicadores/<%= ind.id %>/editar"
-                            class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition" title="Editar indicador">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                        </a>
-                        <form action="/planejamento/<%= plano.id %>/indicadores/<%= ind.id %>/excluir" method="POST" onsubmit="return confirm('Excluir este indicador?')">
-                            <button type="submit" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Excluir">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
+        <!-- Bloco: Indicadores / Metas -->
+        <section :style="'order:' + orderOf('indicadores')" class="transition"
+            @dragover.prevent="onDragOver('indicadores')" @drop.prevent="onDrop('indicadores')"
+            :class="dragOver === 'indicadores' && dragItem && dragItem !== 'indicadores' ? 'ring-2 ring-indigo-300 rounded-xl' : ''">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span draggable="true"
+                            @dragstart="onDragStart('indicadores')" @dragend="onDragEnd()"
+                            class="cursor-grab active:cursor-grabbing p-1 rounded text-slate-300 hover:text-slate-500 shrink-0"
+                            title="Arrastar para reordenar">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-bold text-slate-900">Indicadores e Metas</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Acompanhe os resultados esperados do plano</p>
+                        </div>
+                        <span class="flex flex-col shrink-0">
+                            <button type="button" @click="moverBloco('indicadores', -1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para cima">▲</button>
+                            <button type="button" @click="moverBloco('indicadores', 1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para baixo">▼</button>
+                        </span>
+                    </div>
+                    <a href="/planejamento/<%= plano.id %>/indicadores/novo"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Meta
+                    </a>
+                </div>
+
+                <% if (indicadores.length === 0) { %>
+                <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl">
+                    <svg class="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm text-slate-400 mb-3">Nenhum indicador cadastrado ainda.</p>
+                    <a href="/planejamento/<%= plano.id %>/indicadores/novo"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                        Adicionar primeiro indicador
+                    </a>
+                </div>
+                <% } else { %>
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <% indicadores.forEach(function(ind) { %>
+                    <div class="border border-slate-100 rounded-xl p-4 space-y-2.5 hover:border-indigo-200 hover:shadow-sm transition group"
+                         x-data="indicadorCard(<%= ind.id %>, <%= ind.valor_atual %>, <%= ind.valor_meta %>)">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="text-sm font-semibold text-slate-800 leading-snug flex-1"><%= ind.indicador %></span>
+                            <div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition">
+                                <a href="/planejamento/<%= plano.id %>/indicadores/<%= ind.id %>/editar"
+                                    class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition" title="Editar indicador">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                <form action="/planejamento/<%= plano.id %>/indicadores/<%= ind.id %>/excluir" method="POST" onsubmit="return confirm('Excluir este indicador?')">
+                                    <button type="submit" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Excluir">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <% if (ind.descricao) { %>
+                        <div class="text-xs text-slate-400 leading-snug rich-content"><%- ind.descricao %></div>
+                        <% } %>
+
+                        <div class="flex items-end gap-1.5">
+                            <button type="button" @click="step(-1)" :disabled="saving || valor <= 0"
+                                class="shrink-0 w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:pointer-events-none transition"
+                                title="-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
                             </button>
-                        </form>
+
+                            <template x-if="!editing">
+                                <span class="text-2xl font-bold text-slate-900 cursor-pointer hover:text-indigo-600 transition" @click="startEdit()" title="Clique para editar" x-text="valor"></span>
+                            </template>
+                            <template x-if="editing">
+                                <input type="number" min="0" step="any" x-model="draft" @keydown.enter="save()" @keydown.escape="cancelEdit()" @blur="save()"
+                                    class="w-20 text-2xl font-bold text-slate-900 border-b-2 border-indigo-400 outline-none" x-ref="input">
+                            </template>
+
+                            <button type="button" @click="step(1)" :disabled="saving"
+                                class="shrink-0 w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:pointer-events-none transition"
+                                title="+1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            </button>
+
+                            <span class="text-sm text-slate-400 mb-0.5">/ <%= ind.valor_meta %> <%= ind.unidade %></span>
+                            <svg x-show="saving" class="w-3.5 h-3.5 text-indigo-400 animate-spin mb-1" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+
+                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" :class="colorClass" :style="'width:' + pct + '%'"></div>
+                        </div>
+                        <p class="text-xs text-right font-medium" :class="pct >= 100 ? 'text-emerald-600' : 'text-slate-400'" x-text="pct + '% da meta'"></p>
+                    </div>
+                    <% }); %>
+                </div>
+                <% } %>
+            </div>
+        </section>
+
+        <!-- Bloco: Ações -->
+        <section :style="'order:' + orderOf('acoes')" class="transition"
+            @dragover.prevent="onDragOver('acoes')" @drop.prevent="onDrop('acoes')"
+            :class="dragOver === 'acoes' && dragItem && dragItem !== 'acoes' ? 'ring-2 ring-indigo-300 rounded-xl' : ''">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span draggable="true"
+                            @dragstart="onDragStart('acoes')" @dragend="onDragEnd()"
+                            class="cursor-grab active:cursor-grabbing p-1 rounded text-slate-300 hover:text-slate-500 shrink-0"
+                            title="Arrastar para reordenar">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>
+                        </span>
+                        <span class="flex flex-col shrink-0">
+                            <button type="button" @click="moverBloco('acoes', -1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para cima">▲</button>
+                            <button type="button" @click="moverBloco('acoes', 1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para baixo">▼</button>
+                        </span>
+                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                            <button @click="tab = 'lista'"
+                                :class="tab === 'lista' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
+                                class="px-3 py-1.5 text-xs rounded-md transition">Lista</button>
+                            <button @click="tab = 'timeline'"
+                                :class="tab === 'timeline' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
+                                class="px-3 py-1.5 text-xs rounded-md transition">Timeline</button>
+                            <button @click="tab = 'calendario'"
+                                :class="tab === 'calendario' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
+                                class="px-3 py-1.5 text-xs rounded-md transition">Calendário</button>
+                        </div>
+                    </div>
+                    <a href="/planejamento/<%= plano.id %>/acoes/nova"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Nova Ação
+                    </a>
+                </div>
+
+                <% if (acoes.length === 0) { %>
+                <div class="text-center py-10 border-2 border-dashed border-slate-100 rounded-xl">
+                    <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 8h6m-6 4h4"/>
+                    </svg>
+                    <p class="text-sm text-slate-400 mb-3">Nenhuma ação cadastrada.</p>
+                    <a href="/planejamento/<%= plano.id %>/acoes/nova"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                        Criar primeira ação
+                    </a>
+                </div>
+                <% } else { %>
+
+                <!-- Filtros e ordenação -->
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    <div class="relative flex-1 min-w-[170px]">
+                        <input type="text" x-model="filtroBusca" placeholder="Buscar ação ou responsável..."
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm">
+                    </div>
+                    <select x-model="filtroStatus" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="">Status: todos</option>
+                        <option value="nao_iniciado">Não iniciado</option>
+                        <option value="em_andamento">Em andamento</option>
+                        <option value="concluido">Concluído</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                    <select x-model="filtroPrioridade" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="">Prioridade: todas</option>
+                        <option value="alta">Alta</option>
+                        <option value="media">Média</option>
+                        <option value="baixa">Baixa</option>
+                    </select>
+                    <select x-model="filtroResponsavel" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none max-w-[180px]">
+                        <option value="">Responsável: todos</option>
+                        <template x-for="r in responsaveis" :key="r">
+                            <option :value="r" x-text="r"></option>
+                        </template>
+                    </select>
+                    <select x-model="ordenar" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="prazo_asc">Data ↑ (crescente)</option>
+                        <option value="prazo_desc">Data ↓ (decrescente)</option>
+                        <option value="prioridade">Prioridade</option>
+                        <option value="titulo">Título</option>
+                    </select>
+                    <button type="button" x-show="temFiltro" @click="limparFiltros()"
+                        class="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition">Limpar</button>
+                </div>
+                <p x-show="filtradas.length === 0" x-cloak class="text-center py-8 text-sm text-slate-400">Nenhuma ação corresponde aos filtros.</p>
+
+                <!-- Tab: Lista -->
+                <div x-show="tab === 'lista'" x-cloak>
+                    <div class="space-y-2">
+                        <template x-for="a in filtradas" :key="a.id">
+                            <div class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/20 transition group">
+                                <button type="button" @click="toggleStatusAcao(a.id, a.status)"
+                                    class="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition"
+                                    :class="a.status === 'concluido' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-400'"
+                                    title="Marcar como concluído">
+                                    <svg x-show="a.status === 'concluido'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start gap-2 flex-wrap">
+                                        <span class="text-sm font-semibold text-slate-900 flex-1" :class="a.status === 'concluido' ? 'line-through text-slate-400' : ''" x-text="a.titulo"></span>
+                                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="priorClass(a.prioridade)" x-text="priorLabel(a.prioridade)"></span>
+                                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="statusClass(a.status)" x-text="statusLabel(a.status)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                                        <span x-show="a.responsavel_nome" class="text-xs text-slate-500 flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            <span x-text="a.responsavel_nome"></span>
+                                        </span>
+                                        <span x-show="a.prazo" class="text-xs flex items-center gap-1" :class="isVencida(a) ? 'text-red-500 font-semibold' : 'text-slate-500'">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span x-text="(isVencida(a) ? 'Vencida — ' : '') + fmtPrazo(a.prazo)"></span>
+                                        </span>
+                                    </div>
+
+                                    <!-- Itens vinculados -->
+                                    <div x-show="a.evento_id || a.solicitacao_id" class="mt-2 flex items-center gap-2 flex-wrap">
+                                        <template x-if="a.evento_id">
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                <a href="/eventos" class="hover:underline" x-text="'Evento: ' + (a.evento_titulo || '')"></a>
+                                                <button @click="desvincularEvento(a.id)" class="text-slate-400 hover:text-red-500 transition" title="Desvincular evento">×</button>
+                                            </span>
+                                        </template>
+                                        <template x-if="a.solicitacao_id">
+                                            <a :href="'/solicitacoes/' + a.solicitacao_id" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                <span x-text="'Solicitação #' + a.solicitacao_id"></span>
+                                            </a>
+                                        </template>
+                                    </div>
+
+                                    <!-- Expandido -->
+                                    <div x-show="a.expanded" x-cloak class="mt-3 space-y-2 pt-3 border-t border-slate-100">
+                                        <p x-show="a.objetivo" class="text-xs text-slate-500"><span class="font-semibold text-slate-700">Objetivo:</span> <span x-text="a.objetivo"></span></p>
+                                        <div x-show="a.descricao" class="text-xs text-slate-600 leading-relaxed rich-content" x-html="a.descricao"></div>
+                                        <div class="flex gap-2 pt-1 flex-wrap">
+                                            <a :href="'/planejamento/<%= plano.id %>/acoes/' + a.id + '/editar'"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                Editar
+                                            </a>
+                                            <a x-show="!a.evento_id" :href="eventoUrl(a)"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                Gerar Evento
+                                            </a>
+                                            <a x-show="!a.solicitacao_id" :href="solicUrl(a)"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                Criar Solicitação
+                                            </a>
+                                            <form :action="'/planejamento/<%= plano.id %>/acoes/' + a.id + '/excluir'" method="POST" onsubmit="return confirm('Excluir esta ação?')">
+                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    Excluir
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button @click="a.expanded = !a.expanded"
+                                    class="shrink-0 p-1 text-slate-300 hover:text-slate-500 transition mt-0.5">
+                                    <svg class="w-4 h-4 transition-transform" :class="a.expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
                     </div>
                 </div>
-                <% if (ind.descricao) { %>
-                <div class="text-xs text-slate-400 leading-snug rich-content"><%- ind.descricao %></div>
+
+                <!-- Tab: Timeline (cronológica) -->
+                <div x-show="tab === 'timeline'" x-cloak>
+                    <div class="space-y-5">
+                        <template x-for="m in timelineMeses" :key="m.key">
+                            <div class="flex gap-3">
+                                <div class="w-24 sm:w-28 shrink-0 text-right pt-1">
+                                    <span class="text-xs font-bold text-slate-500 capitalize" x-text="m.label"></span>
+                                </div>
+                                <div class="flex-1 border-l-2 border-slate-100 pl-4 space-y-2">
+                                    <template x-for="a in m.acoes" :key="a.id">
+                                        <div class="relative flex items-center gap-3 p-3 border border-slate-100 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/20 transition">
+                                            <span class="absolute -left-[22px] w-3 h-3 rounded-full border-2 border-white" :style="'background:' + statusDot(a.status)"></span>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="text-sm font-semibold text-slate-900" :class="a.status === 'concluido' ? 'line-through text-slate-400' : ''" x-text="a.titulo"></span>
+                                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="priorClass(a.prioridade)" x-text="priorLabel(a.prioridade)"></span>
+                                                </div>
+                                                <div class="flex items-center gap-3 mt-1 flex-wrap text-xs text-slate-500">
+                                                    <span x-show="a.prazo" x-text="fmtPrazo(a.prazo)"></span>
+                                                    <span x-show="a.responsavel_nome" x-text="a.responsavel_nome"></span>
+                                                </div>
+                                            </div>
+                                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0" :class="statusClass(a.status)" x-text="statusLabel(a.status)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Tab: Calendário -->
+                <div x-show="tab === 'calendario'" x-cloak>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-1">
+                            <button type="button" @click="calPrev()" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition">‹</button>
+                            <button type="button" @click="calNext()" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition">›</button>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700 capitalize" x-text="calTitulo"></span>
+                        <button type="button" @click="calHoje()" class="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition">Hoje</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 mb-1 text-center">
+                        <span class="text-[11px] font-semibold text-slate-400">Dom</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Seg</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Ter</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Qua</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Qui</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Sex</span>
+                        <span class="text-[11px] font-semibold text-slate-400">Sáb</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1">
+                        <template x-for="dia in calDias" :key="dia.key">
+                            <div class="min-h-[84px] border border-slate-100 rounded-lg p-1.5" :class="dia.inMonth ? 'bg-white' : 'bg-slate-50/60'">
+                                <div class="flex items-center justify-end">
+                                    <span class="text-[11px] w-5 h-5 flex items-center justify-center rounded-full"
+                                        :class="dia.isHoje ? 'bg-indigo-600 text-white font-bold' : (dia.inMonth ? 'text-slate-500' : 'text-slate-300')"
+                                        x-text="dia.dia"></span>
+                                </div>
+                                <div class="mt-1 space-y-1">
+                                    <template x-for="a in dia.acoes.slice(0, 3)" :key="a.id">
+                                        <div class="text-[10px] leading-tight truncate rounded px-1 py-0.5 font-medium" :class="priorClass(a.prioridade)" :title="a.titulo" x-text="a.titulo"></div>
+                                    </template>
+                                    <div x-show="dia.acoes.length > 3" class="text-[10px] text-slate-400" x-text="'+' + (dia.acoes.length - 3) + ' mais'"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <% } %>
+            </div>
+        </section>
+
+        <!-- Bloco: Painel do plano -->
+        <% const solicList = Object.values(solicitacoesMap); %>
+        <% if (ultimaImportacao || eventosDoPlano.length > 0 || solicList.length > 0) { %>
+        <section :style="'order:' + orderOf('painel')" class="transition"
+            @dragover.prevent="onDragOver('painel')" @drop.prevent="onDrop('painel')"
+            :class="dragOver === 'painel' && dragItem && dragItem !== 'painel' ? 'ring-2 ring-indigo-300 rounded-xl' : ''">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span draggable="true"
+                            @dragstart="onDragStart('painel')" @dragend="onDragEnd()"
+                            class="cursor-grab active:cursor-grabbing p-1 rounded text-slate-300 hover:text-slate-500 shrink-0"
+                            title="Arrastar para reordenar">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>
+                        </span>
+                        <span class="flex flex-col shrink-0">
+                            <button type="button" @click="moverBloco('painel', -1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para cima">▲</button>
+                            <button type="button" @click="moverBloco('painel', 1)" class="text-slate-300 hover:text-slate-500 leading-none" title="Mover para baixo">▼</button>
+                        </span>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Painel do plano</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Eventos e solicitações criados a partir das ações deste plano</p>
+                        </div>
+                    </div>
+                    <% if (ultimaImportacao) { %>
+                    <button type="button" @click="desfazerImportacao()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Desfazer última importação
+                    </button>
+                    <% } %>
+                </div>
+
+                <!-- Eventos criados -->
+                <% if (eventosDoPlano.length > 0) { %>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Eventos (<%= eventosDoPlano.length %>)</p>
+                <div class="space-y-2 mb-4">
+                    <% eventosDoPlano.forEach(function(ev) {
+                        const st = statusEventoMap[ev.status] || { label: ev.status, cor: '#94a3b8' };
+                        const dt = ev.data_inicio ? new Date(ev.data_inicio).toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sem data';
+                    %>
+                    <a href="/eventos" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition">
+                        <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center" style="background:<%= st.cor %>1a;color:<%= st.cor %>">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start gap-2 flex-wrap">
+                                <span class="text-sm font-semibold text-slate-900 flex-1"><%= ev.titulo %></span>
+                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:<%= st.cor %>1a;color:<%= st.cor %>"><%= st.label %></span>
+                            </div>
+                            <div class="flex items-center gap-3 mt-1 flex-wrap text-xs text-slate-500">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <%= dt %>
+                                </span>
+                                <% if (ev.local) { %>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <%= ev.local %>
+                                </span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </a>
+                    <% }); %>
+                </div>
                 <% } %>
 
-                <!-- Valor atual: stepper rápido + edição inline -->
-                <div class="flex items-end gap-1.5">
-                    <button type="button" @click="step(-1)" :disabled="saving || valor <= 0"
-                        class="shrink-0 w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:pointer-events-none transition"
-                        title="-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
-                    </button>
-
-                    <template x-if="!editing">
-                        <span class="text-2xl font-bold text-slate-900 cursor-pointer hover:text-indigo-600 transition" @click="startEdit()" title="Clique para editar" x-text="valor"></span>
-                    </template>
-                    <template x-if="editing">
-                        <input type="number" min="0" step="any" x-model="draft" @keydown.enter="save()" @keydown.escape="cancelEdit()" @blur="save()"
-                            class="w-20 text-2xl font-bold text-slate-900 border-b-2 border-indigo-400 outline-none" x-ref="input">
-                    </template>
-
-                    <button type="button" @click="step(1)" :disabled="saving"
-                        class="shrink-0 w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-30 disabled:pointer-events-none transition"
-                        title="+1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    </button>
-
-                    <span class="text-sm text-slate-400 mb-0.5">/ <%= ind.valor_meta %> <%= ind.unidade %></span>
-                    <svg x-show="saving" class="w-3.5 h-3.5 text-indigo-400 animate-spin mb-1" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                </div>
-
-                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full transition-all" :class="colorClass" :style="'width:' + pct + '%'"></div>
-                </div>
-                <p class="text-xs text-right font-medium" :class="pct >= 100 ? 'text-emerald-600' : 'text-slate-400'" x-text="pct + '% da meta'"></p>
-            </div>
-            <% }); %>
-        </div>
-        <% } %>
-    </div>
-
-    <!-- Ações -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-                <button @click="tab = 'lista'"
-                    :class="tab === 'lista' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
-                    class="px-3 py-1.5 text-xs rounded-md transition">
-                    Lista
-                </button>
-                <button @click="tab = 'gantt'"
-                    :class="tab === 'gantt' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-slate-500 hover:text-slate-700'"
-                    class="px-3 py-1.5 text-xs rounded-md transition">
-                    Timeline
-                </button>
-            </div>
-            <a href="/planejamento/<%= plano.id %>/acoes/nova"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                Nova Ação
-            </a>
-        </div>
-
-        <!-- Tab: Lista -->
-        <div x-show="tab === 'lista'" x-cloak>
-        <% if (acoes.length === 0) { %>
-        <div class="text-center py-10 border-2 border-dashed border-slate-100 rounded-xl">
-            <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 8h6m-6 4h4"/>
-            </svg>
-            <p class="text-sm text-slate-400 mb-3">Nenhuma ação cadastrada.</p>
-            <a href="/planejamento/<%= plano.id %>/acoes/nova"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-                Criar primeira ação
-            </a>
-        </div>
-        <% } else { %>
-        <div class="space-y-2">
-            <% acoes.forEach(function(acao) {
-                const corPrior = priorCores[acao.prioridade] || 'bg-slate-100 text-slate-600';
-                const labelPrior = priorLabels[acao.prioridade] || acao.prioridade;
-                const corStatus = statusAcaoCores[acao.status] || 'bg-slate-100 text-slate-600';
-                const labelStatus = statusAcaoLabels[acao.status] || acao.status;
-                const eventoVinculado = acao.evento_id && eventosMap[acao.evento_id];
-                const solicitacaoVinculada = acao.solicitacao_id && solicitacoesMap[acao.solicitacao_id];
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
-                const prazoDate = acao.prazo ? new Date(acao.prazo + 'T00:00:00') : null;
-                const vencida = prazoDate && prazoDate < hoje && acao.status !== 'concluido' && acao.status !== 'cancelado';
-                const prazoFmt = prazoDate ? prazoDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
-                const _desc = acao.descricao || acao.objetivo || '';
-                const eventoUrl = '/eventos/novo?titulo=' + encodeURIComponent(acao.titulo)
-                    + '&descricao=' + encodeURIComponent(_desc)
-                    + '&local=' + encodeURIComponent(acao.evento_local || '')
-                    + (acao.prazo ? '&data_inicio=' + encodeURIComponent(acao.prazo + 'T08:00') : '')
-                    + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id;
-                const solicUrl = '/solicitacoes/nova?titulo=' + encodeURIComponent(acao.titulo)
-                    + '&descricao=' + encodeURIComponent(_desc)
-                    + (acao.prazo ? '&prazo=' + encodeURIComponent(acao.prazo) : '')
-                    + '&secretaria_id=' + plano.secretaria_id + '&acao_id=' + acao.id + '&plano_id=' + plano.id;
-            %>
-            <div class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/20 transition group"
-                 x-data="{ expanded: false }">
-                <!-- Status toggle rápido -->
-                <button type="button"
-                    @click="toggleStatusAcao(<%= acao.id %>, '<%= acao.status %>')"
-                    class="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition
-                        <%= acao.status === 'concluido' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-400' %>"
-                    title="Marcar como concluído">
-                    <% if (acao.status === 'concluido') { %>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <% } %>
-                </button>
-
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start gap-2 flex-wrap">
-                        <span class="text-sm font-semibold text-slate-900 flex-1 <%= acao.status === 'concluido' ? 'line-through text-slate-400' : '' %>">
-                            <%= acao.titulo %>
+                <!-- Solicitações criadas -->
+                <% if (solicList.length > 0) { %>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Solicitações (<%= solicList.length %>)</p>
+                <div class="space-y-2">
+                    <% solicList.forEach(function(sol) {
+                        const st = (statusSolicitacaoMap && statusSolicitacaoMap[sol.status]) || { label: sol.status, badge: 'bg-slate-100 text-slate-600' };
+                    %>
+                    <a href="/solicitacoes/<%= sol.id %>" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-emerald-200 hover:bg-emerald-50/20 transition">
+                        <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                         </span>
-                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
-                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= corPrior %>"><%= labelPrior %></span>
-                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= corStatus %>"><%= labelStatus %></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start gap-2 flex-wrap">
+                                <span class="text-sm font-semibold text-slate-900 flex-1"><%= sol.titulo %></span>
+                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= st.badge %>"><%= st.label %></span>
+                            </div>
+                            <span class="text-xs text-slate-400">Solicitação #<%= sol.id %><%= sol.tipo_midia ? ' · ' + sol.tipo_midia : '' %></span>
                         </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <% if (acao.responsavel_nome) { %>
-                        <span class="text-xs text-slate-500 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            <%= acao.responsavel_nome %>
-                        </span>
-                        <% } %>
-                        <% if (prazoFmt) { %>
-                        <span class="text-xs flex items-center gap-1 <%= vencida ? 'text-red-500 font-semibold' : 'text-slate-500' %>">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <%= vencida ? 'Vencida — ' : '' %><%= prazoFmt %>
-                        </span>
-                        <% } %>
-                    </div>
-
-                    <!-- Itens vinculados (evento / solicitação) -->
-                    <% if (eventoVinculado || solicitacaoVinculada) { %>
-                    <div class="mt-2 flex items-center gap-2 flex-wrap">
-                        <% if (eventoVinculado) { %>
-                        <a href="/eventos" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Evento: <%= eventoVinculado.titulo %>
-                        </a>
-                        <button @click="desvincularEvento(<%= acao.id %>)" class="text-xs text-slate-400 hover:text-red-500 transition" title="Desvincular evento">×</button>
-                        <% } %>
-                        <% if (solicitacaoVinculada) { %>
-                        <a href="/solicitacoes/<%= solicitacaoVinculada.id %>" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            Solicitação #<%= solicitacaoVinculada.id %>
-                        </a>
-                        <% } %>
-                    </div>
-                    <% } %>
-
-                    <!-- Expandido: descrição + objetivo + botões -->
-                    <div x-show="expanded" x-cloak class="mt-3 space-y-2 pt-3 border-t border-slate-100">
-                        <% if (acao.objetivo) { %>
-                        <p class="text-xs text-slate-500"><span class="font-semibold text-slate-700">Objetivo:</span> <%= acao.objetivo %></p>
-                        <% } %>
-                        <% if (acao.descricao) { %>
-                        <div class="text-xs text-slate-600 leading-relaxed rich-content"><%- acao.descricao %></div>
-                        <% } %>
-                        <div class="flex gap-2 pt-1 flex-wrap">
-                            <a href="/planejamento/<%= plano.id %>/acoes/<%= acao.id %>/editar"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                Editar
-                            </a>
-                            <% if (!acao.evento_id) { %>
-                            <a href="<%= eventoUrl %>"
-                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                Gerar Evento
-                            </a>
-                            <% } %>
-                            <% if (!acao.solicitacao_id) { %>
-                            <a href="<%= solicUrl %>"
-                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                Criar Solicitação
-                            </a>
-                            <% } %>
-                            <form action="/planejamento/<%= plano.id %>/acoes/<%= acao.id %>/excluir" method="POST" onsubmit="return confirm('Excluir esta ação?')">
-                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    Excluir
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                    </a>
+                    <% }); %>
                 </div>
+                <% } %>
 
-                <!-- Expand toggle -->
-                <button @click="expanded = !expanded"
-                    class="shrink-0 p-1 text-slate-300 hover:text-slate-500 transition mt-0.5"
-                    :title="expanded ? 'Recolher' : 'Expandir'">
-                    <svg class="w-4 h-4 transition-transform" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
+                <% if (eventosDoPlano.length === 0 && solicList.length === 0) { %>
+                <div class="text-center py-6 border-2 border-dashed border-slate-100 rounded-xl">
+                    <p class="text-sm text-slate-400">Nenhum evento ou solicitação criado a partir deste plano ainda.</p>
+                    <p class="text-xs text-slate-300 mt-1">Use "Gerar Evento" ou "Criar Solicitação" em cada ação.</p>
+                </div>
+                <% } %>
             </div>
-            <% }); %>
-        </div>
+        </section>
         <% } %>
-        </div>
 
-        <!-- Tab: Timeline / Gantt -->
-        <div x-show="tab === 'gantt'" x-cloak>
-        <%
-        const planStart = new Date(plano.periodo_inicio + 'T00:00:00').getTime();
-        const planEnd   = new Date(plano.periodo_fim   + 'T00:00:00').getTime();
-        const planSpan  = planEnd - planStart || 1;
-        const acoesComPrazo = acoes.filter(function(a){ return a.prazo; });
-        %>
-        <% if (acoesComPrazo.length === 0) { %>
-        <div class="text-center py-10 text-sm text-slate-400">
-            Nenhuma ação com prazo definido. Adicione prazos às ações para visualizar a timeline.
-        </div>
-        <% } else { %>
-        <%
-        const meses = [];
-        const cur = new Date(planStart);
-        cur.setDate(1);
-        while (cur.getTime() <= planEnd) {
-            const left = Math.max(0, Math.min(100, ((cur.getTime() - planStart) / planSpan) * 100));
-            meses.push({ label: cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), left: left.toFixed(1) });
-            cur.setMonth(cur.getMonth() + 1);
-        }
-        %>
-        <div class="overflow-x-auto">
-        <div style="min-width:600px">
-            <div class="relative h-7 mb-2 border-b border-slate-200">
-                <% meses.forEach(function(m){ %>
-                <span class="absolute text-[10px] text-slate-400 font-medium -translate-x-1/2" style="left:<%= m.left %>%"><%= m.label %></span>
-                <% }); %>
-                <%
-                const hoje2 = new Date(); hoje2.setHours(0,0,0,0);
-                const hojePct = Math.max(0, Math.min(100, ((hoje2.getTime() - planStart) / planSpan) * 100)).toFixed(1);
-                %>
-                <div class="absolute top-0 bottom-0 w-px bg-red-400 z-10" style="left:<%= hojePct %>%" title="Hoje">
-                    <span class="absolute -top-4 -translate-x-1/2 text-[9px] text-red-500 font-bold">HOJE</span>
-                </div>
-            </div>
-            <div class="space-y-2 pb-2">
-            <% acoesComPrazo.forEach(function(acao) {
-                const prazoTs = new Date(acao.prazo + 'T00:00:00').getTime();
-                const barEnd  = Math.max(0, Math.min(100, ((prazoTs - planStart) / planSpan) * 100));
-                const barW    = Math.max(1, barEnd);
-                const ganttColors = { concluido: '#10b981', em_andamento: '#3b82f6', nao_iniciado: '#94a3b8', cancelado: '#f87171' };
-                const barColor = ganttColors[acao.status] || '#94a3b8';
-                const vencidaG = prazoTs < hoje2.getTime() && acao.status !== 'concluido' && acao.status !== 'cancelado';
-            %>
-            <div class="flex items-center gap-3">
-                <div class="w-36 shrink-0 text-xs text-slate-700 truncate font-medium text-right pr-2" title="<%= acao.titulo %>">
-                    <%= acao.titulo %>
-                </div>
-                <div class="flex-1 relative h-7 bg-slate-100 rounded-md overflow-hidden">
-                    <div class="absolute top-1 bottom-1 rounded-md flex items-center px-2 overflow-hidden"
-                         style="left:0%;width:<%= barW %>%;background:<%= barColor %>;opacity:<%= acao.status === 'cancelado' ? '0.5' : '1' %>">
-                        <span class="text-white text-[10px] font-semibold truncate whitespace-nowrap">
-                            <%= new Date(acao.prazo + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) %>
-                            <%= vencidaG ? ' !' : '' %>
-                        </span>
-                    </div>
-                    <div class="absolute top-0 bottom-0 w-0.5 opacity-60" style="left:<%= barEnd %>%;background:<%= barColor %>"></div>
-                </div>
-            </div>
-            <% }); %>
-            </div>
-            <div class="flex gap-4 mt-3 pt-3 border-t border-slate-100 flex-wrap">
-                <span class="flex items-center gap-1.5 text-xs text-slate-500"><span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>Concluído</span>
-                <span class="flex items-center gap-1.5 text-xs text-slate-500"><span class="w-3 h-3 rounded-sm bg-blue-500 inline-block"></span>Em andamento</span>
-                <span class="flex items-center gap-1.5 text-xs text-slate-500"><span class="w-3 h-3 rounded-sm bg-slate-400 inline-block"></span>Não iniciado</span>
-                <span class="flex items-center gap-1.5 text-xs text-slate-500"><span class="w-3 h-3 rounded-sm bg-red-400 inline-block"></span>Cancelado</span>
-                <span class="flex items-center gap-1.5 text-xs text-slate-500"><span class="w-px h-3 bg-red-400 inline-block"></span>Hoje</span>
-            </div>
-        </div>
-        </div>
-        <% } %>
-        </div>
     </div>
-
-    <!-- Painel do plano: só o que foi criado de verdade a partir do plano -->
-    <% const solicList = Object.values(solicitacoesMap); %>
-    <% if (ultimaImportacao || eventosDoPlano.length > 0 || solicList.length > 0) { %>
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <div>
-                <h2 class="text-base font-bold text-slate-900">Painel do plano</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Eventos e solicitações criados a partir das ações deste plano</p>
-            </div>
-            <% if (ultimaImportacao) { %>
-            <button type="button" @click="desfazerImportacao()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                Desfazer última importação
-            </button>
-            <% } %>
-        </div>
-
-        <!-- Eventos criados -->
-        <% if (eventosDoPlano.length > 0) { %>
-        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Eventos (<%= eventosDoPlano.length %>)</p>
-        <div class="space-y-2 mb-4">
-            <% eventosDoPlano.forEach(function(ev) {
-                const st = statusEventoMap[ev.status] || { label: ev.status, cor: '#94a3b8' };
-                const dt = ev.data_inicio ? new Date(ev.data_inicio).toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sem data';
-            %>
-            <a href="/eventos" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition">
-                <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center" style="background:<%= st.cor %>1a;color:<%= st.cor %>">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                </span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start gap-2 flex-wrap">
-                        <span class="text-sm font-semibold text-slate-900 flex-1"><%= ev.titulo %></span>
-                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:<%= st.cor %>1a;color:<%= st.cor %>"><%= st.label %></span>
-                    </div>
-                    <div class="flex items-center gap-3 mt-1 flex-wrap text-xs text-slate-500">
-                        <span class="flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <%= dt %>
-                        </span>
-                        <% if (ev.local) { %>
-                        <span class="flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <%= ev.local %>
-                        </span>
-                        <% } %>
-                    </div>
-                </div>
-            </a>
-            <% }); %>
-        </div>
-        <% } %>
-
-        <!-- Solicitações criadas -->
-        <% if (solicList.length > 0) { %>
-        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Solicitações (<%= solicList.length %>)</p>
-        <div class="space-y-2">
-            <% solicList.forEach(function(sol) {
-                const st = (statusSolicitacaoMap && statusSolicitacaoMap[sol.status]) || { label: sol.status, badge: 'bg-slate-100 text-slate-600' };
-            %>
-            <a href="/solicitacoes/<%= sol.id %>" class="flex items-start gap-3 p-4 border border-slate-100 rounded-xl hover:border-emerald-200 hover:bg-emerald-50/20 transition">
-                <span class="shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                </span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start gap-2 flex-wrap">
-                        <span class="text-sm font-semibold text-slate-900 flex-1"><%= sol.titulo %></span>
-                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= st.badge %>"><%= st.label %></span>
-                    </div>
-                    <span class="text-xs text-slate-400">Solicitação #<%= sol.id %><%= sol.tipo_midia ? ' · ' + sol.tipo_midia : '' %></span>
-                </div>
-            </a>
-            <% }); %>
-        </div>
-        <% } %>
-
-        <% if (eventosDoPlano.length === 0 && solicList.length === 0) { %>
-        <div class="text-center py-6 border-2 border-dashed border-slate-100 rounded-xl">
-            <p class="text-sm text-slate-400">Nenhum evento ou solicitação criado a partir deste plano ainda.</p>
-            <p class="text-xs text-slate-300 mt-1">Use "Gerar Evento" ou "Criar Solicitação" em cada ação.</p>
-        </div>
-        <% } %>
-    </div>
-    <% } %>
-
 </div>
 
+<script id="acoes-data" type="application/json"><%- acoesJson %></script>
+
 <script>
+const PLANO_ID = <%= plano.id %>;
+const PLANO_SECRETARIA = <%= plano.secretaria_id %>;
+const PLANO_INICIO = '<%= plano.periodo_inicio %>';
+
 function planShow() {
     return {
         tab: 'lista',
+        acoes: [],
+        filtroBusca: '',
+        filtroStatus: '',
+        filtroPrioridade: '',
+        filtroResponsavel: '',
+        ordenar: 'prazo_asc',
+        calAno: null,
+        calMes: null,
+        ordemBlocos: [],
+        dragItem: null,
+        dragOver: null,
 
+        init: function () {
+            try { this.acoes = JSON.parse(document.getElementById('acoes-data').textContent); } catch (e) { this.acoes = []; }
+            this.acoes.forEach(function (a) { a.expanded = false; });
+
+            var salvos = null;
+            try { salvos = JSON.parse(localStorage.getItem('planBlocos_' + PLANO_ID)); } catch (e) {}
+            var baseBlocos = ['indicadores', 'acoes', 'painel'];
+            if (!Array.isArray(salvos)) salvos = baseBlocos.slice();
+            baseBlocos.forEach(function (k) { if (salvos.indexOf(k) < 0) salvos.push(k); });
+            this.ordemBlocos = salvos;
+
+            var base = PLANO_INICIO ? new Date(PLANO_INICIO + 'T00:00:00') : new Date();
+            if (isNaN(base.getTime())) base = new Date();
+            this.calAno = base.getFullYear();
+            this.calMes = base.getMonth() + 1;
+        },
+
+        // ── Blocos da página (reordenar) ────────────────────────────────────
+        orderOf: function (key) { var i = this.ordemBlocos.indexOf(key); return i < 0 ? 99 : i; },
+        salvarBlocos: function () { try { localStorage.setItem('planBlocos_' + PLANO_ID, JSON.stringify(this.ordemBlocos)); } catch (e) {} },
+        onDragStart: function (key) { this.dragItem = key; },
+        onDragOver: function (key) { this.dragOver = key; },
+        onDragEnd: function () { this.dragItem = null; this.dragOver = null; },
+        onDrop: function (key) {
+            if (this.dragItem && this.dragItem !== key) {
+                var from = this.ordemBlocos.indexOf(this.dragItem);
+                var to = this.ordemBlocos.indexOf(key);
+                if (from >= 0 && to >= 0) {
+                    this.ordemBlocos.splice(from, 1);
+                    this.ordemBlocos.splice(to, 0, this.dragItem);
+                    this.salvarBlocos();
+                }
+            }
+            this.onDragEnd();
+        },
+        moverBloco: function (key, dir) {
+            var i = this.ordemBlocos.indexOf(key);
+            var j = i + dir;
+            if (i < 0 || j < 0 || j >= this.ordemBlocos.length) return;
+            var tmp = this.ordemBlocos[i];
+            this.ordemBlocos[i] = this.ordemBlocos[j];
+            this.ordemBlocos[j] = tmp;
+            this.salvarBlocos();
+        },
+
+        // ── Filtros / ordenação ─────────────────────────────────────────────
+        get responsaveis() {
+            var set = {};
+            this.acoes.forEach(function (a) { if (a.responsavel_nome) set[a.responsavel_nome] = 1; });
+            return Object.keys(set).sort();
+        },
+        get temFiltro() { return !!(this.filtroBusca || this.filtroStatus || this.filtroPrioridade || this.filtroResponsavel); },
+        limparFiltros: function () { this.filtroBusca = ''; this.filtroStatus = ''; this.filtroPrioridade = ''; this.filtroResponsavel = ''; },
+        get filtradas() {
+            var q = (this.filtroBusca || '').trim().toLowerCase();
+            var fs = this.filtroStatus, fp = this.filtroPrioridade, fr = this.filtroResponsavel;
+            var arr = this.acoes.filter(function (a) {
+                if (q && a.titulo.toLowerCase().indexOf(q) < 0 && (a.responsavel_nome || '').toLowerCase().indexOf(q) < 0) return false;
+                if (fs && a.status !== fs) return false;
+                if (fp && a.prioridade !== fp) return false;
+                if (fr && a.responsavel_nome !== fr) return false;
+                return true;
+            });
+            var prio = { alta: 0, media: 1, baixa: 2 };
+            var ord = this.ordenar;
+            arr.sort(function (x, y) {
+                if (ord === 'titulo') return x.titulo.localeCompare(y.titulo, 'pt-BR');
+                if (ord === 'prioridade') return (prio[x.prioridade] != null ? prio[x.prioridade] : 3) - (prio[y.prioridade] != null ? prio[y.prioridade] : 3);
+                var px = x.prazo || '', py = y.prazo || '';
+                if (!px && !py) return 0;
+                if (!px) return 1;
+                if (!py) return -1;
+                return ord === 'prazo_desc' ? py.localeCompare(px) : px.localeCompare(py);
+            });
+            return arr;
+        },
+
+        // ── Timeline (agrupada por mês) ─────────────────────────────────────
+        get timelineMeses() {
+            var map = {};
+            this.filtradas.forEach(function (a) {
+                var k = a.prazo ? a.prazo.slice(0, 7) : 'sem';
+                if (!map[k]) map[k] = [];
+                map[k].push(a);
+            });
+            var keys = Object.keys(map).filter(function (k) { return k !== 'sem'; }).sort();
+            if (map['sem']) keys.push('sem');
+            return keys.map(function (k) {
+                return {
+                    key: k,
+                    label: k === 'sem' ? 'Sem prazo' : new Date(k + '-01T00:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+                    acoes: map[k]
+                };
+            });
+        },
+
+        // ── Calendário ──────────────────────────────────────────────────────
+        get calTitulo() { return new Date(this.calAno, this.calMes - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); },
+        calPrev: function () { var m = this.calMes - 1, y = this.calAno; if (m < 1) { m = 12; y--; } this.calMes = m; this.calAno = y; },
+        calNext: function () { var m = this.calMes + 1, y = this.calAno; if (m > 12) { m = 1; y++; } this.calMes = m; this.calAno = y; },
+        calHoje: function () { var d = new Date(); this.calAno = d.getFullYear(); this.calMes = d.getMonth() + 1; },
+        get hojeKey() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); },
+        get calDias() {
+            var ano = this.calAno, mes = this.calMes;
+            var porDia = {};
+            this.filtradas.forEach(function (a) {
+                if (!a.prazo) return;
+                if (!porDia[a.prazo]) porDia[a.prazo] = [];
+                porDia[a.prazo].push(a);
+            });
+            var firstDow = new Date(ano, mes - 1, 1).getDay();
+            var cur = new Date(ano, mes - 1, 1 - firstDow);
+            var hoje = this.hojeKey;
+            var dias = [];
+            for (var i = 0; i < 42; i++) {
+                var y = cur.getFullYear();
+                var mm = String(cur.getMonth() + 1).padStart(2, '0');
+                var dd = String(cur.getDate()).padStart(2, '0');
+                var key = y + '-' + mm + '-' + dd;
+                dias.push({
+                    key: key,
+                    dia: cur.getDate(),
+                    inMonth: cur.getMonth() === (mes - 1),
+                    isHoje: key === hoje,
+                    acoes: porDia[key] || []
+                });
+                cur.setDate(cur.getDate() + 1);
+            }
+            return dias;
+        },
+
+        // ── Helpers visuais ─────────────────────────────────────────────────
+        priorLabel: function (p) { return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[p] || p; },
+        priorClass: function (p) { return ({ alta: 'bg-red-100 text-red-700', media: 'bg-amber-100 text-amber-700', baixa: 'bg-green-100 text-green-700' })[p] || 'bg-slate-100 text-slate-600'; },
+        statusLabel: function (s) { return ({ nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído', cancelado: 'Cancelado' })[s] || s; },
+        statusClass: function (s) { return ({ nao_iniciado: 'bg-slate-100 text-slate-600', em_andamento: 'bg-blue-100 text-blue-700', concluido: 'bg-emerald-100 text-emerald-700', cancelado: 'bg-red-100 text-red-600' })[s] || 'bg-slate-100 text-slate-600'; },
+        statusDot: function (s) { return ({ concluido: '#10b981', em_andamento: '#3b82f6', nao_iniciado: '#94a3b8', cancelado: '#f87171' })[s] || '#94a3b8'; },
+        fmtPrazo: function (p) { return p ? new Date(p + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; },
+        isVencida: function (a) {
+            if (!a.prazo || a.status === 'concluido' || a.status === 'cancelado') return false;
+            var d = new Date(a.prazo + 'T00:00:00');
+            var h = new Date(); h.setHours(0, 0, 0, 0);
+            return d < h;
+        },
+        eventoUrl: function (a) {
+            return '/eventos/novo?titulo=' + encodeURIComponent(a.titulo)
+                + '&descricao=' + encodeURIComponent(a.descricao || a.objetivo || '')
+                + '&local=' + encodeURIComponent(a.evento_local || '')
+                + (a.prazo ? '&data_inicio=' + encodeURIComponent(a.prazo + 'T08:00') : '')
+                + '&secretaria_id=' + PLANO_SECRETARIA + '&acao_id=' + a.id + '&plano_id=' + PLANO_ID;
+        },
+        solicUrl: function (a) {
+            return '/solicitacoes/nova?titulo=' + encodeURIComponent(a.titulo)
+                + '&descricao=' + encodeURIComponent(a.descricao || a.objetivo || '')
+                + (a.prazo ? '&prazo=' + encodeURIComponent(a.prazo) : '')
+                + '&secretaria_id=' + PLANO_SECRETARIA + '&acao_id=' + a.id + '&plano_id=' + PLANO_ID;
+        },
+
+        // ── Ações ───────────────────────────────────────────────────────────
         async toggleStatusAcao(id, statusAtual) {
             var novoStatus = statusAtual === 'concluido' ? 'nao_iniciado' : 'concluido';
             try {
-                var r = await fetch('/planejamento/<%= plano.id %>/acoes/' + id + '/status', {
+                var r = await fetch('/planejamento/' + PLANO_ID + '/acoes/' + id + '/status', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: novoStatus }),
                 });
                 if ((await r.json()).ok) window.location.reload();
-            } catch(e) {}
+            } catch (e) {}
         },
 
         async desvincularEvento(acaoId) {
             if (!confirm('Desvincular o evento desta ação?')) return;
             try {
-                var r = await fetch('/planejamento/<%= plano.id %>/acoes/' + acaoId + '/desvincular-evento', { method: 'POST' });
+                var r = await fetch('/planejamento/' + PLANO_ID + '/acoes/' + acaoId + '/desvincular-evento', { method: 'POST' });
                 if ((await r.json()).ok) window.location.reload();
-            } catch(e) {}
+            } catch (e) {}
         },
 
         async desfazerImportacao() {
@@ -590,20 +813,20 @@ function planShow() {
                 var r = await fetch('/planejamento/importar/desfazer', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ plano_id: <%= plano.id %> }),
+                    body: JSON.stringify({ plano_id: PLANO_ID }),
                 });
                 var data = await r.json();
                 if (data.ok) window.location.reload();
                 else alert(data.error || 'Não foi possível desfazer a importação.');
-            } catch(e) {}
+            } catch (e) {}
         },
 
         async excluirPlano() {
             if (!confirm('Excluir este plano e todas as suas ações e indicadores? Esta ação é irreversível.')) return;
             try {
-                var r = await fetch('/planejamento/<%= plano.id %>/excluir', { method: 'POST' });
+                var r = await fetch('/planejamento/' + PLANO_ID + '/excluir', { method: 'POST' });
                 if ((await r.json()).ok) window.location.href = '/planejamento';
-            } catch(e) {}
+            } catch (e) {}
         },
     };
 }
@@ -649,7 +872,7 @@ function indicadorCard(id, valorInicial, meta) {
             this.valor = novoValor;
             this.saving = true;
             try {
-                var r = await fetch('/planejamento/<%= plano.id %>/indicadores/' + id + '/valor', {
+                var r = await fetch('/planejamento/' + PLANO_ID + '/indicadores/' + id + '/valor', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ valor_atual: novoValor }),
