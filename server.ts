@@ -260,6 +260,7 @@ async function seed() {
   await addCol('eventos', 'token_inscricao', 'VARCHAR(64) NULL');
   await addCol('eventos', 'pdf_regulamento', 'VARCHAR(500) NULL');
   await addCol('eventos', 'imagem_capa', 'VARCHAR(255) NULL');
+  await addCol('eventos', 'plano_id', 'INTEGER NULL');
   // Garante criação das novas tabelas mesmo se sync() não as pegou
   await FormularioTemplate.sync({ force: false });
   await Inscricao.sync({ force: false });

@@ -70,7 +70,13 @@ export const show = async (req: Request, res: Response) => {
       evs.forEach((e: any) => { eventosMap[e.id] = e; });
     }
 
-    res.render('planejamento/show', { title: plano.titulo, plano, eventosMap });
+    // Eventos do plano que não estão vinculados a uma ação (ex.: importados por IA)
+    const eventosDoPlano = await Evento.findAll({
+      where: { plano_id: Number(req.params.id), arquivado: false },
+      order: [['data_inicio', 'ASC']],
+    });
+
+    res.render('planejamento/show', { title: plano.titulo, plano, eventosMap, eventosDoPlano });
   } catch (err) {
     console.error(err);
     res.status(500).send('Erro interno');
@@ -254,7 +260,11 @@ export const imprimir = async (req: Request, res: Response) => {
       const evs = await Evento.findAll({ where: { id: eventoIds }, attributes: ['id', 'titulo', 'status'] });
       evs.forEach((e: any) => { eventosMap[e.id] = e; });
     }
-    res.render('planejamento/imprimir', { layout: false, title: plano.titulo, plano, eventosMap });
+    const eventosDoPlano = await Evento.findAll({
+      where: { plano_id: Number(req.params.id), arquivado: false },
+      order: [['data_inicio', 'ASC']],
+    });
+    res.render('planejamento/imprimir', { layout: false, title: plano.titulo, plano, eventosMap, eventosDoPlano });
   } catch (err) {
     console.error(err);
     res.status(500).send('Erro interno');

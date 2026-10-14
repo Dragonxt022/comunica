@@ -3,7 +3,8 @@ import fs from 'fs';
 import * as Repo from './repository.ts';
 import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 import { getIaConfig } from '../ia/controller.ts';
-import { escolherModeloVisao, analisarImagem, mergeDocumentos } from '../../lib/importar-documento.ts';
+import { escolherModeloVisao, analisarImagem, analisarTexto, extrairTextoPdf, mergeDocumentos } from '../../lib/importar-documento.ts';
+import type { DocumentoExtraido } from '../../lib/importar-documento.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
 import IndicadorMeta from '../../database/models/IndicadorMeta.ts';
 import Evento from '../../database/models/Evento.ts';
@@ -31,20 +32,59 @@ export const importarView = async (req: Request, res: Response) => {
 
 export const analisar = async (req: Request, res: Response) => {
   try {
-    const files = ((req as any).files || []) as any[];
-    if (!files.length) return res.status(400).json({ ok: false, error: 'Envie ao menos uma imagem do documento.' });
+    const files = ((req as any).files || {}) as Record<string, any[]>;
+    const imagens = files.imagens || [];
+    const pdfs = files.pdfs || [];
+    const textoColado = String(req.body?.texto || '').trim();
+
+    if (!imagens.length && !pdfs.length && !textoColado) {
+      return res.status(400).json({ ok: false, error: 'Envie imagens, um PDF ou cole o texto do documento.' });
+    }
 
     const { modelo: perfilModelo, systemPrompt } = await getIaConfig();
-    const modelo = await escolherModeloVisao(perfilModelo);
+    const resultados: DocumentoExtraido[] = [];
+    const avisos: string[] = [];
+    let modeloVisao = '';
 
-    const resultados = [];
-    for (const file of files) {
-      const base64 = fs.readFileSync(file.path).toString('base64');
-      resultados.push(await analisarImagem(base64, modelo, systemPrompt));
+    // Imagens/fotos são analisadas por um modelo de visão.
+    if (imagens.length) {
+      modeloVisao = await escolherModeloVisao(perfilModelo);
+      for (const file of imagens) {
+        const base64 = fs.readFileSync(file.path).toString('base64');
+        resultados.push(await analisarImagem(base64, modeloVisao, systemPrompt));
+      }
+    }
+
+    // Texto colado pelo usuário é analisado como texto.
+    if (textoColado) {
+      resultados.push(await analisarTexto(textoColado, perfilModelo, systemPrompt));
+    }
+
+    // PDFs: extrai a camada de texto e analisa como texto.
+    for (const file of pdfs) {
+      let textoPdf = '';
+      try {
+        textoPdf = await extrairTextoPdf(fs.readFileSync(file.path));
+      } catch (e) {
+        console.error('Erro ao extrair texto do PDF:', e);
+      }
+      if (!textoPdf) {
+        avisos.push(`O PDF "${file.originalname}" parece ser digitalizado (sem texto selecionável). Envie imagens das páginas ou cole o texto.`);
+        continue;
+      }
+      resultados.push(await analisarTexto(textoPdf, perfilModelo, systemPrompt));
     }
 
     const dados = mergeDocumentos(resultados);
-    return res.json({ ok: true, modelo, dados });
+    const total = dados.indicadores.length + dados.acoes.length + dados.eventos.length;
+    if (total === 0) {
+      return res.status(422).json({
+        ok: false,
+        error: avisos[0] || 'Nenhuma informação estruturada foi identificada no documento. Tente imagens mais nítidas ou cole o texto.',
+      });
+    }
+
+    return res.json({ ok: true, modelo: modeloVisao || perfilModelo, dados, avisos });
   } catch (err: any) {
     console.error('Erro importar/analisar:', err);
     return res.status(503).json({ ok: false, error: err?.message || 'Não foi possível analisar o documento. O assistente de IA pode estar indisponível.' });
@@ -107,6 +147,7 @@ export const confirmar = async (req: Request, res: Response) => {
         status: 'em_planejamento',
         secretaria_id: plano.secretaria_id,
         municipio_id: plano.municipio_id,
+        plano_id: planoId,
         criado_por: user.id,
       } as any);
       criados.eventos++;

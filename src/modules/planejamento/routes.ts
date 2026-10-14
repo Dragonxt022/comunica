@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as C from './controller.ts';
 import * as Imp from './importar.controller.ts';
 import { isAuthenticated } from '../../middlewares/auth.middleware.ts';
-import { uploadImagens } from '../../middlewares/upload.middleware.ts';
+import { uploadDocumentos } from '../../middlewares/upload.middleware.ts';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.get('/novo', isAuthenticated, C.createView);
 
 // Importação de documento via IA (precisa vir antes de /:id)
 router.get('/importar', isAuthenticated, Imp.importarView);
-router.post('/importar/analisar', isAuthenticated, uploadImagens, Imp.analisar);
+router.post('/importar/analisar', isAuthenticated, uploadDocumentos, Imp.analisar);
 router.post('/importar/confirmar', isAuthenticated, Imp.confirmar);
 
 router.post('/', isAuthenticated, C.store);

@@ -1,4 +1,4 @@
-import { ollamaGenerateImages, ollamaListModels } from './ollama.ts';
+import { ollamaGenerate, ollamaGenerateImages, ollamaListModels } from './ollama.ts';
 
 export type ItemIndicador = {
   indicador: string;
@@ -46,6 +46,25 @@ Regras:
 - Use null quando um valor não estiver disponível.
 - Não invente informações que não estejam na imagem.
 - Mantenha o texto no idioma original (português).`;
+
+const PROMPT_TEXTO = `Você recebe o TEXTO extraído de um documento de planejamento (ofício, plano de ação, cronograma, ata, lista de metas etc.). Extraia as informações estruturadas que aparecerem.
+
+Responda APENAS com um JSON válido (sem texto antes, depois, sem markdown, sem comentários), exatamente neste formato:
+{
+  "indicadores": [ { "indicador": "", "descricao": "", "valor_meta": 0, "valor_atual": 0, "unidade": "" } ],
+  "acoes": [ { "titulo": "", "descricao": "", "objetivo": "", "responsavel_nome": "", "prazo": "YYYY-MM-DD", "prioridade": "baixa|media|alta" } ],
+  "eventos": [ { "titulo": "", "descricao": "", "local": "", "data_inicio": "YYYY-MM-DDTHH:MM", "data_fim": "YYYY-MM-DDTHH:MM", "tipo": "" } ]
+}
+
+Regras:
+- Se uma categoria não aparecer, retorne um array vazio [].
+- Use null quando um valor não estiver disponível.
+- Não invente informações que não estejam no texto.
+- Mantenha o texto no idioma original (português).
+
+TEXTO DO DOCUMENTO:
+---
+`;
 
 /**
  * Escolhe um modelo com suporte a visão: variável de ambiente OLLAMA_VISION_MODEL,
@@ -97,6 +116,42 @@ export function parseDocumento(texto: string): DocumentoExtraido {
 export async function analisarImagem(base64: string, modelo: string, systemPrompt?: string): Promise<DocumentoExtraido> {
   const resposta = await ollamaGenerateImages(PROMPT, [base64], systemPrompt, modelo);
   return parseDocumento(resposta);
+}
+
+/** Limite de caracteres enviados ao modelo para não estourar o contexto. */
+const LIMITE_TEXTO = 24000;
+
+/** Analisa o texto (colado ou extraído de um PDF) e devolve as informações extraídas. */
+export async function analisarTexto(texto: string, modelo: string, systemPrompt?: string): Promise<DocumentoExtraido> {
+  const conteudo = (texto || '').trim();
+  if (!conteudo) return { indicadores: [], acoes: [], eventos: [] };
+  const trecho = conteudo.length > LIMITE_TEXTO ? conteudo.slice(0, LIMITE_TEXTO) : conteudo;
+  const resposta = await ollamaGenerate(`${PROMPT_TEXTO}${trecho}`, systemPrompt, modelo);
+  return parseDocumento(resposta);
+}
+
+/**
+ * Extrai o texto de um PDF com camada de texto. Retorna '' para PDFs digitalizados
+ * (imagens sem texto selecionável), que precisam ser enviados como imagem/OCR.
+ */
+export async function extrairTextoPdf(buffer: Buffer): Promise<string> {
+  // pdf.js usa Promise.withResolvers (Node 22+). Polyfill para manter Node 20 funcional.
+  if (typeof (Promise as any).withResolvers !== 'function') {
+    (Promise as any).withResolvers = function withResolvers() {
+      let resolve: any, reject: any;
+      const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+      return { promise, resolve, reject };
+    };
+  }
+
+  const { PDFParse } = await import('pdf-parse');
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  try {
+    const resultado = await parser.getText();
+    return (resultado?.text || '').trim();
+  } finally {
+    await parser.destroy().catch(() => {});
+  }
 }
 
 /** Junta os resultados de várias páginas/imagens em um único conjunto. */

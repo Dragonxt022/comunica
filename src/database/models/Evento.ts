@@ -23,6 +23,7 @@ class Evento extends Model {
   public imagem_capa!: string | null;
   public pdf_regulamento!: string | null;
   public municipio_id!: number | null;
+  public plano_id!: number | null;
   public secretaria?: Secretaria;
   public autor?: User;
 }
@@ -104,6 +105,10 @@ Evento.init(
       allowNull: true,
     },
     municipio_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    plano_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },

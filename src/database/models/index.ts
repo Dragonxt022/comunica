@@ -45,6 +45,9 @@ User.belongsToMany(Evento, { through: EventoResponsavel, as: 'responsaveis_em_ev
 
 Evento.hasMany(Inscricao, { foreignKey: 'evento_id', as: 'inscricoes' });
 
+Evento.belongsTo(PlanoAcao, { foreignKey: 'plano_id', as: 'plano' });
+PlanoAcao.hasMany(Evento, { foreignKey: 'plano_id', as: 'eventos' });
+
 // ── Chat associations ──────────────────────────────────────────────────────
 
 ChatConversa.hasMany(ChatParticipante, { foreignKey: 'conversa_id', as: 'participantes' });

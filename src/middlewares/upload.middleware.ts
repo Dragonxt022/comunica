@@ -189,3 +189,34 @@ export function uploadImagens(req: any, res: any, done: (err?: any) => void) {
     done();
   });
 }
+
+const multerDocumentos = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      cb(null, getUploadDir());
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `doc-${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const imagemOk = ALLOWED_MIME.has(file.mimetype) && ALLOWED_EXT.has(ext);
+    const pdfOk = file.mimetype === 'application/pdf' && ext === '.pdf';
+    if (imagemOk || pdfOk) cb(null, true);
+    else cb(new Error('Envie imagens (JPEG, PNG, GIF, WebP) ou arquivos PDF'));
+  },
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB por arquivo
+}).fields([
+  { name: 'imagens', maxCount: 12 },
+  { name: 'pdfs', maxCount: 8 },
+]);
+
+/** Upload de documentos para análise por IA: imagens (`imagens`) e PDFs (`pdfs`). */
+export function uploadDocumentos(req: any, res: any, done: (err?: any) => void) {
+  multerDocumentos(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}

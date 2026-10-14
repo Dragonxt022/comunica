@@ -182,6 +182,38 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
 </table>
 <% } %>
 
+<!-- Eventos do plano -->
+<% if(eventosDoPlano && eventosDoPlano.length > 0){ %>
+<h2>Eventos do Plano (<%= eventosDoPlano.length %>)</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Evento</th>
+      <th style="width:170px">Data</th>
+      <th style="width:130px">Local</th>
+      <th style="width:90px">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% const stMap = {}; (statusEventos || []).forEach(function(s){ stMap[s.key] = s; }); %>
+    <% eventosDoPlano.forEach(function(ev){
+       const dt = ev.data_inicio ? new Date(ev.data_inicio).toLocaleString('pt-BR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+       const stLabel = stMap[ev.status] ? stMap[ev.status].label : ev.status;
+    %>
+    <tr>
+      <td>
+        <strong><%= ev.titulo %></strong>
+        <% if(ev.descricao){ %><br><span style="color:#94a3b8"><%= ev.descricao %></span><% } %>
+      </td>
+      <td><%= dt %></td>
+      <td><%= ev.local || '—' %></td>
+      <td><%= stLabel %></td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+<% } %>
+
 <footer>
   <span>Relatório gerado em <%= hoje %></span>
   <span>Comunica — Sistema de Gestão da Comunicação Municipal</span>
