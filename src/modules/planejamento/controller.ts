@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as Repo from './repository.ts';
-import { Secretaria, Evento, Solicitacao, ImportacaoPlano } from '../../database/models/index.ts';
+import { Secretaria, Evento, Solicitacao, ImportacaoPlano, Municipio } from '../../database/models/index.ts';
 import AcaoPlanejamento from '../../database/models/AcaoPlanejamento.ts';
 import { municipioWhere, getActiveMid } from '../../lib/municipio-filter.ts';
 import { notificar, notificarRole } from '../../lib/notificacao.ts';
@@ -278,7 +278,12 @@ export const imprimir = async (req: Request, res: Response) => {
       where: { plano_id: Number(req.params.id), arquivado: false },
       order: [['data_inicio', 'ASC']],
     });
-    res.render('planejamento/imprimir', { layout: false, title: plano.titulo, plano, eventosMap, eventosDoPlano });
+
+    // Cabeçalho institucional (logo + nome) do município do plano
+    const mid = (plano as any).municipio_id || user.municipio_id;
+    const municipio = mid ? await Municipio.findByPk(mid) : null;
+
+    res.render('planejamento/imprimir', { layout: false, title: plano.titulo, plano, eventosMap, eventosDoPlano, municipio });
   } catch (err) {
     console.error(err);
     res.status(500).send('Erro interno');

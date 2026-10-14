@@ -220,3 +220,34 @@ export function uploadDocumentos(req: any, res: any, done: (err?: any) => void) 
     done();
   });
 }
+
+const multerLogo = multer({
+  storage: multer.diskStorage({
+    destination(_req: any, _file: any, cb: any) {
+      const dir = path.join(process.cwd(), 'public', 'uploads', 'logo');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename(_req: any, file: any, cb: any) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `logo-${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
+    },
+  }),
+  fileFilter(_req: any, file: any, cb: any) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_MIME.has(file.mimetype) && ALLOWED_EXT.has(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas: JPEG, PNG, GIF ou WebP'));
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+}).single('logo');
+
+/** Upload da logo/brasão do município (campo `logo`). */
+export function uploadLogo(req: any, res: any, done: (err?: any) => void) {
+  multerLogo(req, res, (err: any) => {
+    if (err) return done(err);
+    done();
+  });
+}

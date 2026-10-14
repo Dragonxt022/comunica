@@ -16,7 +16,7 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório — <%= plano.titulo %></title>
+<title>Plano de Ação — <%= plano.titulo %></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
 <style>
 .ql-editor { padding: 0 !important; }
@@ -50,7 +50,15 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
   .ind-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 4px; }
   .ind-fill { height: 100%; border-radius: 999px; }
   .vencida { color: #ef4444; font-weight: 600; }
-  footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 10px; display: flex; justify-content: space-between; }
+  footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 10px; display: flex; justify-content: space-between; gap: 16px; }
+  .doc-header { text-align: center; margin-bottom: 10px; }
+  .doc-logo { max-height: 84px; max-width: 240px; object-fit: contain; margin-bottom: 8px; }
+  .doc-orgao { font-size: 15px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: .04em; }
+  .doc-sub { font-size: 11.5px; color: #475569; margin-top: 2px; }
+  .doc-rule { border: none; border-top: 1.5px solid #0f172a; margin: 12px 0 18px; }
+  .doc-titulo { font-size: 17px; font-weight: 800; color: #0f172a; text-align: center; text-transform: uppercase; letter-spacing: .08em; }
+  .doc-subtitulo { font-size: 14px; font-weight: 600; color: #334155; text-align: center; margin-top: 3px; }
+  .doc-meta { font-size: 11px; color: #64748b; text-align: center; margin-top: 6px; }
   @media print {
     body { padding: 20px 28px; }
     @page { margin: 1.5cm; size: A4; }
@@ -66,23 +74,29 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
   <button onclick="window.close()" style="padding:8px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Fechar</button>
 </div>
 
-<!-- Cabeçalho -->
-<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-  <div>
-    <h1><%= plano.titulo %></h1>
-    <div class="meta">
-      <% if(plano.secretaria){ %><strong><%= plano.secretaria.nome %></strong> · <% } %>
-      Período: <%= dtInicio %> a <%= dtFim %>
-      <% if(plano.autor){ %> · Responsável: <%= plano.autor.nome %><% } %>
-    </div>
-    <% if(plano.descricao){ %>
-    <p style="color:#475569;font-size:11px;max-width:600px;line-height:1.5"><%= plano.descricao %></p>
-    <% } %>
+<% const _mun = (typeof municipio !== 'undefined') ? municipio : null; %>
+<!-- Cabeçalho institucional -->
+<div class="doc-header">
+  <% if (_mun && _mun.logo) { %>
+    <img class="doc-logo" src="<%= _mun.logo %>" alt="">
+  <% } %>
+  <div class="doc-orgao"><%= _mun ? (_mun.cabecalho || ('Prefeitura Municipal de ' + _mun.nome)) : 'Documento de Planejamento' %></div>
+  <div class="doc-sub">
+    <% if (_mun && _mun.estado) { %>Estado de <%= _mun.estado %><% } %>
+    <% if (plano.secretaria) { %><%= (_mun && _mun.estado ? ' · ' : '') + plano.secretaria.nome %><% } %>
   </div>
-  <span class="badge badge-<%= plano.status %>">
-    <%= plano.status === 'ativo' ? 'Ativo' : plano.status === 'concluido' ? 'Concluído' : 'Suspenso' %>
-  </span>
 </div>
+<hr class="doc-rule">
+<div class="doc-titulo">Plano de Ação</div>
+<div class="doc-subtitulo"><%= plano.titulo %></div>
+<div class="doc-meta">
+  Período: <%= dtInicio %> a <%= dtFim %>
+  <% if(plano.autor){ %> · Responsável: <%= plano.autor.nome %><% } %>
+  · <span class="badge badge-<%= plano.status %>"><%= plano.status === 'ativo' ? 'Ativo' : plano.status === 'concluido' ? 'Concluído' : 'Suspenso' %></span>
+</div>
+<% if(plano.descricao){ %>
+<p style="color:#475569;font-size:11px;max-width:640px;line-height:1.5;margin:12px auto 0;text-align:center"><%= plano.descricao %></p>
+<% } %>
 
 <!-- KPIs resumo -->
 <div class="kpis">
@@ -215,8 +229,8 @@ const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'lo
 <% } %>
 
 <footer>
-  <span>Relatório gerado em <%= hoje %></span>
-  <span>Comunica — Sistema de Gestão da Comunicação Municipal</span>
+  <span><%= (typeof municipio !== 'undefined' && municipio && municipio.rodape) ? municipio.rodape : 'Comunica — Sistema de Gestão da Comunicação Municipal' %></span>
+  <span>Emitido em <%= hoje %></span>
 </footer>
 
 <script>

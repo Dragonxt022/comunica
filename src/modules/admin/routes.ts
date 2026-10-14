@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as AdminController from './controller.ts';
 import { hasRole } from '../../middlewares/auth.middleware.ts';
+import { uploadLogo } from '../../middlewares/upload.middleware.ts';
 
 const router = Router();
 
@@ -10,9 +11,9 @@ const onlySuperAdmin = hasRole(['super_admin']);
 router.post('/municipio-ativo', onlySuperAdmin, AdminController.setMunicipioAtivo);
 router.get('/municipios', onlySuperAdmin, AdminController.listMunicipios);
 router.get('/municipios/novo', onlySuperAdmin, AdminController.novoMunicipioView);
-router.post('/municipios', onlySuperAdmin, AdminController.storeMunicipio);
+router.post('/municipios', onlySuperAdmin, uploadLogo, AdminController.storeMunicipio);
 router.get('/municipios/:id/editar', onlySuperAdmin, AdminController.editMunicipioView);
-router.post('/municipios/:id', onlySuperAdmin, AdminController.updateMunicipio);
+router.post('/municipios/:id', onlySuperAdmin, uploadLogo, AdminController.updateMunicipio);
 router.post('/municipios/:id/excluir', onlySuperAdmin, AdminController.destroyMunicipio);
 
 router.get('/secretarias/por-municipio', onlySuperAdmin, AdminController.secretariasPorMunicipio);

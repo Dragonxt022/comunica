@@ -174,6 +174,9 @@ async function seed() {
   // ─── Multi-município: criar tabela e colunas ──────────────────────────────
   await Municipio.sync({ force: false });
   await addCol('municipios',          'ultimo_resumo_fila_em', 'DATETIME NULL');
+  await addCol('municipios',          'logo', 'VARCHAR(500) NULL');
+  await addCol('municipios',          'cabecalho', 'VARCHAR(255) NULL');
+  await addCol('municipios',          'rodape', 'VARCHAR(255) NULL');
   await addCol('secretarias',         'municipio_id', 'INTEGER NULL');
   await addCol('users',               'municipio_id', 'INTEGER NULL');
   await addCol('eventos',             'municipio_id', 'INTEGER NULL');

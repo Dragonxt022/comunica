@@ -8,6 +8,9 @@ class Municipio extends Model {
   public estado!: string;
   public ativo!: boolean;
   public ultimo_resumo_fila_em!: Date | null;
+  public logo!: string | null;
+  public cabecalho!: string | null;
+  public rodape!: string | null;
 }
 
 Municipio.init(
@@ -37,6 +40,18 @@ Municipio.init(
     },
     ultimo_resumo_fila_em: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    logo: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    cabecalho: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    rodape: {
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
   },

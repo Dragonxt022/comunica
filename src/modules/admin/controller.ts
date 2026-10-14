@@ -13,6 +13,18 @@ const __filename_ctrl = fileURLToPath(import.meta.url);
 const __dirname_ctrl  = path.dirname(__filename_ctrl);
 const UPLOADS_ROOT    = path.resolve(__dirname_ctrl, '../../../public/uploads');
 
+function logoUrl(file: any): string {
+  const rel = file.path.replace(/.*public[\\/]/, '').replace(/\\/g, '/');
+  return '/' + rel;
+}
+function deleteLogoFile(urlPath: string | null) {
+  if (!urlPath) return;
+  try {
+    const abs = path.join(process.cwd(), 'public', urlPath);
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  } catch { /* não crítico */ }
+}
+
 function fmtBytes(b: number): string {
   if (b === 0) return '0 B';
   if (b < 1024) return b + ' B';
@@ -424,9 +436,18 @@ export const novoMunicipioView = (_req: Request, res: Response) => {
 
 export const storeMunicipio = async (req: Request, res: Response) => {
   try {
-    const { nome, estado } = req.body;
+    const { nome, estado, cabecalho, rodape } = req.body;
+    const file = (req as any).file;
     const slug = slugify(nome, { lower: true, strict: true });
-    await Municipio.create({ nome, slug, estado: (estado || 'RO').toUpperCase(), ativo: true });
+    await Municipio.create({
+      nome,
+      slug,
+      estado: (estado || 'RO').toUpperCase(),
+      ativo: true,
+      logo: file ? logoUrl(file) : null,
+      cabecalho: cabecalho || null,
+      rodape: rodape || null,
+    } as any);
     res.redirect('/admin/municipios');
   } catch (error: any) {
     res.render('admin/municipio-form', { title: 'Novo Município', municipio: null, errors: [error.message] });
@@ -446,12 +467,25 @@ export const editMunicipioView = async (req: Request, res: Response) => {
 
 export const updateMunicipio = async (req: Request, res: Response) => {
   try {
-    const { nome, estado, ativo } = req.body;
+    const { nome, estado, ativo, cabecalho, rodape, remover_logo } = req.body;
+    const file = (req as any).file;
+    const atual: any = await Municipio.findByPk(req.params.id);
     const slug = slugify(nome, { lower: true, strict: true });
-    await Municipio.update(
-      { nome, slug, estado: (estado || 'RO').toUpperCase(), ativo: ativo === 'on' },
-      { where: { id: req.params.id } }
-    );
+    const data: any = {
+      nome, slug,
+      estado: (estado || 'RO').toUpperCase(),
+      ativo: ativo === 'on',
+      cabecalho: cabecalho || null,
+      rodape: rodape || null,
+    };
+    if (file) {
+      data.logo = logoUrl(file);
+      if (atual?.logo) deleteLogoFile(atual.logo);
+    } else if (remover_logo === '1' || remover_logo === 'on') {
+      if (atual?.logo) deleteLogoFile(atual.logo);
+      data.logo = null;
+    }
+    await Municipio.update(data, { where: { id: req.params.id } });
     res.redirect('/admin/municipios');
   } catch (error) {
     console.error(error);
