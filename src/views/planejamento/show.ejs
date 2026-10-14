@@ -584,6 +584,9 @@ const acoesJson = JSON.stringify(acoesClient).replace(/</g, '\\u003c');
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start gap-2 flex-wrap">
                                 <span class="text-sm font-semibold text-slate-900 flex-1"><%= sol.titulo %></span>
+                                <% if (sol.publicado) { %>
+                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Publicado</span>
+                                <% } %>
                                 <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full <%= st.badge %>"><%= st.label %></span>
                             </div>
                             <span class="text-xs text-slate-400">Solicitação #<%= sol.id %><%= sol.tipo_midia ? ' · ' + sol.tipo_midia : '' %></span>

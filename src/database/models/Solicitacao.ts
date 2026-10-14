@@ -17,6 +17,8 @@ class Solicitacao extends Model {
   public prazo!: string | null;
   public link_publicacao!: string | null;
   public link_arquivo_matriz!: string | null;
+  public publicado!: boolean;
+  public data_publicacao!: Date | null;
   public municipio_id!: number | null;
   public ordem!: number;
   public secretaria?: Secretaria;
@@ -64,6 +66,8 @@ Solicitacao.init(
     arte_final_nome: { type: DataTypes.STRING, allowNull: true },
     link_publicacao: { type: DataTypes.STRING(500), allowNull: true },
     link_arquivo_matriz: { type: DataTypes.STRING(500), allowNull: true },
+    publicado: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    data_publicacao: { type: DataTypes.DATE, allowNull: true },
     municipio_id: { type: DataTypes.INTEGER, allowNull: true },
     ordem: { type: DataTypes.INTEGER, defaultValue: 0 },
   },

@@ -80,7 +80,7 @@ export const show = async (req: Request, res: Response) => {
     const solIds = acoes.filter((a: any) => a.solicitacao_id).map((a: any) => a.solicitacao_id);
     const solicitacoesMap: Record<number, any> = {};
     if (solIds.length) {
-      const sols = await Solicitacao.findAll({ where: { id: solIds }, attributes: ['id', 'titulo', 'status', 'tipo_midia'] });
+      const sols = await Solicitacao.findAll({ where: { id: solIds }, attributes: ['id', 'titulo', 'status', 'tipo_midia', 'publicado', 'data_publicacao'] });
       sols.forEach((s: any) => { solicitacoesMap[s.id] = s; });
     }
 

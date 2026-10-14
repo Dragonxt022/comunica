@@ -28,6 +28,7 @@ import inscricoesRoutes from './src/modules/inscricoes/routes.ts';
 import inscricoesHubRoutes from './src/modules/inscricoes/hub.routes.ts';
 import inscricaoPublicaRoutes from './src/modules/inscricao-publica/routes.ts';
 import planejamentoRoutes from './src/modules/planejamento/routes.ts';
+import publicacaoRoutes from './src/modules/publicacao/routes.ts';
 import chatRoutes from './src/modules/chat/routes.ts';
 import iaRoutes from './src/modules/ia/routes.ts';
 import artesRoutes from './src/modules/artes/routes.ts';
@@ -234,6 +235,8 @@ async function seed() {
   await addCol('solicitacoes', 'link_publicacao', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'link_arquivo_matriz', 'VARCHAR(500) NULL');
   await addCol('solicitacoes', 'ordem', 'INTEGER NOT NULL DEFAULT 0');
+  await addCol('solicitacoes', 'publicado', 'BOOLEAN NOT NULL DEFAULT 0');
+  await addCol('solicitacoes', 'data_publicacao', 'DATETIME NULL');
 
   // Galeria de imagens da arte final (múltiplas imagens por solicitação)
   await SolicitacaoImagem.sync({ force: false });
@@ -581,6 +584,7 @@ async function startServer() {
     app.use('/eventos/:eventoId/inscricoes', isAuthenticated, inscricoesRoutes);
     app.use('/inscricao', inscricaoPublicaRoutes);
     app.use('/planejamento', isAuthenticated, planejamentoRoutes);
+    app.use('/publicacao', isAuthenticated, publicacaoRoutes);
     app.use('/chat', chatRoutes);
     app.use('/ia', isAuthenticated, iaRoutes);
     app.use('/artes', isAuthenticated, artesRoutes);

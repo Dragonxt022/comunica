@@ -180,6 +180,13 @@
                 <span id="nav-sol-badge" class="nav-badge hidden min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none"></span>
             </a>
 
+            <a href="/publicacao" title="Publicação"
+               class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/publicacao') ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' %>">
+                <svg class="w-[15px] h-[15px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                <span class="nav-label flex-1">Publicação</span>
+                <span id="nav-pub-badge" class="nav-badge hidden min-w-[18px] h-[18px] bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none"></span>
+            </a>
+
             <% if(user && user.role !== 'secretaria') { %>
             <a href="/releases" title="Releases"
                class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors <%= path.startsWith('/releases') ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' %>">
@@ -788,21 +795,32 @@
     <% if(user && (user.role === 'admin' || user.role === 'secom' || user.role === 'super_admin')) { %>
     <script>
     (function() {
-        var badges = [document.getElementById('nav-sol-badge'), document.getElementById('bnav-sol-badge')].filter(Boolean);
-        if (!badges.length) return;
+        var solBadges = [document.getElementById('nav-sol-badge'), document.getElementById('bnav-sol-badge')].filter(Boolean);
+        var pubBadges = [document.getElementById('nav-pub-badge')].filter(Boolean);
+
+        function setBadge(badges, count) {
+            badges.forEach(function(badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.classList.remove('hidden');
+                    badge.classList.add('flex');
+                } else {
+                    badge.classList.add('hidden');
+                    badge.classList.remove('flex');
+                }
+            });
+        }
         function atualizarBadge() {
-            fetch('/solicitacoes/pendentes-count').then(function(r){ return r.json(); }).then(function(d) {
-                badges.forEach(function(badge) {
-                    if (d.count > 0) {
-                        badge.textContent = d.count > 99 ? '99+' : d.count;
-                        badge.classList.remove('hidden');
-                        badge.classList.add('flex');
-                    } else {
-                        badge.classList.add('hidden');
-                        badge.classList.remove('flex');
-                    }
-                });
-            }).catch(function(){});
+            if (solBadges.length) {
+                fetch('/solicitacoes/pendentes-count').then(function(r){ return r.json(); }).then(function(d) {
+                    setBadge(solBadges, d.count || 0);
+                }).catch(function(){});
+            }
+            if (pubBadges.length) {
+                fetch('/publicacao/pendentes-count').then(function(r){ return r.json(); }).then(function(d) {
+                    setBadge(pubBadges, d.count || 0);
+                }).catch(function(){});
+            }
         }
         atualizarBadge();
         document.addEventListener('comunica:sseData', function(e) {
